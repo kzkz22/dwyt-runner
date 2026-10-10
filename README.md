@@ -46,7 +46,26 @@ Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más
 
 ## Futás a háttérben
 
-- **Linux (systemd, felhasználói szolgáltatás):** a [deploy/dwyt-runner.service](deploy/dwyt-runner.service) fájlt másold a `~/.config/systemd/user/` mappába, majd `systemctl --user enable --now dwyt-runner` és `loginctl enable-linger $USER` (hogy kijelentkezés után is fusson).
+- **Linux szerveren, LXC-ben, VPS-en (rendszerszolgáltatás, ez az ajánlott):**
+  ```bash
+  wget -O /etc/systemd/system/dwyt-runner.service \
+    https://raw.githubusercontent.com/kzkz22/dwyt-runner/main/deploy/dwyt-runner-system.service
+  systemctl daemon-reload
+  systemctl enable --now dwyt-runner
+  systemctl status dwyt-runner        # napló: journalctl -u dwyt-runner -f
+  ```
+  A fájl rootként futtatja a programot (`/root/.local/bin/dwyt-runner`, beállítások: `/root/.config/dwyt-runner`). Ha másik felhasználóval telepítettél és párosítottál, a `User=`, `Environment=HOME=` és `ExecStart=` sort írd át az ő adataira.
+- **Linux asztali gépen (felhasználói szolgáltatás, root nélkül):**
+  ```bash
+  mkdir -p ~/.config/systemd/user
+  wget -O ~/.config/systemd/user/dwyt-runner.service \
+    https://raw.githubusercontent.com/kzkz22/dwyt-runner/main/deploy/dwyt-runner.service
+  systemctl --user daemon-reload
+  systemctl --user enable --now dwyt-runner
+  loginctl enable-linger $USER        # hogy kijelentkezés után is fusson
+  systemctl --user status dwyt-runner # napló: journalctl --user -u dwyt-runner -f
+  ```
+  Itt minden parancsban kell a `--user`; a `--user` nélküli `systemctl` a rendszerszolgáltatást keresi, és „could not be found” hibát ad.
 - **Windows:** Feladatütemező → Alapfeladat létrehozása → „Bejelentkezéskor” → program: `dwyt-runner`, argumentum: `run`.
 - **macOS:** egyelőre egy terminálablakban: `dwyt-runner run`.
 

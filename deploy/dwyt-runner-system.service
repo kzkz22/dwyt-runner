@@ -1,0 +1,18 @@
+# System service for a server / LXC / VPS: /etc/systemd/system/dwyt-runner.service
+# User and HOME must belong to the account that ran `dwyt-runner pair` (its config lives
+# in $HOME/.config/dwyt-runner) and installed the program with `uv tool install`
+# ($HOME/.local/bin/dwyt-runner). Edit the three lines if that is not root.
+[Unit]
+Description=dwyt runner
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=root
+Environment=HOME=/root
+ExecStart=/root/.local/bin/dwyt-runner run
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

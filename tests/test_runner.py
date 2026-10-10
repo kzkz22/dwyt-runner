@@ -136,3 +136,76 @@ def test_config_set_values():
         raise AssertionError("token must not be settable")
     except KeyError:
         pass
+
+
+def _local_job(central, job_id, **options):
+    central.add_job(job_id, "transcribe", {"source": {"kind": "youtube", "url": VIDEO},
+                                           "options": {"mode": "local", "model": "large-v3", "language": "hu",
+                                                       "diarize": True, **options}})
+
+
+def test_local_whisper_job(cfg, central, whisper):
+    cfg.whisper_url = whisper.url
+    yt_dlp.REGISTRY["videos"][VIDEO] = _video()
+    _local_job(central, 20, num_speakers=2)
+    _run_once(cfg, central)
+    t = central.results[20]["transcript"]
+    assert (t["mode"], t["model"], t["language"], t["diarized"]) == ("local", "large-v3", "hu", True)
+    assert [(s["speaker"], s["text"]) for s in t["segments"]] == [("Szereplő 1", "Jó napot."),
+                                                                  ("Szereplő 2", "Köszönöm.")]
+    assert whisper.requests[0]["query"] == {"model": "large-v3", "diarize": "true", "language": "hu",
+                                            "num_speakers": "2"}
+    assert whisper.requests[0]["size"] > 0  # the FLAC made by ffmpeg
+    caps = central.claims[0]["capabilities"]
+    assert "local" in caps["transcribe_modes"] and caps["whisper_models"] == ["large-v3", "large-v3-turbo"]
+
+
+def test_local_gpu_host_down_waits(cfg, central, whisper):
+    from conftest import free_port
+    cfg.whisper_url = f"http://127.0.0.1:{free_port()}/upstream/whisper"
+    yt_dlp.REGISTRY["videos"][VIDEO] = _video()
+    _local_job(central, 21)
+    _run_once(cfg, central)
+    assert central.failures[21]["retry"] == "later" and "nem érhető el" in central.failures[21]["error"]
+    # llama-swap could not start the container: also later
+    cfg.whisper_url = whisper.url
+    whisper.status, whisper.detail = 502, "upstream command exited prematurely"
+    _local_job(central, 22)
+    _run_once(cfg, central)
+    assert central.failures[22]["retry"] == "later"
+
+
+def test_local_refusals_and_worker_errors_fail(cfg, central, whisper):
+    cfg.whisper_url = whisper.url
+    yt_dlp.REGISTRY["videos"][VIDEO] = _video()
+    whisper.status, whisper.detail = 422, "A beszélők szétválasztásához Hugging Face-token kell"
+    _local_job(central, 23)
+    _run_once(cfg, central)
+    assert central.failures[23]["retry"] == "never" and "Hugging Face-token" in central.failures[23]["error"]
+    whisper.reset()
+    whisper.error = "A hangban nem volt felismerhető beszéd."
+    _local_job(central, 24)
+    _run_once(cfg, central)
+    assert central.failures[24]["retry"] == "never"
+    _local_job(central, 25, model="tiny")
+    _run_once(cfg, central)
+    assert "nem ismeri" in central.failures[25]["error"]
+
+
+def test_local_stream_cut_is_retried_later(cfg, central, whisper):
+    cfg.whisper_url = whisper.url
+    yt_dlp.REGISTRY["videos"][VIDEO] = _video()
+    whisper.cut = True
+    _local_job(central, 26)
+    _run_once(cfg, central)
+    assert central.failures[26]["retry"] == "later"
+
+
+def test_local_job_can_be_cancelled(cfg, central, whisper):
+    cfg.whisper_url = whisper.url
+    yt_dlp.REGISTRY["videos"][VIDEO] = _video()
+    whisper.delay = 0.5
+    central.cancel.add(27)
+    _local_job(central, 27)
+    _run_once(cfg, central)
+    assert 27 not in central.results and "megszakítva" in central.failures[27]["error"]

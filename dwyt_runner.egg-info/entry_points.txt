@@ -1,2 +1,0 @@
-[console_scripts]
-dwyt-runner = dwyt_runner.cli:main

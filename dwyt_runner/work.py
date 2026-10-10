@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import captions, cloud, summarize
+from . import captions, cloud, local, summarize
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
@@ -13,12 +13,13 @@ KINDS = ("transcribe", "summarize")
 
 
 def capabilities(cfg: Config) -> dict[str, Any]:
-    modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else [])
+    modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else []) + (["local"] if cfg.whisper_url else [])
     roles = [r for r, model in (("public", cfg.llm_public_model), ("private", cfg.llm_private_model))
              if cfg.llm_url and model]
     kinds = ["transcribe"] + (["summarize"] if roles else [])
     return {"kinds": kinds, "transcribe_modes": modes, "llm_roles": roles,
-            "allowed_domains": cfg.allowed_domains, "local_sources": False}
+            "allowed_domains": cfg.allowed_domains, "local_sources": False,
+            "whisper_models": list(cfg.whisper_models) if cfg.whisper_url else []}
 
 
 def domain_allowed(url: str, allowed: list[str]) -> bool:
@@ -45,6 +46,8 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
             return captions.run(url, options, cfg, stage)
         if mode == "cloud":
             return cloud.run(url, options, cfg, stage, cancelled)
+        if mode == "local":
+            return local.run(url, options, cfg, stage, cancelled)
         raise WorkError(f"Ez a futtató nem tud ilyen módot: {mode}.")
     if kind == "summarize":
         role = data.get("role")

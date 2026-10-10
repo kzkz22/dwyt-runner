@@ -37,6 +37,10 @@ class Config:
     assemblyai_key: str = ""
     assemblyai_url: str = "https://api.assemblyai.com"
     cloud_delete_after: bool = True
+    # local transcription: the Whisper GPU worker through llama-swap (dwyt-airouter + dwyt-gpu)
+    whisper_url: str = ""        # e.g. http://AI-ROUTER:8080/upstream/whisper
+    whisper_models: list[str] = field(default_factory=lambda: ["large-v3", "large-v3-turbo"])
+    whisper_timeout_min: int = 60
     # summaries: any OpenAI-compatible server (LiteLLM, OpenRouter, llama-server, Ollama ...)
     llm_url: str = ""
     llm_key: str = ""

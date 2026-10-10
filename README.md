@@ -6,9 +6,10 @@ Amit végez:
 
 - **YouTube-felirat** letöltése (gyors, ingyenes, beszélők nélkül);
 - **felhős átírás** az AssemblyAI-jal, a **saját kulcsoddal** (a költség a tiéd);
+- **helyi átírás beszélőkkel** a saját GPU-don (Whisper; ehhez [dwyt-airouter](https://github.com/kzkz22/dwyt-airouter) és [dwyt-gpu](https://github.com/kzkz22/dwyt-gpu) kell);
 - **magyar összefoglaló** bármely OpenAI-kompatibilis szerverrel: LiteLLM, OpenRouter, llama-server, Ollama.
 
-A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouTube a te IP-címedről, a te sávszélességeddel töltődik. Helyi Whisper (saját GPU) a 2. körben jön.
+A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouTube a te IP-címedről, a te sávszélességeddel töltődik.
 
 - Terv és döntések: [dwyt-docs/docs/terv.md](https://github.com/kzkz22/dwyt-docs/blob/main/docs/terv.md) (8. fejezet)
 - Protokoll: [dwyt-docs/docs/protokoll.md](https://github.com/kzkz22/dwyt-docs/blob/main/docs/protokoll.md)
@@ -35,8 +36,17 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
    ```
 
    Saját LiteLLM-mel (például a dwyt-airouterrel) az `llm_url` a LiteLLM címe, a modellnevek az ott beállított nevek.
+
+   Helyi Whisper (saját GPU, az AI-router llama-swapján át):
+
+   ```
+   dwyt-runner config set whisper_url http://AI-ROUTER-IP:8080/upstream/whisper
+   dwyt-runner config set whisper_models large-v3,large-v3-turbo   # ami a GPU-gépen van
+   ```
+
+   Ha a GPU-gép épp nem érhető el, a helyi munka vár, és később újra próbálkozik. Felhőre nem vált át. A `whisper_timeout_min` (alapból 60) egy munka leghosszabb ideje; hosszú felvételnél a hossz négyszerese.
 5. Ellenőrzés: `dwyt-runner check`
-6. Indítás: `dwyt-runner run` (leállítás: Ctrl+C)
+6. Indítás: `dwyt-runner run` (leállítás: Ctrl+C). A képességeit (melyik mód, melyik modell) induláskor jelenti be, ezért beállításváltozás után indítsd újra.
 
 A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en `~/Library/Application Support/dwyt-runner/config.json`, Linuxon `~/.config/dwyt-runner/config.json`. A fájlt csak te olvashatod; a `config show` a kulcsokat elrejtve mutatja.
 

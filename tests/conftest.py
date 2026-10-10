@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 import uvicorn
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "fake_modules"))  # the fake yt_dlp shadows the real one
@@ -181,6 +181,51 @@ class FakeLlm:
         self.calls, self.status = [], 200
 
 
+class FakeWhisper:
+    """The Whisper worker behind llama-swap: NDJSON progress lines, then a result or an error."""
+
+    def __init__(self) -> None:
+        self.reset()
+        app = FastAPI()
+        fake = self
+
+        @app.post("/upstream/whisper/transcribe")
+        async def transcribe(request: Request):
+            body = await request.body()
+            fake.requests.append({"query": dict(request.query_params), "size": len(body)})
+            if fake.status != 200:
+                return JSONResponse({"detail": fake.detail}, status_code=fake.status)
+
+            async def lines():
+                import asyncio
+                import json as _json
+                for stage in ("waiting-for-gpu", "transcribe", "diarize"):
+                    yield _json.dumps({"stage": stage, "device": "cuda"}) + "\n"
+                    await asyncio.sleep(fake.delay)
+                if fake.error:
+                    yield _json.dumps({"error": fake.error}) + "\n"
+                elif not fake.cut:
+                    yield _json.dumps({"result": {"language": "hu", "device": "cuda", "diarized": True,
+                                                  "warnings": [], "segments": [
+                        {"start": 0.5, "end": 2.0, "text": " Jó napot. ", "speaker": "SPEAKER_01"},
+                        {"start": 2.2, "end": 4.0, "text": "Köszönöm.", "speaker": "SPEAKER_00"}]}}) + "\n"
+
+            return StreamingResponse(lines(), media_type="application/x-ndjson")
+
+        self.server = Server(app)
+        self.url = self.server.url + "/upstream/whisper"
+
+    def reset(self) -> None:
+        self.requests, self.status, self.detail, self.error, self.cut, self.delay = [], 200, "", "", False, 0.0
+
+
+@pytest.fixture(scope="session")
+def whisper():
+    w = FakeWhisper()
+    yield w
+    w.server.stop()
+
+
 @pytest.fixture(scope="session")
 def central():
     c = FakeCentral()
@@ -212,9 +257,10 @@ def audio_file(tmp_path_factory) -> str:
 
 
 @pytest.fixture(autouse=True)
-def isolated(tmp_path, monkeypatch, central, assembly, llm, audio_file):
+def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file):
     monkeypatch.setenv("DWYT_RUNNER_HOME", str(tmp_path / "home"))
     central.reset()
+    whisper.reset()
     assembly.reset()
     llm.reset()
     yt_dlp.reset()

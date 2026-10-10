@@ -11,19 +11,21 @@ jobs:
         python: ["3.11", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
+      - run: uv venv
       - run: uv pip install -e ".[test]"
-      - run: uv run ruff check --select F,E,W dwyt_runner tests
-      - run: uv run pytest -q
+      - run: uv run --no-sync ruff check --select F,E,W dwyt_runner tests
+      - run: uv run --no-sync pytest -q
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.11"
-      - run: uv pip install -e . pip-audit
-      - run: uv run pip-audit --skip-editable
+      - run: uv venv
+      - run: uv pip install pip-audit pip
+      - run: uv run --no-sync pip-audit .   # the project's own dependencies

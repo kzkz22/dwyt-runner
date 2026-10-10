@@ -1,0 +1,29 @@
+name: test
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv pip install -e ".[test]"
+      - run: uv run ruff check --select F,E,W dwyt_runner tests
+      - run: uv run pytest -q
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+      - run: uv pip install -e . pip-audit
+      - run: uv run pip-audit --skip-editable

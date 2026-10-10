@@ -1,0 +1,14 @@
+# dwyt runner as a systemd user service: ~/.config/systemd/user/dwyt-runner.service
+#   systemctl --user enable --now dwyt-runner && loginctl enable-linger $USER
+[Unit]
+Description=dwyt runner
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/dwyt-runner run
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

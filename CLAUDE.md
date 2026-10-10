@@ -9,7 +9,9 @@ Keys stay local. Grows out of the old yt-transcribe API code.
 Must stay cross-platform: installable with `uv` (no admin rights), ffmpeg/deno fetched by the runner, paths and
 subprocesses Windows-safe. Accept only narrow, validated job types; optional domain allow-list; revocable token.
 
-Status: planning only. License: MIT.
+Status: round 1 implemented (pairing, captions, cloud transcription with AssemblyAI, summaries via an
+OpenAI-compatible URL). Tests fake the central service, yt-dlp (tests/fake_modules), AssemblyAI and the LLM.
+License: MIT.
 
 ## Conventions
 

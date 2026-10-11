@@ -11,7 +11,7 @@ subprocesses Windows-safe. Accept only narrow, validated job types; optional dom
 
 Status: rounds 1–2 implemented (pairing, captions, cloud transcription with AssemblyAI, summaries via an
 OpenAI-compatible URL; local Whisper through llama-swap: `local.py`, one streamed NDJSON request, unreachable =
-retry later, refusal/worker error = fail, never another mode).
+retry later, refusal/worker error = fail, never another mode; translations: `translate.py`, numbered batches).
 Tests fake the central service, yt-dlp (tests/fake_modules), AssemblyAI, the LLM and the Whisper worker.
 License: MIT.
 

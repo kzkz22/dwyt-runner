@@ -7,7 +7,7 @@ Amit végez:
 - **YouTube-felirat** letöltése (gyors, ingyenes, beszélők nélkül);
 - **felhős átírás** az AssemblyAI-jal, a **saját kulcsoddal** (a költség a tiéd);
 - **helyi átírás beszélőkkel** a saját GPU-don (Whisper; ehhez [dwyt-airouter](https://github.com/kzkz22/dwyt-airouter) és [dwyt-gpu](https://github.com/kzkz22/dwyt-gpu) kell);
-- **magyar összefoglaló** bármely OpenAI-kompatibilis szerverrel: LiteLLM, OpenRouter, llama-server, Ollama.
+- **magyar összefoglaló és fordítás** bármely OpenAI-kompatibilis szerverrel: LiteLLM, OpenRouter, llama-server, Ollama.
 
 A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouTube a te IP-címedről, a te sávszélességeddel töltődik.
 
@@ -33,6 +33,7 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
    dwyt-runner config set llm_key KULCS
    dwyt-runner config set llm_public_model MODELLNÉV      # nyilvános videók összefoglalója
    dwyt-runner config set llm_private_model MODELLNÉV     # saját felvételekhez: helyi modell javasolt
+   dwyt-runner config set llm_translate_model MODELLNÉV   # (nem kötelező) fordításhoz más modell a nyilvános videóknál
    ```
 
    Saját LiteLLM-mel (például a dwyt-airouterrel) az `llm_url` a LiteLLM címe, a modellnevek az ott beállított nevek.

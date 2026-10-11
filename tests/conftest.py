@@ -170,6 +170,16 @@ class FakeLlm:
             fake.calls.append(body)
             if fake.status != 200:
                 return JSONResponse({"error": {"message": fake.message}}, status_code=fake.status)
+            system = body["messages"][0]["content"]
+            if system.startswith("Fordító vagy"):
+                import re as _re
+                user = body["messages"][1]["content"]
+                rows = _re.findall(r"^(\d+)\| (.*)$", user.split("Fordítandó sorok:\n", 1)[1], _re.M)
+                if fake.drop_once and len(rows) > 1:  # leave one line out: the runner must ask again
+                    rows, fake.drop_once = rows[:-1], False
+                answer = "\n".join(f"{i}| HU {t}" for i, t in rows) + "\nMAGYARÁZOTT: GPU (grafikus processzor)"
+                return {"model": body["model"], "choices": [{"message": {"content": answer}}],
+                        "usage": {"prompt_tokens": 10, "completion_tokens": 5}}
             answer = "<think>hmm</think>## Összefoglaló\nKert."
             return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                     "usage": {"prompt_tokens": 50, "completion_tokens": 5}}
@@ -178,7 +188,7 @@ class FakeLlm:
         self.url = self.server.url
 
     def reset(self) -> None:
-        self.calls, self.status, self.message = [], 200, "down"
+        self.calls, self.status, self.message, self.drop_once = [], 200, "down", False
 
 
 class FakeWhisper:

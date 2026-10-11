@@ -46,6 +46,7 @@ class Config:
     llm_key: str = ""
     llm_public_model: str = ""   # for public sources (YouTube, web pages)
     llm_private_model: str = ""  # for own recordings: point it to a local model
+    llm_translate_model: str = ""  # optional: translations of public sources with another model
     # which sites this runner downloads from ("*" = any)
     allowed_domains: list[str] = field(default_factory=lambda: list(DEFAULT_DOMAINS))
     cookies_file: str = ""

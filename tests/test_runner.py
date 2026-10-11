@@ -218,3 +218,32 @@ def test_local_job_can_be_cancelled(cfg, central, whisper):
     _local_job(central, 27)
     _run_once(cfg, central)
     assert 27 not in central.results and "megszakítva" in central.failures[27]["error"]
+
+
+def _translate_job(central, job_id, role="public", n=5):
+    central.add_job(job_id, "translate", {"role": role, "source_language": "en", "target": "hu",
+                                          "meta": {"title": "Garden"},
+                                          "segments": [{"idx": i, "text": f"Line {i}"} for i in range(n)]})
+
+
+def test_translate_job_keeps_the_numbering_and_asks_again_for_missing_lines(cfg, central, llm):
+    llm.drop_once = True
+    _translate_job(central, 30)
+    _run_once(cfg, central)
+    res = central.results[30]
+    assert res["language"] == "hu" and res["missing"] == 0 and res["prompt_version"] == 1
+    assert [s["idx"] for s in res["segments"]] == [0, 1, 2, 3, 4]
+    assert res["segments"][2]["text"] == "HU Line 2"
+    assert len(llm.calls) == 2  # the whole batch, then the line it left out
+    assert "angol nyelvről" in llm.calls[0]["messages"][0]["content"]
+    assert "GPU (grafikus processzor)" in llm.calls[1]["messages"][1]["content"]  # explained terms carried over
+    assert "translate" in central.claims[0]["capabilities"]["kinds"]
+
+
+def test_translate_models_by_role(cfg, central, llm):
+    cfg.llm_translate_model = "forditas"
+    _translate_job(central, 31)
+    _run_once(cfg, central)
+    _translate_job(central, 32, role="private")
+    _run_once(cfg, central)
+    assert [c["model"] for c in llm.calls] == ["forditas", "osszefoglalo-helyi"]

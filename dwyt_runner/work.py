@@ -4,22 +4,31 @@ from __future__ import annotations
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import captions, cloud, local, summarize
+from . import captions, cloud, local, summarize, translate
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
 
-KINDS = ("transcribe", "summarize")
+KINDS = ("transcribe", "summarize", "translate")
 
 
 def capabilities(cfg: Config) -> dict[str, Any]:
     modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else []) + (["local"] if cfg.whisper_url else [])
     roles = [r for r, model in (("public", cfg.llm_public_model), ("private", cfg.llm_private_model))
              if cfg.llm_url and model]
-    kinds = ["transcribe"] + (["summarize"] if roles else [])
+    kinds = ["transcribe"] + (["summarize", "translate"] if roles else [])
     return {"kinds": kinds, "transcribe_modes": modes, "llm_roles": roles,
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
             "whisper_models": list(cfg.whisper_models) if cfg.whisper_url else []}
+
+
+def model_for(cfg: Config, kind: str, role: str | None) -> str:
+    """The model of a role; own recordings (private) always use the private model."""
+    if role == "private":
+        return cfg.llm_private_model
+    if role == "public":
+        return (cfg.llm_translate_model if kind == "translate" else "") or cfg.llm_public_model
+    return ""
 
 
 def domain_allowed(url: str, allowed: list[str]) -> bool:
@@ -49,10 +58,13 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         if mode == "local":
             return local.run(url, options, cfg, stage, cancelled)
         raise WorkError(f"Ez a futtató nem tud ilyen módot: {mode}.")
-    if kind == "summarize":
+    if kind in ("summarize", "translate"):
         role = data.get("role")
-        model = {"public": cfg.llm_public_model, "private": cfg.llm_private_model}.get(role)
+        model = model_for(cfg, kind, role)
         if not cfg.llm_url or not model:
             raise WorkError(f"Ennek a futtatónak nincs modellje ehhez ({role}).")
-        return summarize.run(data, Llm(cfg.llm_url, cfg.llm_key), model, stage)
+        llm = Llm(cfg.llm_url, cfg.llm_key)
+        if kind == "summarize":
+            return summarize.run(data, llm, model, stage)
+        return translate.run(data, llm, model, stage, cancelled)
     raise WorkError(f"Ismeretlen munkafajta: {kind}.")

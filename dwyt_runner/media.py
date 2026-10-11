@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import glob
+import hashlib
 import os
+import re
 import subprocess
-from typing import Any
+from typing import Any, Callable
 
 from . import tools
 from .config import Config
@@ -68,3 +70,71 @@ def to_flac(src: str, workdir: str) -> str:
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise WorkError(f"Az ffmpeg nem indult el vagy nem végzett: {exc}") from exc
     return dst
+
+
+# ---- where the media comes from -------------------------------------------------------------
+
+class Fetch:
+    """A media source for the transcription modes: info() (title, duration ...), get(workdir) -> path."""
+
+    def info(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def get(self, workdir: str) -> str:
+        raise NotImplementedError
+
+
+class from_url(Fetch):  # noqa: N801 - reads like a function at the call site
+    def __init__(self, url: str, cfg: Config) -> None:
+        self.url, self.cfg, self._info = url, cfg, None
+
+    def info(self) -> dict[str, Any]:
+        if self._info is None:
+            self._info = probe(self.url, self.cfg)
+        return self._info
+
+    def get(self, workdir: str) -> str:
+        return download_audio(self.url, self.cfg, workdir)
+
+
+class from_file(Fetch):  # noqa: N801
+    """An own recording: obtain(workdir) returns its path (downloaded from the central service,
+    or the file in the watched folder); its SHA-256 must match what the central service named."""
+
+    def __init__(self, name: str, sha256: str, obtain: Callable[[str], str]) -> None:
+        self.name, self.sha256, self.obtain = name, sha256, obtain
+        self.path: str | None = None
+
+    def info(self) -> dict[str, Any]:
+        return {"title": self.name, "duration": duration(self.path) if self.path else None}
+
+    def get(self, workdir: str) -> str:
+        path = self.obtain(workdir)
+        if file_sha256(path) != self.sha256:
+            raise WorkError("A fájl tartalma nem egyezik a beküldöttel (megváltozott vagy sérült).")
+        self.path = path
+        return path
+
+
+def file_sha256(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for block in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+_DURATION = re.compile(r"Duration:\s*(\d+):(\d{2}):(\d{2}(?:\.\d+)?)")
+
+
+def duration(path: str) -> float | None:
+    """Seconds of a media file, read from ffmpeg's banner (no ffprobe in imageio-ffmpeg)."""
+    try:
+        proc = subprocess.run([tools.ffmpeg(), "-nostdin", "-hide_banner", "-i", path], capture_output=True,
+                              timeout=60, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    m = _DURATION.search(proc.stderr.decode("utf-8", "replace"))
+    if not m:
+        return None
+    return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))

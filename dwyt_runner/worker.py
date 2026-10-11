@@ -10,7 +10,7 @@ import threading
 import time
 from typing import Any
 
-from . import tools, work
+from . import tools, watch, work
 from .config import Config
 from .errors import WorkError
 from .protocol import Central, CentralError, JobGone
@@ -18,6 +18,7 @@ from .protocol import Central, CentralError, JobGone
 log = logging.getLogger("dwyt-runner")
 HEARTBEAT_S = 60
 DELIVERY_DELAYS = (2, 5, 15, 30, 60, 120, 300, 600)
+WATCH_INTERVAL_S = 60
 
 
 class Job:
@@ -81,7 +82,7 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
     beats = threading.Thread(target=job.heartbeats, daemon=True)
     beats.start()
     try:
-        result = work.run(job_data, cfg, job.stage, job.cancel.is_set)
+        result = work.run(job_data, cfg, job.stage, job.cancel.is_set, central)
         if job.gone.is_set():
             return "gone"
         if job.cancel.is_set():
@@ -111,7 +112,14 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
     versions = tools.versions()
     log.info("capabilities: %s", caps)
     wait = 2
+    last_scan = 0.0
     while not stop.is_set():
+        if cfg.watch_dirs and time.monotonic() - last_scan >= WATCH_INTERVAL_S:
+            last_scan = time.monotonic()
+            try:
+                watch.scan(cfg, central)
+            except (OSError, CentralError) as exc:
+                log.warning("watched folders: %s", exc)
         try:
             job = central.claim(caps, versions)
             wait = 2

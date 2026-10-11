@@ -1,6 +1,8 @@
 """Client side of the central–runner protocol (dwyt-docs/docs/protokoll.md)."""
 from __future__ import annotations
 
+import os
+import time
 from typing import Any
 
 import httpx
@@ -95,6 +97,49 @@ class Central:
         resp = self._call("POST", f"/runner/v1/jobs/{job_id}/fail", json={"error": error[:4000], "retry": retry})
         if resp.status_code != 200:
             raise CentralError(_message(resp))
+
+
+    # own recordings
+    def download(self, path: str, dest: str, max_bytes: int, attempts: int = 4) -> int:
+        """Stream a job's uploaded file to dest; a broken transfer resumes with an HTTP Range request."""
+        done = os.path.getsize(dest) if os.path.exists(dest) else 0
+        for attempt in range(attempts):
+            headers = {"Range": f"bytes={done}-"} if done else {}
+            try:
+                with self.http.stream("GET", path, headers=headers, timeout=httpx.Timeout(120, connect=15)) as resp:
+                    if resp.status_code == 401:
+                        raise Unauthorized(_message(resp))
+                    if resp.status_code in (404, 409, 410):
+                        resp.read()
+                        raise JobGone(_message(resp))
+                    if resp.status_code not in (200, 206):
+                        raise CentralError(f"A fájl letöltése: HTTP {resp.status_code}")
+                    mode = "ab" if resp.status_code == 206 else "wb"
+                    if mode == "wb":
+                        done = 0
+                    with open(dest, mode) as fh:
+                        for chunk in resp.iter_bytes(1024 * 1024):
+                            done += len(chunk)
+                            if done > max_bytes:
+                                raise CentralError("A fájl nagyobb, mint amennyit ez a futtató elfogad (max_file_mb).")
+                            fh.write(chunk)
+                return done
+            except httpx.HTTPError as exc:
+                if attempt == attempts - 1:
+                    raise CentralError(f"A fájl letöltése megszakadt: {exc}") from exc
+                time.sleep(2 * (attempt + 1))
+        return done
+
+    def local_item(self, sha256: str, name: str, size: int, options: dict[str, Any], summarize: bool) -> dict[str, Any]:
+        resp = self._call("POST", "/runner/v1/local-items", json={"sha256": sha256, "name": name, "size": size,
+                                                                  "options": options, "summarize": summarize})
+        if resp.status_code != 200:
+            raise RefusedItem(f"HTTP {resp.status_code}: {_message(resp)}")
+        return resp.json()
+
+
+class RefusedItem(Exception):
+    """The central service did not accept a watched-folder file (bad options, quota...)."""
 
 
 def _message(resp: httpx.Response) -> str:

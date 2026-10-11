@@ -94,19 +94,23 @@ def _words(transcript: dict) -> list[dict]:
              "end": (w.get("end") or 0) / 1000, "speaker": w.get("speaker")} for w in source]
 
 
-def run(url: str, options: dict[str, Any], cfg: Config, stage: Callable[[str], None],
+def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         cancelled: Callable[[], bool] = lambda: False) -> dict[str, Any]:
+    """fetch: where the media comes from (media.from_url, media.from_file); a URL string also works."""
+    if isinstance(fetch, str):
+        fetch = media.from_url(fetch, cfg)
     if not cfg.assemblyai_key:
         raise WorkError("Ennek a futtatónak nincs AssemblyAI-kulcsa (dwyt-runner config set assemblyai_key ...).")
     api_model = resolve_model(options.get("model"), options.get("language"))
     stage("download")
-    info = media.probe(url, cfg)
+    info = fetch.info()
     workdir = tempfile.mkdtemp(prefix="dwyt_", dir=cfg.work_dir or None)
     api = AssemblyAI(cfg)
     transcript_id = None
     started = time.monotonic()
     try:
-        source = media.download_audio(url, cfg, workdir)
+        source = fetch.get(workdir)
+        info = fetch.info()
         if cancelled():
             raise WorkError("megszakítva")
         stage("prepare-audio")

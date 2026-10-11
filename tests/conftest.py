@@ -99,6 +99,44 @@ class FakeCentral:
             fake.results[job_id] = await request.json()
             return {"ok": True}
 
+        @app.get("/runner/v1/jobs/{job_id}/media")
+        async def media(job_id: int, request: Request):
+            bad = check(request)
+            if bad:
+                return bad
+            data = fake.files.get(job_id)
+            if data is None:
+                return JSONResponse({"error": "gone"}, status_code=410)
+            rng = request.headers.get("range")
+            if rng:
+                start = int(rng.split("=")[1].split("-")[0])
+                return Response(data[start:], status_code=206, media_type="application/octet-stream")
+            if fake.cut_once:  # a broken transfer: half the file, then the runner resumes with Range
+                fake.cut_once = False
+                from fastapi.responses import StreamingResponse
+
+                async def half():
+                    yield data[: len(data) // 2]
+                    raise RuntimeError("connection lost")
+                return StreamingResponse(half(), media_type="application/octet-stream",
+                                         headers={"content-length": str(len(data))})
+            return Response(data, media_type="application/octet-stream")
+
+        @app.post("/runner/v1/local-items")
+        async def local_items(request: Request):
+            bad = check(request)
+            if bad:
+                return bad
+            body = await request.json()
+            fake.registered.append(body)
+            if body["options"].get("mode") not in ("local", "cloud"):
+                return JSONResponse({"error": "rossz mód"}, status_code=422)
+            job_id = 100 + len(fake.registered)
+            fake.add_job(job_id, "transcribe", {"source": {"kind": "local", "sha256": body["sha256"],
+                                                           "name": body["name"], "size": body["size"]},
+                                                "options": body["options"]})
+            return {"item_id": 50, "job_id": job_id, "existing": False}
+
         @app.post("/runner/v1/jobs/{job_id}/fail")
         async def fail(job_id: int, request: Request):
             bad = check(request)
@@ -114,6 +152,7 @@ class FakeCentral:
         self.queue, self.claims, self.beats = [], [], []
         self.results, self.failures, self.known, self.cancel = {}, {}, set(), set()
         self.approved, self.result_failures = False, 0
+        self.files, self.registered, self.cut_once = {}, [], False
 
     def add_job(self, job_id: int, kind: str, data: dict) -> None:
         self.known.add(job_id)

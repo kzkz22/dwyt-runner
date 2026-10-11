@@ -1,13 +1,16 @@
 """One job: check it, run it, return the result shape of the protocol."""
 from __future__ import annotations
 
+import os
+import re
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import captions, cloud, local, summarize, translate
+from . import captions, cloud, local, media, summarize, translate, watch
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
+from .protocol import Central, CentralError
 
 KINDS = ("transcribe", "summarize", "translate")
 
@@ -19,7 +22,8 @@ def capabilities(cfg: Config) -> dict[str, Any]:
     kinds = ["transcribe"] + (["summarize", "translate"] if roles else [])
     return {"kinds": kinds, "transcribe_modes": modes, "llm_roles": roles,
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
-            "whisper_models": list(cfg.whisper_models) if cfg.whisper_url else []}
+            "whisper_models": list(cfg.whisper_models) if cfg.whisper_url else [],
+            "source_kinds": ["upload"] + (["local"] if cfg.watch_dirs else [])}
 
 
 def model_for(cfg: Config, kind: str, role: str | None) -> str:
@@ -36,10 +40,47 @@ def domain_allowed(url: str, allowed: list[str]) -> bool:
     return any(d == "*" or host == d.lower() or host.endswith("." + d.lower()) for d in allowed)
 
 
+def _own_file(job: dict[str, Any], data: dict[str, Any], cfg: Config, stage: Callable[[str], None],
+              cancelled: Callable[[], bool], central: Central | None) -> dict[str, Any]:
+    """An own recording: uploaded to the central service, or a file of this runner's watched folder."""
+    source, options = data["source"], data.get("options") or {}
+    sha, name = str(source.get("sha256") or ""), str(source.get("name") or "felvétel")
+    if not re.fullmatch(r"[0-9a-f]{64}", sha):
+        raise WorkError("Hibás fájlazonosító a munkában.")
+    if source["kind"] == "upload":
+        media_path = str(source.get("media") or "")
+        if central is None or not re.fullmatch(r"/runner/v1/jobs/\d+/media", media_path):
+            raise WorkError("Hibás letöltési cím a munkában.")
+
+        def obtain(workdir: str) -> str:
+            dest = os.path.join(workdir, "upload.bin")
+            stage("download")
+            try:
+                central.download(media_path, dest, cfg.max_file_mb * 1024 ** 2)
+            except CentralError as exc:
+                raise WorkError(str(exc), "later") from exc
+            return dest
+    else:
+        def obtain(workdir: str) -> str:
+            path = watch.path_for(sha)
+            if path is None:
+                raise WorkError("A fájl már nincs meg a figyelt mappában (áthelyezték vagy törölték).")
+            return path
+    fetch = media.from_file(name, sha, obtain)
+    mode = options.get("mode")
+    if mode == "local":
+        return local.run(fetch, options, cfg, stage, cancelled)
+    if mode == "cloud":
+        return cloud.run(fetch, options, cfg, stage, cancelled)
+    raise WorkError(f"Saját felvételhez ez a mód nem kérhető: {mode}.")
+
+
 def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
-        cancelled: Callable[[], bool]) -> dict[str, Any]:
+        cancelled: Callable[[], bool], central: Central | None = None) -> dict[str, Any]:
     """Validate the job strictly (the central service is not trusted blindly) and run it."""
     kind, data = job.get("kind"), job.get("input") or {}
+    if kind == "transcribe" and (data.get("source") or {}).get("kind") in ("upload", "local"):
+        return _own_file(job, data, cfg, stage, cancelled, central)
     if kind == "transcribe":
         source, options = data.get("source") or {}, data.get("options") or {}
         url = str(source.get("url") or "")

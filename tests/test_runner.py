@@ -247,3 +247,92 @@ def test_translate_models_by_role(cfg, central, llm):
     _translate_job(central, 32, role="private")
     _run_once(cfg, central)
     assert [c["model"] for c in llm.calls] == ["forditas", "osszefoglalo-helyi"]
+
+
+# ---- own recordings -----------------------------------------------------------------------
+
+def _sha(data: bytes) -> str:
+    import hashlib
+    return hashlib.sha256(data).hexdigest()
+
+
+def test_uploaded_file_is_downloaded_checked_and_transcribed(cfg, central, whisper, audio_file):
+    cfg.whisper_url = whisper.url
+    data = open(audio_file, "rb").read()
+    central.files[40] = data
+    central.cut_once = True  # the first transfer breaks in the middle
+    central.add_job(40, "transcribe", {"source": {"kind": "upload", "sha256": _sha(data), "name": "interjú.wav",
+                                                  "size": len(data), "media": "/runner/v1/jobs/40/media"},
+                                       "options": {"mode": "local", "model": "large-v3", "language": "hu"}})
+    _run_once(cfg, central)
+    res = central.results[40]
+    assert res["video"]["title"] == "interjú.wav" and res["video"]["duration_s"] == 1
+    assert res["transcript"]["mode"] == "local"
+    assert whisper.requests[0]["size"] > 0
+    caps = central.claims[0]["capabilities"]
+    assert caps["source_kinds"] == ["upload"]
+
+
+def test_upload_with_wrong_content_or_bad_link_fails(cfg, central, whisper):
+    cfg.whisper_url = whisper.url
+    central.files[41] = b"not the same"
+    central.add_job(41, "transcribe", {"source": {"kind": "upload", "sha256": "0" * 64, "name": "x.wav",
+                                                  "size": 12, "media": "/runner/v1/jobs/41/media"},
+                                       "options": {"mode": "local", "model": "large-v3"}})
+    _run_once(cfg, central)
+    assert "nem egyezik" in central.failures[41]["error"]
+    central.add_job(42, "transcribe", {"source": {"kind": "upload", "sha256": "0" * 64, "name": "x.wav",
+                                                  "media": "https://evil.example/file"},
+                                       "options": {"mode": "local", "model": "large-v3"}})
+    _run_once(cfg, central)
+    assert "Hibás letöltési cím" in central.failures[42]["error"]
+
+
+def test_watched_folder_files_are_registered_once_and_transcribed_in_place(cfg, central, whisper, audio_file,
+                                                                            tmp_path):
+    import os
+    import shutil
+
+    from dwyt_runner import watch
+    from dwyt_runner.protocol import Central as Client
+    cfg.whisper_url = whisper.url
+    folder = tmp_path / "Felvételek"
+    (folder / "2026").mkdir(parents=True)
+    rec = folder / "2026" / "megbeszélés.wav"
+    shutil.copy(audio_file, rec)
+    (folder / "jegyzet.txt").write_text("nem hang")
+    cfg.watch_dirs = [str(folder)]
+    client = Client(central.url, "tok-1")
+    old = os.path.getmtime(rec) - 120
+    os.utime(rec, (old, old))
+    assert watch.scan(cfg, client) == 0  # first seen: may still be copying
+    assert watch.scan(cfg, client) == 1
+    assert watch.scan(cfg, client) == 0  # never twice
+    reg = central.registered[0]
+    assert reg["name"] == "megbeszélés.wav" and reg["sha256"] == _sha(rec.read_bytes())
+    assert reg["options"] == {"mode": "local", "model": "large-v3"} and reg["summarize"] is True
+    _run_once(cfg, central)
+    assert central.results[101]["transcript"]["mode"] == "local"
+    assert rec.exists()  # the file stays where it was
+    caps = central.claims[-1]["capabilities"]
+    assert caps["source_kinds"] == ["upload", "local"]
+
+
+def test_watched_file_that_disappeared_fails_clearly(cfg, central, whisper, audio_file, tmp_path):
+    import os
+    import shutil
+
+    from dwyt_runner import watch
+    from dwyt_runner.protocol import Central as Client
+    cfg.whisper_url = whisper.url
+    rec = tmp_path / "a.mp3"
+    shutil.copy(audio_file, rec)
+    old = os.path.getmtime(rec) - 120
+    os.utime(rec, (old, old))
+    cfg.watch_dirs = [str(tmp_path)]
+    client = Client(central.url, "tok-1")
+    watch.scan(cfg, client)
+    watch.scan(cfg, client)
+    rec.unlink()
+    _run_once(cfg, central)
+    assert "nincs meg a figyelt mappában" in central.failures[101]["error"]

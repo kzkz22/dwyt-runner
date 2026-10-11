@@ -9,9 +9,11 @@ Keys stay local. Grows out of the old yt-transcribe API code.
 Must stay cross-platform: installable with `uv` (no admin rights), ffmpeg/deno fetched by the runner, paths and
 subprocesses Windows-safe. Accept only narrow, validated job types; optional domain allow-list; revocable token.
 
-Status: rounds 1–2 implemented (pairing, captions, cloud transcription with AssemblyAI, summaries via an
+Status: rounds 1–3 implemented (pairing, captions, cloud transcription with AssemblyAI, summaries via an
 OpenAI-compatible URL; local Whisper through llama-swap: `local.py`, one streamed NDJSON request, unreachable =
-retry later, refusal/worker error = fail, never another mode; translations: `translate.py`, numbered batches).
+retry later, refusal/worker error = fail, never another mode; translations: `translate.py`, numbered batches;
+own recordings: `media.from_file` (upload downloaded from central with Range resume, SHA-256 checked) and
+`watch.py` (watched folders, registered via local-items, state in watched.json)).
 Tests fake the central service, yt-dlp (tests/fake_modules), AssemblyAI, the LLM and the Whisper worker.
 License: MIT.
 

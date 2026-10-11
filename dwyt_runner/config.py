@@ -50,6 +50,13 @@ class Config:
     # which sites this runner downloads from ("*" = any)
     allowed_domains: list[str] = field(default_factory=lambda: list(DEFAULT_DOMAINS))
     cookies_file: str = ""
+    # own recordings: watched folders (the files never leave this machine) and uploads via the central
+    watch_dirs: list[str] = field(default_factory=list)
+    watch_mode: str = "local"          # local | cloud
+    watch_model: str = ""              # empty: the first of whisper_models (local) or auto (cloud)
+    watch_language: str = ""           # empty: detect
+    watch_summarize: bool = True
+    max_file_mb: int = 4096
     max_duration_min: int = 360
     work_dir: str = ""
 

@@ -4,7 +4,8 @@
   run                        ask for work and do it, until stopped (Ctrl+C)
   config show                the settings (secrets masked)
   config set KEY VALUE       e.g. assemblyai_key, whisper_url, whisper_models, llm_url, llm_key,
-                             llm_public_model, llm_private_model, allowed_domains (comma-separated, * = any)
+                             llm_public_model, llm_private_model, allowed_domains (comma-separated, * = any),
+                             watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
 """
 from __future__ import annotations
@@ -91,6 +92,9 @@ def check() -> int:
     if cfg.whisper_url:
         _out(f"helyi Whisper: {cfg.whisper_url} ({', '.join(cfg.whisper_models)}); nem hívom meg, mert "
              "a GPU-t elvenné az LLM-től")
+    if cfg.watch_dirs:
+        from . import watch
+        _out(f"figyelt mappák: {', '.join(cfg.watch_dirs)} ({watch.options(cfg)})")
     _out(f"engedélyezett tartományok: {', '.join(cfg.allowed_domains)}")
     if not cfg.paired:
         _out("párosítás: még nincs (dwyt-runner pair SERVER)")

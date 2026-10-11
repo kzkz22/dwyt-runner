@@ -106,8 +106,11 @@ def transcribe_on_worker(flac: str, options: dict[str, Any], model: str, cfg: Co
                     "később újrapróbálom.", "later")
 
 
-def run(url: str, options: dict[str, Any], cfg: Config, stage: Callable[[str], None],
+def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         cancelled: Callable[[], bool] = lambda: False) -> dict[str, Any]:
+    """fetch: where the media comes from (media.from_url, media.from_file); a URL string also works."""
+    if isinstance(fetch, str):
+        fetch = media.from_url(fetch, cfg)
     if not cfg.whisper_url:
         raise WorkError("Ennek a futtatónak nincs helyi Whispere (dwyt-runner config set whisper_url ...).")
     model = str(options.get("model") or (cfg.whisper_models or ["large-v3"])[0])
@@ -116,10 +119,11 @@ def run(url: str, options: dict[str, Any], cfg: Config, stage: Callable[[str], N
                         f"{', '.join(cfg.whisper_models)}).")
     started = time.monotonic()
     stage("download")
-    info = media.probe(url, cfg)
+    info = fetch.info()
     workdir = tempfile.mkdtemp(prefix="dwyt_", dir=cfg.work_dir or None)
     try:
-        source = media.download_audio(url, cfg, workdir)
+        source = fetch.get(workdir)
+        info = fetch.info()
         if cancelled():
             raise WorkError("megszakítva")
         stage("prepare-audio")

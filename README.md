@@ -51,6 +51,23 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
 
 A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en `~/Library/Application Support/dwyt-runner/config.json`, Linuxon `~/.config/dwyt-runner/config.json`. A fájlt csak te olvashatod; a `config show` a kulcsokat elrejtve mutatja.
 
+## Saját felvételek
+
+Két úton:
+
+- **Figyelt mappa** (ajánlott): a futtató a megadott mappák új hang- és videófájljait magától átíratja. A fájl el sem hagyja a gépedet; a központ csak az átiratot kapja. A fájlt a futtató nem mozgatja, nem módosítja és nem törli; egy fájlt egyszer dolgoz fel (a tartalma szerint).
+
+  ```
+  dwyt-runner config set watch_dirs "/home/zoli/Felvételek"        # több mappa vesszővel elválasztva
+  dwyt-runner config set watch_mode local                          # local (alapból) vagy cloud
+  dwyt-runner config set watch_language hu                         # üresen felismeri
+  ```
+
+  Utána indítsd újra a futtatót. A mappákat percenként nézi át; egy fájlt akkor vesz fel, ha már nem változik (a másolás befejeződött). Windowson a mappa például `C:\Users\Zoli\Felvételek`.
+- **Feltöltés a böngészőből** a központ „Új átirat” oldalán. A fájl csak addig van a központon, amíg a futtatód le nem töltötte; a futtató a tartalmát ellenőrzi (SHA-256), mielőtt átíratja. A legnagyobb elfogadott méret: `max_file_mb` (alapból 4096).
+
+Mindkét esetben a felvétel „saját”: más felhasználó nem kaphatja meg az eredményét, és az összefoglaló meg a fordítás csak az `llm_private_model` modellel készül.
+
 ## Mely oldalakról tölthet le
 
 Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más oldalra szóló munka jönne, a futtató visszautasítja. Bővítés: `dwyt-runner config set allowed_domains youtube.com,youtu.be,vimeo.com` (`*` = bármi).

@@ -47,6 +47,9 @@ class Config:
     llm_public_model: str = ""   # for public sources (YouTube, web pages)
     llm_private_model: str = ""  # for own recordings: point it to a local model
     llm_translate_model: str = ""  # optional: translations of public sources with another model
+    # models the user may pick on the central's item page (besides the ones above)
+    llm_models: list[str] = field(default_factory=list)          # for public sources
+    llm_private_models: list[str] = field(default_factory=list)  # for own recordings: the owner's explicit consent
     # which sites this runner downloads from ("*" = any)
     allowed_domains: list[str] = field(default_factory=lambda: list(DEFAULT_DOMAINS))
     cookies_file: str = ""

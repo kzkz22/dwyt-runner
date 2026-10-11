@@ -86,7 +86,7 @@ def _chunks(lines: list[str], max_chars: int) -> list[str]:
 
 
 def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], None] = lambda s: None,
-        max_chars: int = MAX_CHARS) -> dict[str, Any]:
+        max_chars: int = MAX_CHARS, progress: Callable[[dict[str, Any]], None] = lambda p: None) -> dict[str, Any]:
     t = job_input["transcript"]
     meta = job_input.get("meta") or {}
     target = job_input.get("language") or "hu"
@@ -101,12 +101,16 @@ def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], 
     stage("summarize")
     if chunked:
         parts = _chunks(lines, max_chars)
-        notes = [usage.add(llm.chat(model, system, NOTES_PROMPT.format(part=i, parts=len(parts), language=lang,
-                                                                        text=part))).text
-                 for i, part in enumerate(parts, 1)]
+        notes = []
+        for i, part in enumerate(parts, 1):  # the last step (part parts+1) writes the summary itself
+            progress({"part": i, "parts": len(parts) + 1, "model": model})
+            notes.append(usage.add(llm.chat(model, system, NOTES_PROMPT.format(part=i, parts=len(parts),
+                                                                               language=lang, text=part))).text)
+        progress({"part": len(parts) + 1, "parts": len(parts) + 1, "model": model})
         material = ("Az átirat túl hosszú volt, ezért részenként jegyzet készült róla. A jegyzetek:\n\n"
                     + "\n\n".join(notes))
     else:
+        progress({"model": model})
         material = "Átirat:\n" + body
     speakers = SPEAKERS_BLOCK if (t.get("diarized") and t.get("speakers")) else ""
     user = f"{_header(meta, t)}\n\n{FORMAT.format(speakers_block=speakers)}\n\n{material}"

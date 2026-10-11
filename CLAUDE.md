@@ -13,7 +13,9 @@ Status: rounds 1–3 implemented (pairing, captions, cloud transcription with As
 OpenAI-compatible URL; local Whisper through llama-swap: `local.py`, one streamed NDJSON request, unreachable =
 retry later, refusal/worker error = fail, never another mode; translations: `translate.py`, numbered batches;
 own recordings: `media.from_file` (upload downloaded from central with Range resume, SHA-256 checked) and
-`watch.py` (watched folders, registered via local-items, state in watched.json)).
+`watch.py` (watched folders, registered via local-items, state in watched.json); 3c: `llm_models` /
+`llm_private_models` offered for choice (capability `llm_models`, a job's `model` must be one of them), progress
+{part, parts, model} sent with heartbeats).
 Tests fake the central service, yt-dlp (tests/fake_modules), AssemblyAI, the LLM and the Whisper worker.
 License: MIT.
 

@@ -131,13 +131,16 @@ def translate_texts(llm: Llm, model: str, source_language: str | None, texts: li
 
 
 def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], None] = lambda s: None,
-        cancelled: Callable[[], bool] = lambda: False) -> dict[str, Any]:
+        cancelled: Callable[[], bool] = lambda: False,
+        progress: Callable[[dict[str, Any]], None] = lambda p: None) -> dict[str, Any]:
     segments = job_input.get("segments") or []
     texts = [(int(seg["idx"]), str(seg.get("text") or "")) for seg in segments]
     if not any(t.strip() for _, t in texts):
         raise WorkError("Az átirat üres, nincs mit fordítani.")
     stage("translate")
-    lines, usage = translate_texts(llm, model, job_input.get("source_language"), texts, cancelled=cancelled)
+    lines, usage = translate_texts(llm, model, job_input.get("source_language"), texts, cancelled=cancelled,
+                                   progress=lambda part, parts: progress({"part": part, "parts": parts,
+                                                                          "model": model}))
     if not lines:
         raise WorkError("A modell egyetlen sort sem adott vissza a várt alakban; később újrapróbálom.", "later")
     wanted = sum(1 for _, t in texts if t.strip())

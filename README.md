@@ -38,6 +38,15 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
 
    Saját LiteLLM-mel (például a dwyt-airouterrel) az `llm_url` a LiteLLM címe, a modellnevek az ott beállított nevek.
 
+   Ha a központ elemoldalán más modellt is választhatnál egy összefoglalóhoz vagy fordításhoz, sorold fel őket (nem kötelező):
+
+   ```
+   dwyt-runner config set llm_models cloud/okos,osszefoglalo-gyors   # nyilvános videókhoz
+   dwyt-runner config set llm_private_models helyi-nagy              # saját felvételekhez (csak amit ide engedsz)
+   ```
+
+   A futtató csak ezeket (és a fenti alapmodelleket) fogadja el; saját felvétel szövege más modellhez nem kerül.
+
    Helyi Whisper (saját GPU, az AI-router llama-swapján át):
 
    ```

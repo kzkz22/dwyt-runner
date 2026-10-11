@@ -21,6 +21,7 @@ def capabilities(cfg: Config) -> dict[str, Any]:
              if cfg.llm_url and model]
     kinds = ["transcribe"] + (["summarize", "translate"] if roles else [])
     return {"kinds": kinds, "transcribe_modes": modes, "llm_roles": roles,
+            "llm_models": {role: offered_models(cfg, role) for role in roles},
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
             "whisper_models": list(cfg.whisper_models) if cfg.whisper_url else [],
             "source_kinds": ["upload"] + (["local"] if cfg.watch_dirs else [])}
@@ -33,6 +34,20 @@ def model_for(cfg: Config, kind: str, role: str | None) -> str:
     if role == "public":
         return (cfg.llm_translate_model if kind == "translate" else "") or cfg.llm_public_model
     return ""
+
+
+def offered_models(cfg: Config, role: str) -> list[str]:
+    """The models a user may choose for a role: the configured ones first, no duplicates.
+    Own recordings (private) only ever get llm_private_model and llm_private_models."""
+    if role == "private":
+        names = [cfg.llm_private_model, *cfg.llm_private_models]
+    else:
+        names = [cfg.llm_public_model, cfg.llm_translate_model, *cfg.llm_models]
+    out: list[str] = []
+    for name in names:
+        if name and name not in out:
+            out.append(name)
+    return out[:30]
 
 
 def domain_allowed(url: str, allowed: list[str]) -> bool:
@@ -76,7 +91,8 @@ def _own_file(job: dict[str, Any], data: dict[str, Any], cfg: Config, stage: Cal
 
 
 def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
-        cancelled: Callable[[], bool], central: Central | None = None) -> dict[str, Any]:
+        cancelled: Callable[[], bool], central: Central | None = None,
+        progress: Callable[[dict[str, Any]], None] = lambda p: None) -> dict[str, Any]:
     """Validate the job strictly (the central service is not trusted blindly) and run it."""
     kind, data = job.get("kind"), job.get("input") or {}
     if kind == "transcribe" and (data.get("source") or {}).get("kind") in ("upload", "local"):
@@ -104,8 +120,14 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         model = model_for(cfg, kind, role)
         if not cfg.llm_url or not model:
             raise WorkError(f"Ennek a futtatónak nincs modellje ehhez ({role}).")
+        wanted = data.get("model")
+        if wanted:  # chosen on the item page: only a model this runner offers for this role
+            if role not in ("public", "private") or wanted not in offered_models(cfg, role):
+                raise WorkError(f"Ezt a modellt a futtató nem ajánlja fel ehhez: {str(wanted)[:80]} (llm_models, "
+                                "llm_private_models).")
+            model = str(wanted)
         llm = Llm(cfg.llm_url, cfg.llm_key)
         if kind == "summarize":
-            return summarize.run(data, llm, model, stage)
-        return translate.run(data, llm, model, stage, cancelled)
+            return summarize.run(data, llm, model, stage, progress=progress)
+        return translate.run(data, llm, model, stage, cancelled, progress=progress)
     raise WorkError(f"Ismeretlen munkafajta: {kind}.")

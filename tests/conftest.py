@@ -83,7 +83,10 @@ class FakeCentral:
             bad = check(request)
             if bad:
                 return bad
-            fake.beats.append((job_id, (await request.json()).get("stage")))
+            body = await request.json()
+            fake.beats.append((job_id, body.get("stage")))
+            if body.get("progress"):
+                fake.progress.append((job_id, body["progress"]))
             if job_id not in fake.known:
                 return JSONResponse({"error": "no such job"}, status_code=404)
             return {"lease_s": 900, "cancel": job_id in fake.cancel}
@@ -149,7 +152,7 @@ class FakeCentral:
         self.url = self.server.url
 
     def reset(self) -> None:
-        self.queue, self.claims, self.beats = [], [], []
+        self.queue, self.claims, self.beats, self.progress = [], [], [], []
         self.results, self.failures, self.known, self.cancel = {}, {}, set(), set()
         self.approved, self.result_failures = False, 0
         self.files, self.registered, self.cut_once = {}, [], False

@@ -336,3 +336,38 @@ def test_watched_file_that_disappeared_fails_clearly(cfg, central, whisper, audi
     rec.unlink()
     _run_once(cfg, central)
     assert "nincs meg a figyelt mappában" in central.failures[101]["error"]
+
+
+# ---- chosen models, progress --------------------------------------------------------------
+
+def test_models_offered_for_choice_and_used_when_asked(cfg, central, llm):
+    cfg.llm_models = ["cloud/okos", "osszefoglalo"]
+    cfg.llm_private_models = ["helyi-nagy"]
+    caps = work.capabilities(cfg)
+    assert caps["llm_models"] == {"public": ["osszefoglalo", "cloud/okos"],
+                                  "private": ["osszefoglalo-helyi", "helyi-nagy"]}
+    transcript = {"segments": [{"start": 0, "end": 1, "speaker": None, "text": "x"}]}
+    central.add_job(40, "summarize", {"role": "public", "model": "cloud/okos", "transcript": transcript})
+    _run_once(cfg, central)
+    assert central.results[40]["model"] == "cloud/okos" and llm.calls[-1]["model"] == "cloud/okos"
+    # an own recording never goes to a model the owner did not list for private use
+    central.add_job(41, "summarize", {"role": "private", "model": "cloud/okos", "transcript": transcript})
+    _run_once(cfg, central)
+    assert central.failures[41]["retry"] == "never" and "nem ajánlja fel" in central.failures[41]["error"]
+    _translate_job(central, 42, role="private")
+    central.queue[-1]["input"]["model"] = "helyi-nagy"
+    _run_once(cfg, central)
+    assert 42 in central.results and llm.calls[-1]["model"] == "helyi-nagy"
+
+
+def test_long_jobs_report_their_parts(cfg, central, llm, monkeypatch):
+    from dwyt_runner import translate
+    original = translate.batches
+    monkeypatch.setattr(translate, "batches", lambda texts, max_chars=0, **kw: original(texts, 10))
+    monkeypatch.setattr(worker.Job, "progress", lambda self, data: (setattr(self, "progress_data", data),
+                                                                    self.beat()))
+    _translate_job(central, 43)
+    _run_once(cfg, central)
+    parts = [p for j, p in central.progress if j == 43]
+    assert parts and parts[-1]["parts"] > 1 and parts[-1]["part"] == parts[-1]["parts"]
+    assert parts[0]["model"] == "osszefoglalo"

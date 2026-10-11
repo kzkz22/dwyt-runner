@@ -27,6 +27,7 @@ class Job:
         self.id = job["job_id"]
         self.data = job
         self.stage_name = "starting"
+        self.progress_data: dict[str, Any] | None = None
         self.cancel = threading.Event()
         self.gone = threading.Event()
         self.done = threading.Event()
@@ -35,7 +36,7 @@ class Job:
 
     def beat(self) -> None:
         try:
-            answer = self.central.heartbeat(self.id, self.stage_name)
+            answer = self.central.heartbeat(self.id, self.stage_name, self.progress_data)
             self._last_beat = time.monotonic()
             if answer.get("cancel"):
                 self.cancel.set()
@@ -48,6 +49,12 @@ class Job:
     def stage(self, name: str) -> None:
         self.stage_name = name
         log.info("job %s: %s", self.id, name)
+        if time.monotonic() - self._last_beat > 5:
+            self.beat()
+
+    def progress(self, data: dict[str, Any]) -> None:
+        """Parts done of a long LLM job (shown on the item page); sent with the heartbeats."""
+        self.progress_data = data
         if time.monotonic() - self._last_beat > 5:
             self.beat()
 
@@ -82,7 +89,7 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
     beats = threading.Thread(target=job.heartbeats, daemon=True)
     beats.start()
     try:
-        result = work.run(job_data, cfg, job.stage, job.cancel.is_set, central)
+        result = work.run(job_data, cfg, job.stage, job.cancel.is_set, central, progress=job.progress)
         if job.gone.is_set():
             return "gone"
         if job.cancel.is_set():

@@ -70,7 +70,14 @@ class Llm:
         if resp.status_code in (408, 429) or resp.status_code >= 500:
             raise WorkError(f"A(z) {model} modell most nem érhető el (HTTP {resp.status_code}).", "later")
         if resp.status_code >= 400:
-            raise WorkError(f"Az LLM-szerver elutasította a kérést (HTTP {resp.status_code}): {_error(resp)}")
+            detail = _error(resp)
+            if resp.status_code in (401, 403) or "No connected db" in detail:
+                # LiteLLM answers "No connected db" when the key is not its master key (it would look
+                # the key up in a database it does not have).
+                raise WorkError(f"Az LLM-szerver nem fogadta el a kulcsot (HTTP {resp.status_code}: {detail[:200]}). "
+                                "Ellenőrizd: dwyt-runner config set llm_key ... "
+                                "(LiteLLM-nél a LITELLM_MASTER_KEY értéke), majd indítsd újra a futtatót.")
+            raise WorkError(f"Az LLM-szerver elutasította a kérést (HTTP {resp.status_code}): {detail}")
         try:
             data = resp.json()
             text = data["choices"][0]["message"].get("content") or ""

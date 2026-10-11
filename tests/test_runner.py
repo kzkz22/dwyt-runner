@@ -116,6 +116,15 @@ def test_llm_down_is_retried_later(cfg, central, llm):
     assert central.failures[8]["retry"] == "later"
 
 
+def test_wrong_litellm_key_says_which_setting_to_fix(cfg, central, llm):
+    llm.status, llm.message = 400, "No connected db."
+    central.add_job(9, "summarize", {"role": "public", "transcript": {"segments": [
+        {"start": 0, "end": 1, "speaker": None, "text": "x"}]}})
+    _run_once(cfg, central)
+    failure = central.failures[9]
+    assert failure["retry"] == "never" and "llm_key" in failure["error"]
+
+
 def test_capabilities_follow_the_settings():
     from dwyt_runner.config import Config
     caps = work.capabilities(Config())

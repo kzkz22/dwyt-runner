@@ -169,7 +169,7 @@ class FakeLlm:
             body = await request.json()
             fake.calls.append(body)
             if fake.status != 200:
-                return JSONResponse({"error": {"message": "down"}}, status_code=fake.status)
+                return JSONResponse({"error": {"message": fake.message}}, status_code=fake.status)
             answer = "<think>hmm</think>## Összefoglaló\nKert."
             return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                     "usage": {"prompt_tokens": 50, "completion_tokens": 5}}
@@ -178,7 +178,7 @@ class FakeLlm:
         self.url = self.server.url
 
     def reset(self) -> None:
-        self.calls, self.status = [], 200
+        self.calls, self.status, self.message = [], 200, "down"
 
 
 class FakeWhisper:

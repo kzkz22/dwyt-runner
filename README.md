@@ -81,7 +81,7 @@ Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más
 
 ## Frissítés
 
-`uv tool upgrade dwyt-runner`. Ez a yt-dlp-t is frissíti; a YouTube gyakran változik, ezért ha a letöltés hibázni kezd, először ezt érdemes futtatni. Ha a központ új protokollt kér, a futtató kiírja, és leáll.
+`uv tool install --force git+https://github.com/kzkz22/dwyt-runner` (a GitHubról mindig a legfrissebbet telepíti; a `dwyt-runner --version` mutatja a változatot), utána indítsd újra a futtatót. A yt-dlp-t az `uv tool upgrade dwyt-runner` is frissíti; a YouTube gyakran változik, ezért ha a letöltés hibázni kezd, először ezt érdemes futtatni. Ha a központ új protokollt kér, a futtató kiírja, és leáll.
 
 ## Fejlesztés
 

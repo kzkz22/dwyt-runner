@@ -121,6 +121,7 @@ def main() -> None:
         pass
     parser = argparse.ArgumentParser(prog="dwyt-runner")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("pair")
     p.add_argument("server")

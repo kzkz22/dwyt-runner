@@ -79,6 +79,9 @@ def _request_body(options: dict[str, Any], api_model: str, upload_url: str) -> d
         body["language_detection"] = True
     if diarize and options.get("num_speakers"):
         body["speakers_expected"] = int(options["num_speakers"])
+    elif diarize and (options.get("min_speakers") or options.get("max_speakers")):
+        body["speaker_options"] = {key: int(options[name]) for key, name in (
+            ("min_speakers_expected", "min_speakers"), ("max_speakers_expected", "max_speakers")) if options.get(name)}
     return body
 
 

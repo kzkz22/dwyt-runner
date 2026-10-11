@@ -371,3 +371,15 @@ def test_long_jobs_report_their_parts(cfg, central, llm, monkeypatch):
     parts = [p for j, p in central.progress if j == 43]
     assert parts and parts[-1]["parts"] > 1 and parts[-1]["part"] == parts[-1]["parts"]
     assert parts[0]["model"] == "osszefoglalo"
+
+
+def test_speaker_options_reach_assemblyai():
+    from dwyt_runner import cloud
+    exact = cloud._request_body({"diarize": True, "num_speakers": 3}, "universal", "u")
+    assert exact["speakers_expected"] == 3 and "speaker_options" not in exact
+    ranged = cloud._request_body({"diarize": True, "min_speakers": 2, "max_speakers": 5}, "universal", "u")
+    assert ranged["speaker_options"] == {"min_speakers_expected": 2, "max_speakers_expected": 5}
+    assert cloud._request_body({"diarize": True, "max_speakers": 4}, "universal", "u")["speaker_options"] == \
+        {"max_speakers_expected": 4}
+    none = cloud._request_body({"diarize": False, "num_speakers": 3}, "universal", "u")
+    assert none["speaker_labels"] is False and "speakers_expected" not in none

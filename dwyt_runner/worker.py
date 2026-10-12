@@ -10,7 +10,7 @@ import threading
 import time
 from typing import Any
 
-from . import tools, watch, work
+from . import modelinfo, tools, watch, work
 from .config import Config
 from .errors import WorkError
 from .protocol import Central, CentralError, JobGone
@@ -120,7 +120,11 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
     log.info("capabilities: %s", caps)
     wait = 2
     last_scan = 0.0
+    last_caps = time.monotonic()
     while not stop.is_set():
+        if time.monotonic() - last_caps >= modelinfo.REFRESH_S:  # what the model names mean may change
+            last_caps = time.monotonic()
+            caps = work.capabilities(cfg)
         if cfg.watch_dirs and time.monotonic() - last_scan >= WATCH_INTERVAL_S:
             last_scan = time.monotonic()
             try:

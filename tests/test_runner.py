@@ -446,3 +446,53 @@ def test_ask_job_shape_is_checked(cfg, central, llm, bad):
     central.add_job(64, "ask", {**_ask_job(), **bad})
     _run_once(cfg, central)
     assert 64 in central.failures and not llm.calls
+
+
+# ---- what the model names mean (round 6) ---------------------------------------------------------
+
+def test_model_info_from_litellm_is_passed_on_without_secrets(cfg, central, llm):
+    from dwyt_runner import modelinfo
+    cfg.llm_ask_model = "kerdes"
+    llm.info = [
+        {"model_name": "kerdes",
+         "litellm_params": {"model": "openai/Qwen", "api_key": "sk-secret", "api_base": "http://x"},
+         "model_info": {"max_input_tokens": 9, "dwyt": {
+             "description": "Kérdések", "where": "local", "target": "Qwen-Gnrl", "target_label": "Qwen, általános",
+             "context": 242144, "vision": True, "thinking": True, "thinking_budget": 24576, "api_key": "sk-leak",
+             "fallback": [{"name": "cloud/flash", "where": "cloud", "target_label": "qwen/flash",
+                           "provider": "OpenRouter", "thinking": None, "secret": "x"}]}}},
+        {"model_name": "osszefoglalo", "model_info": {"dwyt": {"where": "elsewhere", "description": 5}}},
+        {"model_name": "valami-mas", "model_info": {"dwyt": {"description": "nem a futtatóé"}}}]
+    caps = work.capabilities(cfg)
+    info = caps["llm_model_info"]
+    assert caps["llm_server"] == "LiteLLM" and set(info) == {"kerdes"}
+    assert info["kerdes"] == {"description": "Kérdések", "target": "Qwen-Gnrl", "target_label": "Qwen, általános",
+                              "where": "local", "context": 242144, "thinking_budget": 24576, "vision": True,
+                              "thinking": True, "fallback": [{"target_label": "qwen/flash", "provider": "OpenRouter",
+                                                              "where": "cloud", "name": "cloud/flash"}]}
+    assert "sk-" not in json.dumps(caps)
+    assert caps["llm_defaults"] == {"summarize": "osszefoglalo", "translate": "osszefoglalo", "ask": "kerdes",
+                                    "private": "osszefoglalo-helyi"}
+    calls = llm.info_calls
+    work.capabilities(cfg)
+    assert llm.info_calls == calls  # cached for an hour
+    # the owner's own notes describe the names a plain server says nothing about
+    modelinfo.reset()
+    llm.info = None
+    config.set_value(cfg, "llm_model_notes", "osszefoglalo=Gyors összefoglaló; kerdes = Alapos válaszok ")
+    caps = work.capabilities(cfg)
+    assert caps["llm_server"] == "OpenAI-kompatibilis szerver"
+    assert caps["llm_model_info"] == {"osszefoglalo": {"description": "Gyors összefoglaló"},
+                                      "kerdes": {"description": "Alapos válaszok"}}
+
+
+def test_model_info_never_blocks_the_runner(cfg, central, llm, monkeypatch):
+    from dwyt_runner import modelinfo
+    cfg.llm_url = "http://127.0.0.1:9/v1"  # nothing listens there
+    assert modelinfo.fetch(cfg, timeout=1) == ({}, "OpenAI-kompatibilis szerver")
+    cfg.llm_url = "https://openrouter.ai/api/v1"
+    def refuse(*a, **k):
+        raise modelinfo.httpx.ConnectError("x")
+    monkeypatch.setattr(modelinfo.httpx, "get", refuse)
+    info, server = modelinfo.fetch(cfg)
+    assert server == "OpenRouter" and info["osszefoglalo"]["where"] == "cloud"

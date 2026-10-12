@@ -206,6 +206,13 @@ class FakeLlm:
         app = FastAPI()
         fake = self
 
+        @app.get("/v1/model/info")
+        async def model_info(request: Request):
+            fake.info_calls += 1
+            if fake.info is None:
+                return JSONResponse({"detail": "Not Found"}, status_code=404)
+            return {"data": fake.info}
+
         @app.post("/v1/chat/completions")
         async def chat(request: Request):
             body = await request.json()
@@ -236,6 +243,7 @@ class FakeLlm:
 
     def reset(self) -> None:
         self.calls, self.status, self.message, self.drop_once = [], 200, "down", False
+        self.info, self.info_calls = None, 0  # /model/info rows (LiteLLM); None = not a LiteLLM
 
 
 class FakeWhisper:
@@ -322,8 +330,9 @@ def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file)
     llm.reset()
     yt_dlp.reset()
     yt_dlp.REGISTRY["audio"] = audio_file
-    from dwyt_runner import worker
+    from dwyt_runner import modelinfo, worker
     monkeypatch.setattr(worker, "DELIVERY_DELAYS", (0.05, 0.05, 0.05))
+    modelinfo.reset()
     yield
 
 

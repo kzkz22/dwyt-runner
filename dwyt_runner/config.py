@@ -51,6 +51,9 @@ class Config:
     # models the user may pick on the central's item page (besides the ones above)
     llm_models: list[str] = field(default_factory=list)          # for public sources
     llm_private_models: list[str] = field(default_factory=list)  # for own recordings: the owner's explicit consent
+    # what the model names are for, shown on the central's Runners page when the LLM server does not say it
+    # (dwyt-airouter's LiteLLM does): "name=description; name2=description"
+    llm_model_notes: dict[str, str] = field(default_factory=dict)
     # which sites this runner downloads from ("*" = any)
     allowed_domains: list[str] = field(default_factory=lambda: list(DEFAULT_DOMAINS))
     cookies_file: str = ""
@@ -109,6 +112,9 @@ def set_value(cfg: Config, key: str, value: str) -> None:
         setattr(cfg, key, value.strip().lower() in ("1", "true", "yes", "on", "igen"))
     elif isinstance(current, int) and not isinstance(current, bool):
         setattr(cfg, key, int(value))
+    elif isinstance(current, dict):
+        pairs = (part.split("=", 1) for part in value.split(";") if "=" in part)
+        setattr(cfg, key, {k.strip(): v.strip() for k, v in pairs if k.strip() and v.strip()})
     elif isinstance(current, list):
         setattr(cfg, key, [v.strip() for v in value.split(",") if v.strip()])
     else:

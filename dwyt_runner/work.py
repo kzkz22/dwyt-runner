@@ -6,7 +6,7 @@ import re
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import ask, captions, cloud, local, media, summarize, translate, watch
+from . import ask, captions, cloud, local, media, modelinfo, summarize, translate, watch
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
@@ -20,8 +20,13 @@ def capabilities(cfg: Config) -> dict[str, Any]:
     roles = [r for r, model in (("public", cfg.llm_public_model), ("private", cfg.llm_private_model))
              if cfg.llm_url and model]
     kinds = ["transcribe"] + (["summarize", "translate", "ask"] if roles else [])
+    info, server = modelinfo.cached(cfg) if roles else ({}, "")
+    defaults = {"summarize": model_for(cfg, "summarize", "public"), "translate": model_for(cfg, "translate", "public"),
+                "ask": model_for(cfg, "ask", "public"), "private": cfg.llm_private_model}
     return {"kinds": kinds, "transcribe_modes": modes, "llm_roles": roles,
             "llm_models": {role: offered_models(cfg, role) for role in roles},
+            "llm_model_info": info, "llm_server": server,
+            "llm_defaults": {k: v for k, v in defaults.items() if v} if roles else {},
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
             "whisper_models": list(cfg.whisper_models) if cfg.whisper_url else [],
             "source_kinds": ["upload"] + (["local"] if cfg.watch_dirs else [])}

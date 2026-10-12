@@ -50,6 +50,12 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
 
    A futtató csak ezeket (és a fenti alapmodelleket) fogadja el; saját felvétel szövege más modellhez nem kerül.
 
+   A központ Futtatók oldala mutatja, mi fut az egyes nevek mögött (modell, helyben vagy felhőben, gondolkodás, mi válaszol, ha a GPU-gép ki van kapcsolva). A dwyt-airouter LiteLLM-je ezt maga megadja (`/model/info`); a futtató óránként lekérdezi, és csak a leírást küldi tovább, kulcsot és címet nem. Más szervernél a leírást te adhatod meg:
+
+   ```
+   dwyt-runner config set llm_model_notes "osszefoglalo=Összefoglaló, gyors; cloud/okos=Felhős, alapos"
+   ```
+
    Helyi Whisper (saját GPU, az AI-router llama-swapján át):
 
    ```

@@ -413,7 +413,7 @@ def test_ask_job_answers_from_the_background_with_the_conversation(cfg, central,
     _run_once(cfg, central)
     res = central.results[60]
     assert res["text"] == "A kertről szól [00:00]. (3 üzenet)" and res["model"] == "kerdes"
-    assert res["prompt_version"] == 2 and res["reasoning_tokens"] == 30
+    assert res["prompt_version"] == 3 and res["reasoning_tokens"] == 30
     assert "tömör legyél" in call_system(llm) and "Táblázatban soronként egy szempont" in call_system(llm)
     call = llm.calls[-1]
     assert call["model"] == "kerdes" and "temperature" not in call  # the model's own setting
@@ -439,7 +439,31 @@ def test_ask_library_cites_sources_and_private_uses_the_local_model(cfg, central
     assert central.failures[63]["retry"] == "never" and "nem ajánlja fel" in central.failures[63]["error"]
 
 
+def test_ask_library_sees_the_whole_catalogue(cfg, central, llm):
+    catalog = [{"n": 1, "title": "Kerti videó", "channel": "Kertész", "date": "2026-10-01", "tags": ["kert"],
+                "summary": "A kertről."},
+               {"n": 2, "title": "NAS építés", "channel": "Hardware Haven", "date": "2026-10-02", "tags": [],
+                "summary": None}]
+    central.add_job(65, "ask", _ask_job(scope="library", catalog=catalog, library_total=2))
+    _run_once(cfg, central)
+    system = call_system(llm)
+    assert "összesen 2 videó" in system and "mind a(z) 2 videót felsorolja" in system
+    assert "- [#1] Kerti videó (Kertész; 2026-10-01; címkék: kert): A kertről." in system
+    assert "- [#2] NAS építés (Hardware Haven; 2026-10-02)" in system and "## Részletek" in system
+    assert "Soha ne kérd, hogy a felhasználó másolja be" in system
+    # partial catalogue (a very large library) is said so; only a catalogue, no passages, is fine too
+    central.add_job(66, "ask", {**_ask_job(scope="library", catalog=catalog, library_total=900), "sources": []})
+    _run_once(cfg, central)
+    assert 66 in central.results and "a legújabb 2 videót sorolja fel" in call_system(llm)
+    assert "(a kereséshez nem illett részlet)" in call_system(llm)
+    # the item scope has no catalogue text
+    central.add_job(67, "ask", _ask_job())
+    _run_once(cfg, central)
+    assert "## Könyvtár" not in call_system(llm)
+
+
 @pytest.mark.parametrize("bad", [{"scope": "shell"}, {"sources": []}, {"messages": []},
+                                 {"catalog": "x"}, {"catalog": [{}] * 5001},
                                  {"messages": [{"role": "assistant", "content": "x"}]},
                                  {"messages": [{"role": "system", "content": "x"}]}])
 def test_ask_job_shape_is_checked(cfg, central, llm, bad):

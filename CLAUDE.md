@@ -17,7 +17,7 @@ own recordings: `media.from_file` (upload downloaded from central with Range res
 `llm_private_models` offered for choice (capability `llm_models`, a job's `model` must be one of them), progress
 {part, parts, model} sent with heartbeats); round 6: `ask.py` (kind `ask`: questions about an item or the
 library; the central sends background + conversation, the runner writes the instructions; no tools, the background
-is untrusted; model: public → `llm_ask_model` or `llm_public_model`, private → `llm_private_model`). 0.7: `modelinfo.py` (capabilities `llm_model_info`, `llm_server`, `llm_defaults`; from LiteLLM's `/model/info` `model_info.dwyt`, known fields only, refreshed hourly; `llm_model_notes` for other servers).
+is untrusted; model: public → `llm_ask_model` or `llm_public_model`, private → `llm_private_model`; prompt v3: library questions also get `catalog` (the whole library, short) and `library_total`). 0.7: `modelinfo.py` (capabilities `llm_model_info`, `llm_server`, `llm_defaults`; from LiteLLM's `/model/info` `model_info.dwyt`, known fields only, refreshed hourly; `llm_model_notes` for other servers).
 Tests fake the central service, yt-dlp (tests/fake_modules), AssemblyAI, the LLM and the Whisper worker.
 License: MIT.
 

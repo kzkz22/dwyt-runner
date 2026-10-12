@@ -12,8 +12,9 @@ from . import formatting
 from .errors import WorkError
 from .llm import Llm, Usage
 
-PROMPT_VERSION = 2  # 2: thorough, structured answers instead of terse ones; fewer citations per cell
+PROMPT_VERSION = 3  # 2: thorough, structured answers; 3: library questions get the whole library as a catalogue
 MAX_SOURCES = 50
+MAX_CATALOG = 5000
 MAX_MESSAGES = 40
 MAX_INPUT_CHARS = 1_500_000
 TURN_CHARS = 220  # a timestamp every ~15 s of speech, so the answer can cite precisely
@@ -39,15 +40,26 @@ SYSTEM = "\n".join([
     "- A neveket és szakkifejezéseket eredeti alakjukban hagyd; ha nem magyarok, első előfordulásukkor zárójelben "
     "magyarázd.",
     "",
+    "{scope}",
+    "",
     "{sources}",
 ])
 
 CITE_ITEM = ("A fontos állításoknál hivatkozz az átirat időbélyegére szögletes zárójelben, pontosan úgy, ahogy a "
              "sor elején áll, például [12:34] vagy [01:02:03]. Ne zsúfold: mondatonként vagy táblázatcellánként "
              "legfeljebb egy-két időpont.")
+LIBRARY_SCOPE = ("A könyvtárban összesen {total} videó van (a felhasználó saját felvételei nélkül). A „Könyvtár” "
+                 "rész {catalog_note} rövid adatokkal: cím, csatorna, dátum, címkék, az összefoglaló eleje. A "
+                 "„Részletek” rész csak a kérdéshez legjobban illő {sources} videó átiratrészleteit tartalmazza. "
+                 "Ha a kérdés az egész könyvtárra vonatkozik (darabszám, csoportosítás, áttekintés), a Könyvtár "
+                 "listájából dolgozz, és minden videót vegyél figyelembe; a részletekből csak a pontosításhoz. Ha "
+                 "valamihez a rövid adatok nem elegendőek, mondd meg, és javasold, hogy a felhasználó kérdezzen rá "
+                 "konkrétan, vagy az adott videó oldalán. Soha ne kérd, hogy a felhasználó másolja be a videók "
+                 "tartalmát: a könyvtár a rendszerben van.")
 CITE_LIBRARY = ("A fontos állításoknál hivatkozz a forrásra a sorszámával és az időbélyeggel, például [#2 12:34]; "
                 "ha nincs időpont (például az összefoglalóból), csak a sorszámmal: [#2]. Mondatonként vagy "
-                "cellánként legfeljebb egy-két hivatkozás. Ha több forrás is szól a kérdésről, hasonlítsd össze őket.")
+                "cellánként legfeljebb egy-két hivatkozás. Ha több forrás is szól a kérdésről, hasonlítsd össze őket. "
+                "A Könyvtár listájának videóira is a sorszámukkal hivatkozz: [#7].")
 
 
 def _turns(lines: list[dict[str, Any]]) -> list[str]:
@@ -93,19 +105,36 @@ def _source_block(src: dict[str, Any], scope: str) -> str:
     return "\n".join(lines)
 
 
+def _catalog_block(entries: list[dict[str, Any]]) -> str:
+    lines = ["## Könyvtár", ""]
+    for e in entries:
+        if not isinstance(e, dict):
+            continue
+        facts = [str(e[k]) for k in ("channel", "date") if e.get(k)]
+        tags = [str(x) for x in e.get("tags") or [] if isinstance(x, str)]
+        if tags:
+            facts.append("címkék: " + ", ".join(tags))
+        head = f"- [#{e.get('n')}] {e.get('title') or 'cím nélkül'}" + (f" ({'; '.join(facts)})" if facts else "")
+        lines.append(head + (f": {' '.join(str(e['summary']).split())}" if e.get("summary") else ""))
+    return "\n".join(lines)
+
+
 def check(job_input: dict[str, Any]) -> None:
     """The central service is not trusted blindly: a narrow, bounded shape only."""
     if job_input.get("scope") not in ("item", "library"):
         raise WorkError("Ismeretlen kérdéstípus.")
     sources, messages = job_input.get("sources"), job_input.get("messages")
-    if not isinstance(sources, list) or not sources or len(sources) > MAX_SOURCES:
+    catalog = job_input.get("catalog") or []
+    if not isinstance(catalog, list) or len(catalog) > MAX_CATALOG:
+        raise WorkError("A könyvtár listája hibás vagy túl hosszú.")
+    if not isinstance(sources, list) or len(sources) > MAX_SOURCES or not (sources or catalog):
         raise WorkError("A kérdéshez nem jött háttér.")
     if not isinstance(messages, list) or not messages or len(messages) > MAX_MESSAGES:
         raise WorkError("A kérdés hiányzik.")
     if any(not isinstance(m, dict) or m.get("role") not in ("user", "assistant")
            or not isinstance(m.get("content"), str) for m in messages) or messages[-1]["role"] != "user":
         raise WorkError("A beszélgetés alakja hibás.")
-    size = sum(len(str(m["content"])) for m in messages) + sum(len(str(s)) for s in sources)
+    size = sum(len(str(m["content"])) for m in messages) + sum(len(str(s)) for s in sources) + len(str(catalog))
     if size > MAX_INPUT_CHARS:
         raise WorkError("A kérdés háttere túl nagy.")
 
@@ -115,8 +144,18 @@ def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], 
     check(job_input)
     scope = job_input["scope"]
     blocks = "\n\n".join(_source_block(src, scope) for src in job_input["sources"] if isinstance(src, dict))
-    system = SYSTEM.format(cite_rule=CITE_ITEM if scope == "item" else CITE_LIBRARY,
-                           sources="Források:\n\n" + blocks)
+    catalog = job_input.get("catalog") or []
+    if scope == "library" and catalog:
+        total = int(job_input.get("library_total") or len(catalog))
+        note = ("mind a(z) {} videót felsorolja".format(len(catalog)) if len(catalog) >= total else
+                "a legújabb {} videót sorolja fel (a többi nem fért bele)".format(len(catalog)))
+        scope_text = LIBRARY_SCOPE.format(total=total, catalog_note=note, sources=len(job_input["sources"]))
+        background = _catalog_block(catalog) + "\n\n## Részletek\n\n" + (blocks or "(a kereséshez nem illett részlet)")
+    else:
+        scope_text = ""
+        background = blocks
+    system = SYSTEM.format(cite_rule=CITE_ITEM if scope == "item" else CITE_LIBRARY, scope=scope_text,
+                           sources="Források:\n\n" + background)
     messages = [{"role": "system", "content": system}] + [
         {"role": m["role"], "content": m["content"]} for m in job_input["messages"]]
     stage("ask")

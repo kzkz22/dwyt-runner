@@ -6,20 +6,20 @@ import re
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import captions, cloud, local, media, summarize, translate, watch
+from . import ask, captions, cloud, local, media, summarize, translate, watch
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
 from .protocol import Central, CentralError
 
-KINDS = ("transcribe", "summarize", "translate")
+KINDS = ("transcribe", "summarize", "translate", "ask")
 
 
 def capabilities(cfg: Config) -> dict[str, Any]:
     modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else []) + (["local"] if cfg.whisper_url else [])
     roles = [r for r, model in (("public", cfg.llm_public_model), ("private", cfg.llm_private_model))
              if cfg.llm_url and model]
-    kinds = ["transcribe"] + (["summarize", "translate"] if roles else [])
+    kinds = ["transcribe"] + (["summarize", "translate", "ask"] if roles else [])
     return {"kinds": kinds, "transcribe_modes": modes, "llm_roles": roles,
             "llm_models": {role: offered_models(cfg, role) for role in roles},
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
@@ -32,7 +32,8 @@ def model_for(cfg: Config, kind: str, role: str | None) -> str:
     if role == "private":
         return cfg.llm_private_model
     if role == "public":
-        return (cfg.llm_translate_model if kind == "translate" else "") or cfg.llm_public_model
+        own = {"translate": cfg.llm_translate_model, "ask": cfg.llm_ask_model}.get(kind, "")
+        return own or cfg.llm_public_model
     return ""
 
 
@@ -42,7 +43,7 @@ def offered_models(cfg: Config, role: str) -> list[str]:
     if role == "private":
         names = [cfg.llm_private_model, *cfg.llm_private_models]
     else:
-        names = [cfg.llm_public_model, cfg.llm_translate_model, *cfg.llm_models]
+        names = [cfg.llm_public_model, cfg.llm_translate_model, cfg.llm_ask_model, *cfg.llm_models]
     out: list[str] = []
     for name in names:
         if name and name not in out:
@@ -115,7 +116,7 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         if mode == "local":
             return local.run(url, options, cfg, stage, cancelled)
         raise WorkError(f"Ez a futtató nem tud ilyen módot: {mode}.")
-    if kind in ("summarize", "translate"):
+    if kind in ("summarize", "translate", "ask"):
         role = data.get("role")
         model = model_for(cfg, kind, role)
         if not cfg.llm_url or not model:
@@ -129,5 +130,7 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         llm = Llm(cfg.llm_url, cfg.llm_key)
         if kind == "summarize":
             return summarize.run(data, llm, model, stage, progress=progress)
+        if kind == "ask":
+            return ask.run(data, llm, model, stage, progress=progress)
         return translate.run(data, llm, model, stage, cancelled, progress=progress)
     raise WorkError(f"Ismeretlen munkafajta: {kind}.")

@@ -15,7 +15,9 @@ retry later, refusal/worker error = fail, never another mode; translations: `tra
 own recordings: `media.from_file` (upload downloaded from central with Range resume, SHA-256 checked) and
 `watch.py` (watched folders, registered via local-items, state in watched.json); 3c: `llm_models` /
 `llm_private_models` offered for choice (capability `llm_models`, a job's `model` must be one of them), progress
-{part, parts, model} sent with heartbeats).
+{part, parts, model} sent with heartbeats); round 6: `ask.py` (kind `ask`: questions about an item or the
+library; the central sends background + conversation, the runner writes the instructions; no tools, the background
+is untrusted; model: public → `llm_ask_model` or `llm_public_model`, private → `llm_private_model`).
 Tests fake the central service, yt-dlp (tests/fake_modules), AssemblyAI, the LLM and the Whisper worker.
 License: MIT.
 

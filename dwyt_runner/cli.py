@@ -4,7 +4,8 @@
   run                        ask for work and do it, until stopped (Ctrl+C)
   config show                the settings (secrets masked)
   config set KEY VALUE       e.g. assemblyai_key, whisper_url, whisper_models, llm_url, llm_key,
-                             llm_public_model, llm_private_model, allowed_domains (comma-separated, * = any),
+                             llm_public_model, llm_private_model, llm_ask_model, allowed_domains (comma-separated,
+                             * = any),
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
 """

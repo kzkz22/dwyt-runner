@@ -34,7 +34,10 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
    dwyt-runner config set llm_public_model MODELLNÉV      # nyilvános videók összefoglalója
    dwyt-runner config set llm_private_model MODELLNÉV     # saját felvételekhez: helyi modell javasolt
    dwyt-runner config set llm_translate_model MODELLNÉV   # (nem kötelező) fordításhoz más modell a nyilvános videóknál
+   dwyt-runner config set llm_ask_model MODELLNÉV         # (nem kötelező) a központban feltett kérdésekhez, például a gondolkodó „kerdes”
    ```
+
+   A központban feltett kérdésekre (az elem oldalán és a Keresés oldalon) a futtató válaszol: nyilvános videóknál az `llm_ask_model`, ha nincs, az `llm_public_model`; saját felvételnél mindig az `llm_private_model`. A modell nem kap eszközöket, csak a központ által összeszedett átiratrészleteket.
 
    Saját LiteLLM-mel (például a dwyt-airouterrel) az `llm_url` a LiteLLM címe, a modellnevek az ott beállított nevek.
 

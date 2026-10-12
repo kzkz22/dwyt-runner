@@ -222,6 +222,11 @@ class FakeLlm:
                 answer = "\n".join(f"{i}| HU {t}" for i, t in rows) + "\nMAGYARÁZOTT: GPU (grafikus processzor)"
                 return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                         "usage": {"prompt_tokens": 10, "completion_tokens": 5}}
+            if system.startswith("Egy videó- és hangfelvétel-könyvtár"):
+                answer = f"<think>hmm</think>A kertről szól [00:00]. ({len(body['messages']) - 1} üzenet)"
+                return {"model": body["model"], "choices": [{"message": {"content": answer}}],
+                        "usage": {"prompt_tokens": 70, "completion_tokens": 9,
+                                  "completion_tokens_details": {"reasoning_tokens": 30}}}
             answer = "<think>hmm</think>## Összefoglaló\nKert."
             return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                     "usage": {"prompt_tokens": 50, "completion_tokens": 5}}

@@ -57,9 +57,15 @@ class Llm:
         self.timeout = timeout
 
     def chat(self, model: str, system: str, user: str, temperature: float = 0.3) -> Answer:
+        return self.complete(model, [{"role": "system", "content": system}, {"role": "user", "content": user}],
+                             temperature)
+
+    def complete(self, model: str, messages: list[dict], temperature: float | None = 0.3) -> Answer:
+        """A whole conversation; temperature None leaves it to the server (the model's preset)."""
         started = time.monotonic()
-        body = {"model": model, "temperature": temperature,
-                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        body: dict = {"model": model, "messages": messages}
+        if temperature is not None:
+            body["temperature"] = temperature
         try:
             resp = httpx.post(self.url, json=body, headers=self.headers,
                               timeout=httpx.Timeout(self.timeout, connect=10))

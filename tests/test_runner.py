@@ -398,6 +398,10 @@ def _ask_job(scope="item", role="public", messages=None, **extra):
             "messages": messages or [{"role": "user", "content": "Miről szól?"}], **extra}
 
 
+def call_system(llm) -> str:
+    return llm.calls[-1]["messages"][0]["content"]
+
+
 def test_ask_job_answers_from_the_background_with_the_conversation(cfg, central, llm):
     caps = work.capabilities(cfg)
     assert "ask" in caps["kinds"]
@@ -409,7 +413,8 @@ def test_ask_job_answers_from_the_background_with_the_conversation(cfg, central,
     _run_once(cfg, central)
     res = central.results[60]
     assert res["text"] == "A kertről szól [00:00]. (3 üzenet)" and res["model"] == "kerdes"
-    assert res["prompt_version"] == 1 and res["reasoning_tokens"] == 30
+    assert res["prompt_version"] == 2 and res["reasoning_tokens"] == 30
+    assert "tömör legyél" in call_system(llm) and "Táblázatban soronként egy szempont" in call_system(llm)
     call = llm.calls[-1]
     assert call["model"] == "kerdes" and "temperature" not in call  # the model's own setting
     system = call["messages"][0]["content"]

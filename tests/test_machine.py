@@ -1,5 +1,6 @@
 """The machine check (decision 18.8): reading the hardware, the judgement, what changed."""
 import json
+import os
 import subprocess
 import sys
 
@@ -155,10 +156,11 @@ def test_model_servers_are_found(monkeypatch):
 def test_report_and_the_command(tmp_path):
     text = machine.report(m(), machine.assess(m()))
     assert "Helyi modellszerver" in text and "[figyelem]" in text and "próbafuttatás" in text
-    env = {"DWYT_RUNNER_HOME": str(tmp_path), "PYTHONIOENCODING": "utf-8", "PATH": "", "SYSTEMROOT": "C:\\Windows"}
-    out = subprocess.run([sys.executable, "-m", "dwyt_runner.cli", "machine", "--json"], capture_output=True,
-                         text=True, encoding="utf-8", env=env, timeout=60, check=True).stdout
-    data = json.loads(out)
+    env = {**os.environ, "DWYT_RUNNER_HOME": str(tmp_path), "PYTHONIOENCODING": "utf-8"}
+    proc = subprocess.run([sys.executable, "-m", "dwyt_runner.cli", "machine", "--json"], capture_output=True,
+                          text=True, encoding="utf-8", env=env, timeout=120, check=False)
+    assert proc.returncode == 0, proc.stderr[-3000:]
+    data = json.loads(proc.stdout)
     assert data["assessment"]["mode"] in ("felho", "vegyes", "sajat") and data["changes"] == []
     assert (tmp_path / "machine.json").exists()
 

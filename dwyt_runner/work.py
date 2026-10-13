@@ -144,13 +144,13 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
                 raise WorkError(f"Ezt a modellt a futtató nem ajánlja fel ehhez: {str(wanted)[:80]} (llm_models, "
                                 "llm_private_models).")
             model = str(wanted)
-        localllm.before_llm_job(cfg)
+        context = localllm.before_llm_job(cfg, model)  # a local model: its context decides the text sizes
         if localllm.uses_local(cfg):
             localllm.mark_used(model)
         llm = Llm(cfg.llm_url, cfg.llm_key)
         if kind == "summarize":
-            return summarize.run(data, llm, model, stage, progress=progress)
+            return summarize.run(data, llm, model, stage, progress=progress, context_tokens=context)
         if kind == "ask":
-            return ask.run(data, llm, model, stage, progress=progress)
+            return ask.run(data, llm, model, stage, progress=progress, context_tokens=context)
         return translate.run(data, llm, model, stage, cancelled, progress=progress)
     raise WorkError(f"Ismeretlen munkafajta: {kind}.")

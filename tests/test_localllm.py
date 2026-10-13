@@ -27,7 +27,8 @@ class FakeOllama:
 
         @app.get("/api/ps")
         def ps():
-            return {"models": [{"name": n, "size_vram": 6 * 1024 ** 3} for n in fake.loaded]}
+            return {"models": [{"name": n, "size_vram": 6 * 1024 ** 3, "context_length": fake.ctx}
+                               for n in fake.loaded]}
 
         @app.post("/api/pull")
         async def pull(request: Request):
@@ -67,7 +68,7 @@ class FakeOllama:
         self.url = self.server.url
 
     def reset(self) -> None:
-        self.up, self.models, self.loaded, self.calls = True, ["qwen3:8b"], [], []
+        self.up, self.models, self.loaded, self.calls, self.ctx = True, ["qwen3:8b"], [], [], 4096
 
 
 class FakeLmStudio:
@@ -86,8 +87,9 @@ class FakeLmStudio:
             if denied(request):
                 return denied(request)
             return {"models": [
-                {"type": "llm", "key": k, "size_bytes": 9 * 1024 ** 3,
-                 "loaded_instances": [{"id": k + ":1"}] if k in fake.loaded else []} for k in fake.models] + [
+                {"type": "llm", "key": k, "size_bytes": 9 * 1024 ** 3, "max_context_length": 40960,
+                 "loaded_instances": [{"id": k + ":1", "config": {"context_length": fake.ctx.get(k, 4096)}}]
+                 if k in fake.loaded else []} for k in fake.models] + [
                 {"type": "embedding", "key": "text-embedding-nomic", "size_bytes": 1, "loaded_instances": []}]}
 
         @app.post("/api/v1/models/download")
@@ -112,7 +114,11 @@ class FakeLmStudio:
         @app.post("/api/v1/models/load")
         async def load(request: Request):
             body = await request.json()
+            fake.calls.append(("load", body))
+            if body.get("context_length", 4096) > fake.memory:
+                return JSONResponse({"error": "Failed to load model: insufficient memory"}, status_code=500)
             fake.loaded.append(body["model"])
+            fake.ctx[body["model"]] = body.get("context_length", 4096)
             return {"type": "llm", "instance_id": body["model"], "status": "loaded"}
 
         @app.post("/api/v1/models/unload")
@@ -128,6 +134,7 @@ class FakeLmStudio:
     def reset(self) -> None:
         self.models, self.loaded, self.calls, self.token, self.fail, self.polls = ["qwen/qwen3-8b"], [], [], "", \
             False, 0
+        self.ctx, self.memory = {}, 10 ** 9
 
 
 @pytest.fixture(scope="module")
@@ -247,3 +254,78 @@ def test_the_llm_command(ollama, capsys):
     assert cli.local_llm("status", None) == 1
     assert "config set local_llm" in capsys.readouterr().out
     assert config.masked(config.Config(lmstudio_token="abcdefgh"))["lmstudio_token"] == "***efgh"
+
+
+def test_lmstudio_gets_the_model_loaded_with_enough_context(lmstudio):
+    s = localllm.LmStudio(lmstudio.url)
+    lmstudio.loaded, lmstudio.ctx = ["qwen/qwen3-8b"], {"qwen/qwen3-8b": 4096}  # loaded on first use, 4096
+    assert s.ensure_context("qwen/qwen3-8b", 32768) == 32768
+    assert ("unload", {"instance_id": "qwen/qwen3-8b:1"}) in lmstudio.calls
+    assert ("load", {"model": "qwen/qwen3-8b", "context_length": 32768}) in lmstudio.calls
+    lmstudio.calls.clear()
+    assert s.ensure_context("qwen/qwen3-8b", 32768) == 32768 and lmstudio.calls == []  # already enough
+    assert s.ensure_context("qwen/qwen3-8b", 131072) == 40960  # never more than the model's own maximum
+    lmstudio.reset()
+    lmstudio.memory = 10000  # the card holds only a smaller context: halve down
+    assert s.ensure_context("qwen/qwen3-8b", 32768) == 8192
+    lmstudio.memory = 100
+    with pytest.raises(WorkError, match="legalább 8192 token"):
+        s.ensure_context("qwen/qwen3-8b", 32768)
+    lmstudio.reset()
+
+
+def test_ollama_tells_the_context_it_runs_with(ollama):
+    s = localllm.Ollama(ollama.url)
+    ollama.ctx = 8192
+    assert s.ensure_context("qwen3:8b", 32768) == 8192 and "qwen3:8b" in ollama.loaded
+    ollama.reset()
+
+
+def test_a_long_summary_is_cut_to_the_local_context():
+    from dwyt_runner import summarize
+    from dwyt_runner.llm import Answer, chars_for
+
+    class Model:
+        def __init__(self):
+            self.sizes = []
+
+        def chat(self, model, system, user, temperature=0.3):
+            self.sizes.append(len(user))
+            return Answer(text="- [00:01] jegyzet " + "x" * 300, model=model, prompt_tokens=1, completion_tokens=1,
+                          seconds=0.1)
+    segs = [{"start": i * 5.0, "end": i * 5.0 + 5, "text": f"Ez a {i}. mondat, elég hosszú ahhoz, hogy számítson.",
+             "speaker": None} for i in range(800)]
+    m = Model()
+    out = summarize.run({"transcript": {"segments": segs, "language": "hu"}, "meta": {}}, m, "qwen/qwen3-8b",
+                        context_tokens=4096)
+    limit = chars_for(4096, summarize.MAX_CHARS)
+    assert out["chunked"] and limit < 6000
+    assert all(size < limit + 3000 for size in m.sizes)  # every request fits (the part plus the instructions)
+    assert chars_for(None, 120000) == 120000 and chars_for(262144, 120000) == 120000
+
+
+def test_a_question_background_is_cut_to_the_local_context():
+    from dwyt_runner import ask
+    from dwyt_runner.llm import Answer
+
+    class Model:
+        def complete(self, model, messages, temperature=None):
+            self.system = messages[0]["content"]
+            return Answer(text="Válasz.", model=model, prompt_tokens=1, completion_tokens=1, seconds=0.1)
+    long = [{"start": i, "text": "szó " * 40} for i in range(2000)]  # ~330 000 characters
+    job = {"scope": "item", "sources": [{"title": "Videó", "transcript": long}],
+           "messages": [{"role": "user", "content": "Miről szól?"}]}
+    m = Model()
+    ask.run(job, m, "qwen/qwen3-8b", context_tokens=8192)
+    assert len(m.system) < 20000 and ask.CUT_NOTE.strip() in m.system
+    ask.run(job, m, "cloud", context_tokens=None)
+    assert ask.CUT_NOTE.strip() not in m.system
+
+
+def test_an_ollama_the_runner_starts_gets_the_context_setting(monkeypatch, ollama):
+    seen = {}
+    monkeypatch.setattr(localllm.subprocess, "Popen", lambda cmd, **kw: seen.update(cmd=cmd, env=kw.get("env")))
+    cfg = config.Config(local_llm="ollama", local_llm_url=ollama.url, local_llm_context=16384)
+    localllm.before_llm_job(cfg)  # sets what a start would use
+    localllm.Ollama(ollama.url)._start("/opt/ollama/ollama")
+    assert seen["cmd"] == ["/opt/ollama/ollama", "serve"] and seen["env"]["OLLAMA_CONTEXT_LENGTH"] == "16384"

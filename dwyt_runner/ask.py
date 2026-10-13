@@ -6,12 +6,14 @@ model. The model gets no tools: the background comes from videos and is untruste
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable
 
 from . import formatting
 from .errors import WorkError
-from .llm import Llm, Usage
+from .llm import Llm, Usage, chars_for
 
+log = logging.getLogger("dwyt-runner")
 PROMPT_VERSION = 3  # 2: thorough, structured answers; 3: library questions get the whole library as a catalogue
 MAX_SOURCES = 50
 MAX_CATALOG = 5000
@@ -139,8 +141,12 @@ def check(job_input: dict[str, Any]) -> None:
         raise WorkError("A kérdés háttere túl nagy.")
 
 
+CUT_NOTE = "\n\n[A háttér innen hiányzik: a helyi modell kontextusába ennyi fért.]"
+
+
 def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], None] = lambda s: None,
-        progress: Callable[[dict[str, Any]], None] = lambda p: None) -> dict[str, Any]:
+        progress: Callable[[dict[str, Any]], None] = lambda p: None,
+        context_tokens: int | None = None) -> dict[str, Any]:
     check(job_input)
     scope = job_input["scope"]
     blocks = "\n\n".join(_source_block(src, scope) for src in job_input["sources"] if isinstance(src, dict))
@@ -154,6 +160,12 @@ def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], 
     else:
         scope_text = ""
         background = blocks
+    cut = False
+    if context_tokens:  # a local model with a small context: the background is cut to what fits
+        room = chars_for(context_tokens, MAX_INPUT_CHARS) - len(SYSTEM) - len(scope_text) - sum(
+            len(m["content"]) for m in job_input["messages"])
+        if len(background) > max(room, 1000):
+            background, cut = background[:max(room, 1000)] + CUT_NOTE, True
     system = SYSTEM.format(cite_rule=CITE_ITEM if scope == "item" else CITE_LIBRARY, scope=scope_text,
                            sources="Források:\n\n" + background)
     messages = [{"role": "system", "content": system}] + [
@@ -163,4 +175,6 @@ def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], 
     usage = Usage()
     # no temperature: the model's own setting (a thinking model wants its recommended one)
     answer = usage.add(llm.complete(model, messages, temperature=None))
+    if cut:
+        log.info("ask: background cut to the local model's context (%s tokens)", context_tokens)
     return {"text": answer.text, "model": model, "prompt_version": PROMPT_VERSION, **usage.facts()}

@@ -45,6 +45,19 @@ class Usage:
                 "duration_s": round(self.seconds, 1)}
 
 
+CHARS_PER_TOKEN = 2.5  # careful: Hungarian and timestamps take more tokens per character than English prose
+PROMPT_TOKENS = 1200   # the instructions around the text
+
+
+def chars_for(context_tokens: int | None, limit: int) -> int:
+    """How many characters of text fit next to the instructions and the answer in a model's context.
+    A quarter of the context (at least 1024 tokens) is kept for the answer, thinking included."""
+    if not context_tokens:
+        return limit
+    answer = max(1024, context_tokens // 4)
+    return max(2000, min(limit, int((context_tokens - answer - PROMPT_TOKENS) * CHARS_PER_TOKEN)))
+
+
 def chat_url(base: str) -> str:
     base = base.rstrip("/")
     return f"{base}/chat/completions" if base.endswith("/v1") else f"{base}/v1/chat/completions"

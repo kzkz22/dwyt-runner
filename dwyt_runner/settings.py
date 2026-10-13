@@ -84,6 +84,10 @@ SETTINGS: tuple[Setting, ...] = (
       choices=(("", "nincs"), ("ollama", "Ollama"), ("lmstudio", "LM Studio"))),
     S("local_llm_url", "url", "llm", "A helyi modellszerver címe", "Üresen a szokásos cím ezen a gépen.",
       advanced=True, show_if=(("local_llm", "ollama"), ("local_llm", "lmstudio"))),
+    S("local_llm_context", "int", "llm", "A helyi modell kontextusa", "Ennyi tokennyi szöveget lát egyszerre a "
+      "helyi modell. Az LM Studióban a futtató ezzel tölti be a modellt (ha a memória nem bírja, kevesebbel); "
+      "az Ollama ezzel indul, ha a futtató indítja. A hosszabb szöveget a futtató részekre bontja.", min=4096,
+      max=262144, unit="token", advanced=True, show_if=(("local_llm", "ollama"), ("local_llm", "lmstudio"))),
     S("lmstudio_token", "secret", "llm", "LM Studio API-token", "Csak ha az LM Studióban bekapcsoltad az "
       "API-tokent.", show_if=(("local_llm", "lmstudio"),)),
     S("llm_prefer_local", "bool", "llm", "A helyi modellszerver az elsődleges", "Akkor is a helyi modellszerver "

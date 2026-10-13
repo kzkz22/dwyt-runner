@@ -20,19 +20,24 @@ import shutil
 import subprocess
 import sys
 import time
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any
 
 import httpx
 
 from .config import Config
 from .errors import WorkError
 
+log = logging.getLogger("dwyt-runner")
 KINDS = {"ollama": "Ollama", "lmstudio": "LM Studio"}
 DEFAULT_URLS = {"ollama": "http://127.0.0.1:11434", "lmstudio": "http://127.0.0.1:1234"}
 START_WAIT_S = 60
 KEEP_LOADED = "30m"   # Ollama: how long a model stays in memory after a load or an answer
+SMALL_CONTEXT = 4096   # what both servers used for years when nobody asked for more
+CONTEXT_FLOOR = 8192   # below this a summary of a long video is only scraps: try no smaller
 
 
 class LocalLlmError(WorkError):
@@ -122,6 +127,11 @@ class LocalServer:
     def loaded(self) -> list[LocalModel]:
         return [m for m in self.models() if m.loaded]
 
+    def ensure_context(self, name: str, want: int) -> int:
+        """Make the model run with at least `want` tokens of context where the server lets the runner say so;
+        returns the context it will have (SMALL_CONTEXT when unknown: the texts are cut to fit that)."""
+        return SMALL_CONTEXT
+
     def unload_all(self) -> list[str]:
         names = [m.name for m in self.loaded()]
         for name in names:
@@ -202,8 +212,21 @@ class Ollama(LocalServer):
             return str(p) if p.exists() else None
         return None
 
+    def ensure_context(self, name: str, want: int) -> int:
+        """Ollama's OpenAI-style endpoint takes no context size: the model runs with the server's default
+        (OLLAMA_CONTEXT_LENGTH, set to `local_llm_context` when the runner starts Ollama itself). The runner
+        loads the model and reads back what it got (/api/ps), so the texts are cut to fit it."""
+        try:
+            self.load(name)
+            for m in self._req("GET", "/api/ps").get("models") or []:
+                if isinstance(m, dict) and m.get("name") == name and m.get("context_length"):
+                    return int(m["context_length"])
+        except (LocalLlmError, ValueError, TypeError) as exc:
+            log.warning("Ollama context of %s unknown: %s", name, exc)
+        return SMALL_CONTEXT
+
     def _start(self, program: str) -> None:
-        _detached([program, "serve"])
+        _detached([program, "serve"], {"OLLAMA_CONTEXT_LENGTH": str(START_CONTEXT[0])})
 
 
 class LmStudio(LocalServer):
@@ -237,8 +260,41 @@ class LmStudio(LocalServer):
         if progress:
             progress(1.0, status)
 
-    def load(self, name: str) -> None:
-        self._req("POST", "/api/v1/models/load", {"model": name}, timeout=600)
+    def load(self, name: str, context: int | None = None) -> None:
+        body: dict[str, Any] = {"model": name}
+        if context:
+            body["context_length"] = context
+        self._req("POST", "/api/v1/models/load", body, timeout=600)
+
+    def ensure_context(self, name: str, want: int) -> int:
+        """LM Studio loads a model on first use with its default context (often 4096 tokens), too small for a
+        summary. The runner loads it itself with `want` (at most the model's own maximum); a copy already
+        loaded with less is replaced. Not enough memory: halves down to CONTEXT_FLOOR."""
+        info = next((m for m in self._req("GET", "/api/v1/models").get("models") or []
+                     if isinstance(m, dict) and m.get("key") == name), None)
+        if info is None:
+            return SMALL_CONTEXT
+        most = int(info.get("max_context_length") or 0)
+        target = min(want, most) if most else want
+        have = [(inst.get("id"), int((inst.get("config") or {}).get("context_length") or 0))
+                for inst in info.get("loaded_instances") or [] if isinstance(inst, dict)]
+        best = max((c for _, c in have), default=0)
+        if best >= target:
+            return best
+        for inst_id, _ in have:
+            self._req("POST", "/api/v1/models/unload", {"instance_id": inst_id}, timeout=120)
+        size, last = target, None
+        while size >= min(CONTEXT_FLOOR, target):
+            try:
+                self.load(name, size)
+                log.info("LM Studio: %s loaded with %s tokens of context", name, size)
+                return size
+            except LocalLlmError as exc:  # most often: not enough memory for that much context
+                last = exc
+                size //= 2
+        floor = min(CONTEXT_FLOOR, target)
+        raise LocalLlmError(f"Az LM Studio nem tudta betölteni a(z) {name} modellt legalább {floor} token "
+                            f"kontextussal ({last}). Válassz kisebb modellt.", "later")
 
     def unload(self, name: str) -> None:
         for m in self._req("GET", "/api/v1/models").get("models") or []:
@@ -268,9 +324,14 @@ def _no_window() -> dict:
     return {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
 
 
-def _detached(cmd: list[str]) -> None:
+START_CONTEXT = [32768]  # local_llm_context, for an Ollama the runner starts (before_llm_job sets it)
+
+
+def _detached(cmd: list[str], env: dict[str, str] | None = None) -> None:
     """Start a server that outlives this call (and the runner)."""
     kwargs: dict = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    if env:
+        kwargs["env"] = {**os.environ, **env}
     if sys.platform == "win32":
         kwargs["creationflags"] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | \
             subprocess.CREATE_NO_WINDOW
@@ -318,10 +379,14 @@ def uses_local(cfg: Config) -> bool:
     return s is not None and effective(cfg).llm_url.rstrip("/") == s.openai_url
 
 
-def before_llm_job(cfg: Config) -> None:
-    """A job is about to use the local server: start it if needed; a missing server is a clear message."""
+def before_llm_job(cfg: Config, model: str = "") -> int | None:
+    """A job is about to use the local server: start it if needed (a missing server is a clear message), and
+    have the model run with enough context. Returns the context in tokens (None: not a local server, the
+    texts need no cutting)."""
     if not uses_local(cfg):
-        return
+        return None
     s = server(cfg)
+    START_CONTEXT[0] = cfg.local_llm_context or START_CONTEXT[0]
     if not s.ensure_running():
         raise LocalLlmError(f"A(z) {s.title} nincs telepítve ezen a gépen (local_llm = {cfg.local_llm}).")
+    return s.ensure_context(model, cfg.local_llm_context) if model else None

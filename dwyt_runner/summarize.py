@@ -9,7 +9,7 @@ from typing import Any, Callable
 
 from . import formatting
 from .errors import WorkError
-from .llm import Llm, Usage
+from .llm import Llm, Usage, chars_for
 
 PROMPT_VERSION = 1
 MAX_CHARS = 120000
@@ -86,7 +86,8 @@ def _chunks(lines: list[str], max_chars: int) -> list[str]:
 
 
 def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], None] = lambda s: None,
-        max_chars: int = MAX_CHARS, progress: Callable[[dict[str, Any]], None] = lambda p: None) -> dict[str, Any]:
+        max_chars: int = MAX_CHARS, progress: Callable[[dict[str, Any]], None] = lambda p: None,
+        context_tokens: int | None = None) -> dict[str, Any]:
     t = job_input["transcript"]
     meta = job_input.get("meta") or {}
     target = job_input.get("language") or "hu"
@@ -95,6 +96,7 @@ def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], 
     if not lines:
         raise WorkError("Az átirat üres, nincs mit összefoglalni.")
     system = SYSTEM.format(language=lang)
+    max_chars = chars_for(context_tokens, max_chars)  # a local model's context decides the part size
     body = "\n".join(lines)
     chunked = len(body) > max_chars
     usage = Usage()
@@ -107,6 +109,11 @@ def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], 
             notes.append(usage.add(llm.chat(model, system, NOTES_PROMPT.format(part=i, parts=len(parts),
                                                                                language=lang, text=part))).text)
         progress({"part": len(parts) + 1, "parts": len(parts) + 1, "model": model})
+        while len("\n\n".join(notes)) > max_chars and len(notes) > 1:  # the notes themselves too long: merge
+            merged = _chunks(notes, max_chars)
+            notes = [usage.add(llm.chat(model, system, NOTES_PROMPT.format(part=i, parts=len(merged), language=lang,
+                                                                           text=part))).text
+                     for i, part in enumerate(merged, 1)]
         material = ("Az átirat túl hosszú volt, ezért részenként jegyzet készült róla. A jegyzetek:\n\n"
                     + "\n\n".join(notes))
     else:

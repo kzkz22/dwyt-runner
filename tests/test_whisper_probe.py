@@ -145,3 +145,28 @@ def test_run_without_speakers(run, tmp_path):
     assert "<ins>utazni?</ins>" in page or "<del>elutazni?</del><ins>utazni?</ins>" in page
     txt = json.dumps(sorted(p.name for p in (tmp_path / "out").iterdir()))
     assert "JAVITOTT.whisper.cpp_large-v3-turbo.txt" in txt
+
+
+def test_download_tries_the_next_mirror(tmp_path, monkeypatch):
+    monkeypatch.setattr(probe.shutil, "which", lambda name: None)  # no curl either
+    good = tmp_path / "model.onnx"
+    good.write_bytes(b"model")
+    dest = tmp_path / "cache" / "model.onnx"
+    probe.download([(tmp_path / "missing.onnx").as_uri(), good.as_uri()], dest)
+    assert dest.read_bytes() == b"model"
+    with pytest.raises(RuntimeError, match="letöltés sikertelen"):
+        probe.download((tmp_path / "missing.onnx").as_uri(), tmp_path / "cache" / "other.onnx")
+    assert not (tmp_path / "cache" / "other.onnx.part").exists()
+
+
+def test_whisper_cli_may_be_given_as_the_release_folder(tmp_path):
+    exe = tmp_path / "whisper.cpp-1.9.5" / "Release" / ("whisper-cli.exe" if os.name == "nt" else "whisper-cli")
+    exe.parent.mkdir(parents=True)
+    exe.write_bytes(b"")
+    (exe.parent / "whisper-server.exe").write_bytes(b"")
+    path, build = probe.whisper_cli(tmp_path, str(tmp_path / "whisper.cpp-1.9.5"))
+    assert path == str(exe) and build == "megadott (Release)"
+    with pytest.raises(SystemExit, match="Nincs whisper-cli"):
+        empty = tmp_path / "empty"
+        empty.mkdir()
+        probe.whisper_cli(tmp_path, str(empty))

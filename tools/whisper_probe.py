@@ -47,6 +47,8 @@ SEGMENTATION = f"{SHERPA}/speaker-segmentation-models/sherpa-onnx-pyannote-segme
 EMBEDDINGS = {  # the folder name's typo is upstream's
     "3dspeaker": f"{SHERPA}/speaker-recongition-models/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx",
     "wespeaker": f"{SHERPA}/speaker-recongition-models/wespeaker_en_voxceleb_resnet34_LM.onnx"}
+SEGMENTATION_HF = f"{HF}/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/resolve/main/model.onnx"
+EMBEDDINGS_HF = f"{HF}/csukuangfj/speaker-embedding-models/resolve/main"
 RELEASES = "https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest"
 TIME = re.compile(r"^\[(\d{1,2}):(\d{2})(?::(\d{2}))?\]\s*(.*)$")
 SPEAKER = re.compile(r"^((?:Szereplő|Speaker|SPEAKER)[ _]?\d+|[^:]{1,40}):\s+(.*)$")
@@ -237,17 +239,36 @@ def say(msg: str) -> None:
     print(msg, flush=True)
 
 
-def download(url: str, dest: Path) -> Path:
+def download(url: str | list[str], dest: Path) -> Path:
+    """Fetch to dest (kept as a cache). Several URLs = mirrors, tried in order. When Python's own
+    TLS fails (security software or a proxy may break its handshake), the system's curl is tried,
+    which on Windows uses the operating system's TLS and certificates."""
     if dest.exists() and dest.stat().st_size > 0:
         return dest
     dest.parent.mkdir(parents=True, exist_ok=True)
-    say(f"  letöltés: {url}")
     tmp = dest.with_suffix(dest.suffix + ".part")
-    req = urllib.request.Request(url, headers={"User-Agent": "dwyt-whisper-probe"})
-    with urllib.request.urlopen(req, timeout=60) as resp, open(tmp, "wb") as f:
-        shutil.copyfileobj(resp, f, 1 << 20)
-    tmp.replace(dest)
-    return dest
+    errors = []
+    for u in [url] if isinstance(url, str) else url:
+        say(f"  letöltés: {u}")
+        try:
+            req = urllib.request.Request(u, headers={"User-Agent": "dwyt-whisper-probe"})
+            with urllib.request.urlopen(req, timeout=60) as resp, open(tmp, "wb") as f:
+                shutil.copyfileobj(resp, f, 1 << 20)
+            tmp.replace(dest)
+            return dest
+        except Exception as exc:  # noqa: BLE001 - try curl, then the next mirror
+            errors.append(f"{u}: {exc}")
+        curl = shutil.which("curl")
+        if curl:
+            say("    Python nem tudta letölteni, próbálom curl-lel …")
+            proc = subprocess.run([curl, "-L", "--fail", "--silent", "--show-error", "-A", "dwyt-whisper-probe",
+                                   "-o", str(tmp), u], capture_output=True, text=True, check=False)
+            if proc.returncode == 0 and tmp.exists() and tmp.stat().st_size > 0:
+                tmp.replace(dest)
+                return dest
+            errors.append(f"curl {u}: {proc.stderr.strip()[-300:]}")
+    tmp.unlink(missing_ok=True)
+    raise RuntimeError("letöltés sikertelen – " + " | ".join(errors))
 
 
 def ffmpeg() -> str:
@@ -279,16 +300,23 @@ def has_nvidia() -> bool:
 def whisper_cli(cache: Path, given: str | None) -> tuple[str, str]:
     """(path to whisper-cli, which build). A given path wins; else the latest official release."""
     if given:
-        return given, "megadott"
+        path = Path(given)
+        if path.is_dir():  # the unpacked release folder: find the program in it
+            names = ("whisper-cli.exe", "whisper-cli", "main.exe")
+            hits = [p for n in names for p in sorted(path.rglob(n))]
+            if not hits:
+                raise SystemExit(f"Nincs whisper-cli a mappában: {path}")
+            path = hits[0]
+        return str(path), f"megadott ({path.parent.name})"
     exe = "whisper-cli.exe" if os.name == "nt" else "whisper-cli"
     found = shutil.which("whisper-cli")
     if os.name != "nt":
         if found:
             return found, "PATH"
         raise SystemExit("Linuxon/macOS-en add meg a whisper-cli helyét: --whisper-cli /út/whisper-cli")
-    with urllib.request.urlopen(urllib.request.Request(RELEASES, headers={"User-Agent": "dwyt-whisper-probe"}),
-                                timeout=30) as resp:
-        release = json.load(resp)
+    listing = cache / "whisper.cpp" / "latest-release.json"
+    listing.unlink(missing_ok=True)  # always the current release
+    release = json.loads(download(RELEASES, listing).read_text(encoding="utf-8"))
     assets = [a for a in release.get("assets", []) if a["name"].endswith(".zip") and "x64" in a["name"]]
     order = (["cublas", "cuda"] if has_nvidia() else []) + ["blas", "bin-x64"]
     for want in order:
@@ -349,13 +377,20 @@ def read_wav(path: Path):
 def segmentation_model(cache: Path) -> Path:
     folder = cache / "sherpa"
     model = folder / "sherpa-onnx-pyannote-segmentation-3-0" / "model.onnx"
-    if not model.exists():
+    if model.exists():
+        return model
+    try:
         archive = download(SEGMENTATION, folder / Path(SEGMENTATION).name)
-        with tarfile.open(archive) as tf:
-            try:
-                tf.extractall(folder, filter="data")
-            except TypeError:  # Python without extraction filters
-                tf.extractall(folder)
+    except RuntimeError as first:
+        try:  # the same model, unpacked, on Hugging Face
+            return download(SEGMENTATION_HF, model)
+        except RuntimeError as second:
+            raise RuntimeError(f"{first} || {second}") from None
+    with tarfile.open(archive) as tf:
+        try:
+            tf.extractall(folder, filter="data")
+        except TypeError:  # Python without extraction filters
+            tf.extractall(folder)
     return model
 
 
@@ -364,7 +399,8 @@ def diarize(wav: Path, cache: Path, speakers: int | None,
     """sherpa-onnx speaker turns: (start, end, 'Szereplő N'), numbered by first appearance."""
     import sherpa_onnx
     seg = segmentation_model(cache)
-    emb = download(EMBEDDINGS[embedding], cache / "sherpa" / Path(EMBEDDINGS[embedding]).name)
+    name = Path(EMBEDDINGS[embedding]).name
+    emb = download([EMBEDDINGS[embedding], f"{EMBEDDINGS_HF}/{name}"], cache / "sherpa" / name)
     config = sherpa_onnx.OfflineSpeakerDiarizationConfig(
         segmentation=sherpa_onnx.OfflineSpeakerSegmentationModelConfig(
             pyannote=sherpa_onnx.OfflineSpeakerSegmentationPyannoteModelConfig(model=str(seg))),

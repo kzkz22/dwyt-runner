@@ -106,7 +106,10 @@ uv tool install --force --python 3.13 "dwyt-runner[desktop,local] @ https://gith
 dwyt-runner app
 ```
 
-Az ablak a gépen belül, a 127.0.0.1-en futó oldal: csak az az ablak láthatja, amelyik megnyitotta. Ha a saját ablak nem indul (Linuxon a pywebview GTK-t vagy Qt-t kér), a `dwyt-runner app --browser` a böngészőben nyitja meg. A beállítások a futó munkát nem zavarják: a következő munkától érvényesek. A tálcaikon, a telepítő és az automatikus indulás a következő lépésben jön.
+Az ablak a gépen belül, a 127.0.0.1-en futó oldal: csak az az ablak láthatja, amelyik megnyitotta. Ha a saját ablak nem indul (Linuxon a pywebview GTK-t vagy Qt-t kér), a `dwyt-runner app --browser` a böngészőben nyitja meg. A beállítások a futó munkát nem zavarják: a következő munkától érvényesek. 
+A tálcaikon színe mutatja, mi történik: **zöld** – vár a következő munkára, **kék** – dolgozik, **narancs** – modellcsere (a videókártyán a beszédfelismerő fut, most ne használd a helyi nyelvi modelleket), **piros** – leállt (erről értesítést is kapsz), **szürke** – nincs párosítva. Az ablak bezárása csak elrejti, a futtató tovább dolgozik; az ikonra kattintva jön vissza. Ha a futtatót újra elindítod, nem indul el másodszor, hanem a már futó ablaka jön elő; ahol nincs tálca (néhány Linuxos asztal), így lehet visszahozni az ablakot. Kilépni a tálcaikon menüjéből vagy az ablak jobb felső sarkában lévő **Kilépés** gombbal lehet. A `dwyt-runner app --hidden` az ablak megnyitása nélkül indul (csak ha van tálcaikon).
+
+A telepítő és a bejelentkezéskori indulás a következő lépésben jön.
 
 ## Saját felvételek
 

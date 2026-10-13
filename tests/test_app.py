@@ -193,3 +193,83 @@ def test_activity_titles():
     assert activity.title_of({"kind": "summarize", "input": {"meta": {"title": "Kerti videó"}}}) == "Kerti videó"
     assert activity.where_of({"kind": "transcribe", "input": {"options": {"mode": "cloud"}}}, config.Config()) == \
         "felhőben"
+
+
+def test_tray_colour_follows_the_runner():
+    from dwyt_runner.app import tray
+    base = {"paired": True, "running": True, "error": "", "current": {}, "swap": {"phase": "idle"}}
+    assert tray.state_of({**base, "paired": False})[0] == "grey"
+    assert tray.state_of(base) == ("green", "dwyt futtató – vár a következő munkára")
+    busy = {**base, "current": {"kind_label": "Átírás", "stage_label": "beszédfelismerés"}}
+    assert tray.state_of(busy) == ("blue", "dwyt futtató – Átírás: beszédfelismerés")
+    assert tray.state_of({**busy, "swap": {"phase": "waiting"}})[0] == "orange"  # swap wins over working
+    colour, tip = tray.state_of({**base, "error": "x" * 500})
+    assert colour == "red" and len(tip) <= 120  # Windows cuts tooltips at 128
+    img = tray.image("orange")
+    assert img.size == (64, 64) and img.getpixel((32, 6))[:3] == tray.COLOURS["orange"]
+
+
+def test_tray_icon_changes_and_says_when_the_runner_stopped():
+    from dwyt_runner.app import tray
+
+    class Icon:
+        HAS_NOTIFICATION = True
+
+        def __init__(self):
+            self.icon, self.title, self.notes, self.menus = None, "", [], 0
+
+        def notify(self, text, title):
+            self.notes.append(text)
+
+        def update_menu(self):
+            self.menus += 1
+
+    t = tray.Tray(lambda: {}, lambda: None, lambda: None)
+    t.icon, t.colour = Icon(), "green"
+    base = {"paired": True, "running": True, "error": "", "current": {}, "swap": {}}
+    t.update({**base, "swap": {"phase": "swapping"}})
+    assert t.colour == "orange" and "modellcsere" in t.icon.title and t.icon.notes == []
+    t.update({**base, "error": "A dwyt nem fogadja el a párosítást."})
+    assert t.colour == "red" and t.icon.notes == ["leállt: A dwyt nem fogadja el a párosítást."]
+    t.update({**base, "error": "A dwyt nem fogadja el a párosítást."})
+    assert len(t.icon.notes) == 1  # said once, not every poll
+    assert t._tip().startswith("Leállt")
+
+
+def test_a_second_start_shows_the_running_window(tmp_path):
+    from dwyt_runner.app import main
+    assert main.wake_running() is False  # nothing runs yet
+    server, state, runtime = main.serve(start_worker=False)
+    try:
+        shown = []
+        state.on_show = lambda: shown.append(1)
+        port = int(state.host.rsplit(":", 1)[1])
+        main.write_instance(port, "wrong")
+        assert main.wake_running() is False and shown == []  # a stale or foreign file is not obeyed
+        main.write_instance(port, state.instance_secret)
+        assert main.wake_running() is True and shown == [1]
+        main.remove_instance("someone else's")
+        assert main.instance_file().exists()
+        main.remove_instance(state.instance_secret)
+        assert not main.instance_file().exists()
+        first = state.start_url
+        assert state.new_start_url() != first  # the browser mode's tray opens a fresh one-time entry
+    finally:
+        runtime.shutdown()
+        server.should_exit = True
+
+
+def test_quit_from_the_window(window):
+    client, state, _ = enter(*window[:2]) and window
+    quit_called = []
+    state.on_quit = lambda: quit_called.append(1)
+    page = client.get("/allapot").text
+    assert 'action="/kilepes"' in page
+    assert client.post("/kilepes", data={"csrf": "x"}).status_code == 403
+    r = client.post("/kilepes", data={"csrf": csrf(page)})
+    assert "A futtató leállt" in r.text
+    for _ in range(30):
+        if quit_called:
+            break
+        time.sleep(0.1)
+    assert quit_called == [1]

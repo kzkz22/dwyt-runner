@@ -8,6 +8,7 @@ style (strict CSP), like the central's pages. Keys can be written and tried here
 from __future__ import annotations
 
 import secrets
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,9 @@ class App:
         self.runtime = runtime
         self.host = host                       # "127.0.0.1:PORT": the only Host header answered
         self.launch_code = secrets.token_urlsafe(24)
+        self.instance_secret = secrets.token_urlsafe(24)  # a second start of the app shows this window
+        self.on_show = lambda: None
+        self.on_quit = lambda: None
         self.sessions: dict[str, str] = {}     # session id -> CSRF token
         self.env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
         self.env.globals.update(version=__version__, lamp_text=machine.LAMP_TEXT)
@@ -40,6 +44,11 @@ class App:
     @property
     def start_url(self) -> str:
         return f"http://{self.host}/belepes?t={self.launch_code}"
+
+    def new_start_url(self) -> str:
+        """A fresh one-time entry (the browser mode's tray "open" opens a new tab with it)."""
+        self.launch_code = secrets.token_urlsafe(24)
+        return self.start_url
 
     async def form(self, request: Request):
         """The posted form, after checking its CSRF token against the session's."""
@@ -65,7 +74,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         if request.headers.get("host") != state.host:
             return Response("Ismeretlen cím.", status_code=403)
         path = request.url.path
-        if not (path == "/belepes" or path.startswith("/static/")):
+        if not (path in ("/belepes", "/ablak") or path.startswith("/static/")):
             sid = request.cookies.get(COOKIE, "")
             if sid not in state.sessions:
                 return Response("Ezt az oldalt a dwyt futtató ablaka nyitja meg.", status_code=403)
@@ -85,9 +94,27 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         r.set_cookie(COOKIE, sid, httponly=True, samesite="strict")
         return r
 
+    @api.post("/ablak")
+    def show_window(request: Request):
+        """Another start of the app on this machine: show this window instead of a second app."""
+        given = request.headers.get("x-dwyt-instance", "")
+        if not secrets.compare_digest(given, state.instance_secret):
+            return Response(status_code=403)
+        state.on_show()
+        return Response(status_code=204)
+
     @api.get("/")
     def root():
         return RedirectResponse("/allapot", status_code=303)
+
+    @api.post("/kilepes")
+    async def quit_app(request: Request):
+        await state.form(request)
+        threading.Timer(0.5, state.on_quit).start()  # the goodbye page gets out first
+        return HTMLResponse("<!doctype html><html lang=\"hu\"><head><meta charset=\"utf-8\"><title>dwyt futtató</title>"
+                            "<link rel=\"stylesheet\" href=\"/static/style.css\"></head><body><main>"
+                            "<h1>A futtató leállt</h1><p class=\"muted\">Nem vesz fel munkát, amíg újra nem indítod."
+                            "</p></main></body></html>")
 
     # -- Állapot --
     @api.get("/allapot")

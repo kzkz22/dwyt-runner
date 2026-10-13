@@ -30,6 +30,7 @@ small { display: block; color: var(--muted); font-size: .87rem; font-weight: nor
 .tab svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round;
   stroke-linejoin: round; }
 .tab.active { color: var(--text); font-weight: 600; border-bottom-color: var(--primary); }
+.quit button { font-size: .8rem; padding: 4px 10px; }
 .version { margin-left: auto; color: var(--muted); font-size: .8rem; white-space: nowrap; }
 main { max-width: 1100px; margin: 0 auto; padding: 4px 24px 32px; }
 
@@ -116,5 +117,8 @@ legend { font-weight: 700; padding-right: 8px; }
   .th { width: 100%; }
   .tabs { padding: 0 8px; }
   .version { display: none; }
+  .quit { margin-left: auto; }
+  .tab { padding: 14px 8px 12px; }
+  .tab svg { display: none; }  /* four tabs and Kilépés fit in 390 px */
   .dots { display: none; }
 }

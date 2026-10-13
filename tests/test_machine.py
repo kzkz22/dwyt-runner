@@ -55,9 +55,16 @@ def test_a_mid_card_recommends_mixed_and_says_small_models_are_weaker():
     assert got["whisper"][0] == GREEN
     assert got["llm_small"] == (YELLOW, "működik, de gyengébb")
     assert "gyengébbek" in next(x.note for x in a.abilities if x.key == "llm_small")
-    assert got["llm_large"] == (RED, "nem fér el")
+    assert got["llm_large"] == (YELLOW, "MoE-modellel működik")  # 12 GB card + 32 GB memory
     assert got["server"] == (YELLOW, "nincs (Ollama és LM Studio nem található)")
     assert a.mode == "vegyes"
+
+
+def test_a_16_gb_card_with_much_memory_runs_a_moe_model():
+    # the RTX 5080 machine: 16 GB on the card, 62 GB memory
+    a = machine.assess(m([Gpu("nvidia", "NVIDIA GeForce RTX 5080", 16.0, "616.92")], ram=62.0))
+    assert lamps(a)["llm_large"] == (YELLOW, "MoE-modellel működik")
+    assert lamps(machine.assess(m([Gpu("nvidia", "NVIDIA GeForce RTX 5080", 16.0)], ram=16.0)))["llm_large"][0] == RED
 
 
 def test_no_card_means_slow_or_cloud():
@@ -71,6 +78,20 @@ def test_no_card_means_slow_or_cloud():
     weak = machine.assess(m([], ram=7.8, threads=4, free=3.0))
     got = lamps(weak)
     assert got["cpu"][0] == YELLOW and got["whisper"] == (RED, "nem ajánlott") and got["disk"][0] == RED
+
+
+def test_built_in_graphics_are_not_a_card():
+    # the Ryzen 8845HS laptop: the firmware sets 4 GB aside for the built-in Radeon 780M
+    for name in ("AMD Radeon(TM) 780M Graphics", "AMD Radeon(TM) Graphics", "Intel(R) Iris(R) Xe Graphics",
+                 "Intel(R) UHD Graphics 770", "Intel(R) Arc(TM) Graphics", "Intel(R) Arc(TM) 140V Graphics"):
+        assert Gpu("amd" if "AMD" in name else "intel", name, 4.0).integrated, name
+    for name in ("AMD Radeon RX 7900 XTX", "AMD Radeon(TM) RX 7600", "Intel(R) Arc(TM) A770 Graphics",
+                 "Intel(R) Arc(TM) B580 Graphics"):
+        assert not Gpu("amd" if "AMD" in name else "intel", name, 8.0).integrated, name
+    a = machine.assess(m([Gpu("amd", "AMD Radeon(TM) 780M Graphics", 4.0, "32.0.21025.10016")], ram=27.8))
+    got = lamps(a)
+    assert got["gpu"] == (YELLOW, "nincs külön videókártya (AMD Radeon(TM) 780M Graphics)")
+    assert got["cpu"][0] == GREEN and got["whisper"] == (YELLOW, "lassú") and a.mode == "felho"
 
 
 def test_other_vendors_and_small_cards_are_explained():

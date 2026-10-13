@@ -39,7 +39,13 @@ WHISPER_VRAM_GB = 6
 WHISPER_TURBO_VRAM_GB = 4
 SMALL_LLM_VRAM_GB = 8
 LARGE_LLM_VRAM_GB = 24
+MOE_VRAM_GB, MOE_RAM_GB = 12, 30  # a 30B-A3B MoE model at 4 bits (~20 GB) split between the card and memory
 INTEGRATED_BELOW_GB = 2  # less dedicated memory than this: a processor's built-in graphics
+# Built-in graphics by name: the memory the firmware sets aside for them (often 4 GB, e.g. a Ryzen 8845HS's
+# "AMD Radeon(TM) 780M Graphics") looks like a card's own memory but is taken from the system memory.
+INTEGRATED_NAMES = re.compile(
+    r"^AMD Radeon\(TM\) (\d{3}M )?Graphics$|^AMD Radeon Graphics$|Radeon Vega \d+ Graphics|"
+    r"Intel\(R\) (UHD|HD|Iris)|^Intel\(R\) Arc\(TM\) (\d{3}V )?Graphics$|Intel\(R\) Graphics", re.IGNORECASE)
 
 
 @dataclass
@@ -56,7 +62,10 @@ class Gpu:
 
     @property
     def integrated(self) -> bool:
-        return self.vram_gb is not None and self.vram_gb < INTEGRATED_BELOW_GB
+        if self.vendor in ("nvidia", "apple"):
+            return False
+        return bool(INTEGRATED_NAMES.search(self.name.strip())) or (
+            self.vram_gb is not None and self.vram_gb < INTEGRATED_BELOW_GB)
 
 
 @dataclass
@@ -441,8 +450,15 @@ def assess(m: Machine) -> Assessment:
         abilities.append(Lamp("llm_small", "Helyi összefoglaló", "nem fér el", RED,
                               f"legalább {SMALL_LLM_VRAM_GB} GB videómemória kellene"))
     if vram < LARGE_LLM_VRAM_GB:
-        abilities.append(Lamp("llm_large", "Nagy helyi modell (30B+)", "nem fér el", RED,
-                              f"ehhez legalább {LARGE_LLM_VRAM_GB} GB videómemória kellene"))
+        if vram >= MOE_VRAM_GB and ram >= MOE_RAM_GB:
+            # a mixture-of-experts model (e.g. 30B-A3B) keeps its experts in system memory and stays usable
+            abilities.append(Lamp("llm_large", "Nagy helyi modell (30B+)", "MoE-modellel működik", YELLOW,
+                                  "egy MoE-modell (például Qwen3 30B-A3B) a rendszermemória segítségével elfut, "
+                                  "lassabban; egy sűrű 30B-s modellhez legalább "
+                                  f"{LARGE_LLM_VRAM_GB} GB videómemória kellene"))
+        else:
+            abilities.append(Lamp("llm_large", "Nagy helyi modell (30B+)", "nem fér el", RED,
+                                  f"ehhez legalább {LARGE_LLM_VRAM_GB} GB videómemória kellene"))
 
     if vram >= LARGE_LLM_VRAM_GB:
         mode, reason = "sajat", ("a **Saját gép** módot ajánljuk: az átírás és az összefoglaló is itt készül, "

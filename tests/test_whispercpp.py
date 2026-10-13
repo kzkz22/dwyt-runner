@@ -23,6 +23,8 @@ open(log, "a", encoding="utf-8").write(" ".join(args) + "\n")
 flag = os.environ.get("FAKE_WHISPER_GPU_FAIL")
 if "-ng" not in args:
     sys.stderr.write("whisper_backend_init_gpu: using CUDA0 backend\n")
+    for i in range(60):  # a long log: the backend line scrolls far up
+        sys.stderr.write("whisper_model_load: some detail %d\n" % i)
     if flag and os.path.exists(flag):
         os.remove(flag)
         sys.stderr.write("CUDA error: out of memory\n")
@@ -226,3 +228,14 @@ def test_the_windows_build_is_picked_from_the_release():
     assert whispercpp.pick_asset(other, True)["name"] == "whisper-bin-win-cuda-12.4.0-x64.zip"
     assert whispercpp.pick_asset(other, False)["name"] == "whisper-bin-win-cpu-x64.zip"
     assert whispercpp.pick_asset([], True) is None
+
+
+def test_the_newest_release_with_a_windows_build_is_used():
+    releases = [{"tag_name": "v1.9.5", "assets": []}, {"tag_name": "b7001", "draft": True, "assets": [
+        {"name": "whisper-bin-win-cuda-12.4.0-x64.zip", "browser_download_url": "draft"}]},
+        {"tag_name": "b7000", "assets": [{"name": "whisper-bin-win-cuda-12.4.0-x64.zip", "browser_download_url": "u"},
+                                         {"name": "whisper-blas-bin-x64.zip", "browser_download_url": "u2"}]}]
+    tag, asset = whispercpp.pick_release(releases, True)
+    assert (tag, asset["browser_download_url"]) == ("b7000", "u")
+    assert whispercpp.pick_release(releases, False)[1]["name"] == "whisper-blas-bin-x64.zip"
+    assert whispercpp.pick_release(releases[:1], True) == ("", None)

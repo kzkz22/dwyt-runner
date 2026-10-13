@@ -10,8 +10,9 @@ clustering at threshold 0.8 found all 8 speakers and gave 95.8% of the words the
 non-commercial and is not used.
 
 whisper.cpp runs as its official program (whisper-cli). On Windows the runner downloads the official
-release itself (the CUDA build when an NVIDIA card is present, else the OpenBLAS build), checked against
-the SHA-256 that GitHub publishes; elsewhere whisper-cli comes from PATH or the whisper_cli setting.
+release itself (the newest release that carries Windows builds: the CUDA build when an NVIDIA card is
+present, else the OpenBLAS build), checked against the SHA-256 that GitHub publishes; elsewhere whisper-cli
+comes from PATH or the whisper_cli setting.
 Windows application control may refuse the unsigned program: that is said plainly, never worked around.
 A failed GPU run is repeated on the processor with a warning (that is still local mode, not a switch).
 Models live in the runner's models folder and are downloaded once.
@@ -40,8 +41,7 @@ from .config import Config
 from .errors import WorkError
 
 HF = "https://huggingface.co"
-WHISPER_CPP_VERSION = "v1.9.5"
-RELEASE_API = f"https://api.github.com/repos/ggml-org/whisper.cpp/releases/tags/{WHISPER_CPP_VERSION}"
+RELEASES_API = "https://api.github.com/repos/ggml-org/whisper.cpp/releases?per_page=30"
 MODELS = {"large-v3": f"{HF}/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
           "large-v3-turbo": f"{HF}/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"}
 VAD_MODEL = f"{HF}/ggml-org/whisper-vad/resolve/main/ggml-silero-v6.2.0.bin"
@@ -133,6 +133,18 @@ def speaker_models(stage: Callable[[str], None] | None = None) -> tuple[Path, Pa
     return seg, emb
 
 
+def pick_release(releases: list[dict], nvidia: bool) -> tuple[str, dict | None]:
+    """The newest published release that has a fitting Windows build: whisper.cpp's version tags
+    (v1.9.5) may come without files, the builds sit on other releases."""
+    for rel in releases:
+        if not isinstance(rel, dict) or rel.get("draft"):
+            continue
+        asset = pick_asset(rel.get("assets") or [], nvidia)
+        if asset:
+            return str(rel.get("tag_name") or "whisper.cpp"), asset
+    return "", None
+
+
 def pick_asset(assets: list[dict], nvidia: bool) -> dict | None:
     """The Windows x64 build to use: CUDA 12 (then any CUDA) with an NVIDIA card, else OpenBLAS, else plain."""
     zips = [a for a in assets if isinstance(a, dict) and str(a.get("name", "")).endswith(".zip")
@@ -163,23 +175,22 @@ def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
         return str(path)
     folder = models_dir() / "whisper.cpp"
     if sys.platform == "win32":
-        done = sorted(folder.glob(f"{WHISPER_CPP_VERSION}-*/**/whisper-cli.exe")) if folder.exists() else []
+        done = sorted(folder.glob("*/**/whisper-cli.exe")) if folder.exists() else []
         if done:
             return str(done[0])
-        try:  # the release's files and their SHA-256 as GitHub lists them
-            r = httpx.get(RELEASE_API, timeout=30, headers={"User-Agent": "dwyt-runner"})
-            assets = r.json().get("assets", []) if r.status_code == 200 else []
+        try:  # the releases' files and their SHA-256 as GitHub lists them, newest first
+            r = httpx.get(RELEASES_API, timeout=30, headers={"User-Agent": "dwyt-runner"})
+            releases = r.json() if r.status_code == 200 else []
         except (httpx.HTTPError, ValueError) as exc:
-            raise WorkError(f"Nem érem el a whisper.cpp kiadását a GitHubon ({exc}); később újrapróbálom.",
+            raise WorkError(f"Nem érem el a whisper.cpp kiadásait a GitHubon ({exc}); később újrapróbálom.",
                             "later") from exc
-        asset = pick_asset(assets, bool(machine.nvidia_smi()))
+        tag, asset = pick_release(releases if isinstance(releases, list) else [], bool(machine.nvidia_smi()))
         if asset is None:
-            names = ", ".join(a.get("name", "") for a in assets) or "nincs"
-            raise WorkError(f"A whisper.cpp {WHISPER_CPP_VERSION} kiadásában nem találok Windowsos csomagot "
-                            f"({names[:400]}). Töltsd le kézzel, és add meg: dwyt-runner config set whisper_cli MAPPA")
+            raise WorkError("A whisper.cpp legutóbbi kiadásaiban nem találok Windowsos csomagot. Töltsd le kézzel, "
+                            "és add meg a mappáját: dwyt-runner config set whisper_cli MAPPA")
         name = asset["name"]
         digest = str(asset.get("digest") or "")
-        target = folder / f"{WHISPER_CPP_VERSION}-{name[:-4]}"
+        target = folder / f"{tag}-{name[:-4]}"
         archive = download(asset["browser_download_url"], folder / name, stage,
                            sha256=digest.split(":", 1)[1] if digest.startswith("sha256:") else None)
         with zipfile.ZipFile(archive) as zf:
@@ -229,10 +240,13 @@ def run_cli(args: list[str], stage: Callable[[str], None], cancelled: Callable[[
                             "kérj felhős átírást, vagy használd egy másik gépen.") from exc
         raise WorkError(f"A whisper.cpp nem indult el: {exc}") from exc
     tail: list[str] = []
+    notes: list[str] = []  # the backend lines come first and would scroll out of the tail
     last = -1
     try:
         for line in proc.stderr:
             tail = (tail + [line.rstrip()])[-40:]
+            if len(notes) < 20 and re.search(r"backend|CUDA|Vulkan|Metal|ggml_cuda", line):
+                notes.append(line.rstrip())
             m = PROGRESS.search(line)
             if m and int(m.group(1)) != last:
                 last = int(m.group(1))
@@ -246,7 +260,7 @@ def run_cli(args: list[str], stage: Callable[[str], None], cancelled: Callable[[
         if proc.poll() is None:
             proc.kill()
             proc.wait()
-    return proc.returncode, "\n".join(tail)
+    return proc.returncode, "\n".join(notes + tail)
 
 
 def device_of(log: str) -> str:

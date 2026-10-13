@@ -151,6 +151,11 @@ def test_full_run_with_fakes(run, monkeypatch, tmp_path):
     assert "| EREDETI | 1 | 50,0% | 50,0% | – |" in report
     assert "GPU/backend: whisper_backend_init_gpu: using CUDA0 backend" in report
     assert "Hiba: sherpa-onnx reverb + wespeaker, 2 beszélő megadva: letöltés sikertelen" in report
+    # every pair with every threshold
+    calls.clear()
+    run("--segmentations", "pyannote", "--embeddings", "3dspeaker,titanet", "--thresholds", "0.8", "--sweep", "all")
+    assert calls == [("pyannote", "3dspeaker", 2, 0.5), ("pyannote", "titanet", 2, 0.5),
+                     ("pyannote", "3dspeaker", None, 0.8), ("pyannote", "titanet", None, 0.8)]
 
 
 def test_run_without_speakers(run, tmp_path):

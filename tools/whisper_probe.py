@@ -551,6 +551,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--embeddings", default=",".join(EMBEDDINGS), help="hangazonosító modellek")
     ap.add_argument("--thresholds", default=",".join(map(str, THRESHOLDS)),
                     help="küszöbök az automatikus beszélőszámhoz (nagyobb = kevesebb beszélő)")
+    ap.add_argument("--sweep", choices=("best", "all"), default="best",
+                    help="küszöbök csak a legjobb modellpárral, vagy mindegyikkel")
     ap.add_argument("--no-diarize", action="store_true")
     ap.add_argument("--out", type=Path, default=Path("whisper-probe-out"))
     ap.add_argument("--cache", type=Path, default=Path("whisper-probe-cache"))
@@ -632,7 +634,10 @@ def main(argv: list[str] | None = None) -> int:
 
             # every model pair with the true number of speakers, then thresholds for the best pair
             best, best_acc = None, -1.0
-            jobs = [(seg, emb, n_ref, 0.5) for seg in csv(args.segmentations) for emb in csv(args.embeddings)]
+            pairs = [(seg, emb) for seg in csv(args.segmentations) for emb in csv(args.embeddings)]
+            jobs = [(seg, emb, n_ref, 0.5) for seg, emb in pairs]
+            if args.sweep == "all":
+                jobs += [(seg, emb, None, float(x)) for seg, emb in pairs for x in csv(args.thresholds)]
             thresholds = [float(x) for x in csv(args.thresholds)]
             while jobs:
                 seg, emb, count, th = jobs.pop(0)
@@ -650,7 +655,7 @@ def main(argv: list[str] | None = None) -> int:
                     write_txt(t, args.out / f"{ref_path.stem}.{re.sub(r'[^A-Za-z0-9_.-]+', '_', t.name)}.txt")
                     if count and (sc.speaker_acc or 0) > best_acc:
                         best, best_acc = (seg, emb), sc.speaker_acc or 0
-                if not jobs and best and thresholds:  # then the thresholds for the best pair
+                if not jobs and best and thresholds and args.sweep == "best":  # then the best pair's thresholds
                     jobs = [(best[0], best[1], None, x) for x in thresholds]
                     thresholds = []
             md.append("")

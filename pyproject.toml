@@ -25,6 +25,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["dwyt_runner*"]
 
+[tool.setuptools.package-data]
+dwyt_runner = ["data/*.mp3"]  # the test-run sample (public domain)
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"

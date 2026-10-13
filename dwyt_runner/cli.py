@@ -9,6 +9,7 @@
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
   machine [--json]           what this machine can do: video card, memory, free space, local model server
+  trial [--model M]          test run: a 33 s sample transcribed and a short summary, timed; recommends a mode
   whisper prepare [--model M] download whisper.cpp, its model and the speaker models (built-in local Whisper)
   whisper try FILE [--model M] [--language hu] [--speakers N]
                              transcribe a file on this machine and print it (nothing goes to the central)
@@ -151,7 +152,31 @@ def show_machine(as_json: bool) -> int:
     for line in said:
         _out(line + "\n")
     _out(machine.report(m, a))
+    from . import trial
+    last = trial.load()
+    if last:
+        old = f" · még a régi kártyával ({last.gpu or 'videókártya nélkül'})" if m.best_gpu and \
+            last.gpu != m.best_gpu.name or (not m.best_gpu and last.gpu) else ""
+        _out("\nUtolsó " + trial.report(last).split("\n", 1)[0].lower() + old)
+        for x in last.lamps:
+            _out(f"  {x.label}: {x.value}" + (f" · {x.note}" if x.note else ""))
+    else:
+        _out("\nPróbafuttatás még nem volt: dwyt-runner trial")
     return 0
+
+
+def run_trial(model: str) -> int:
+    from . import trial
+    last = [""]
+
+    def stage(name: str) -> None:
+        if name != last[0]:
+            last[0] = name
+            _out(f"  {name} …")
+    _out("Próbafuttatás (az első alkalommal a modellek letöltése hosszabb) …")
+    r = trial.run(config.load(), model, stage)
+    _out("\n" + trial.report(r))
+    return 0 if not r.errors else 1
 
 
 def local_llm(action: str, name: str | None) -> int:
@@ -270,6 +295,8 @@ def main() -> None:
     sub.add_parser("check")
     mp = sub.add_parser("machine")
     mp.add_argument("--json", action="store_true")
+    tp = sub.add_parser("trial")
+    tp.add_argument("--model", default="large-v3")
     wp = sub.add_parser("whisper")
     wp.add_argument("action", choices=["prepare", "try"])
     wp.add_argument("file", nargs="?")
@@ -298,6 +325,8 @@ def main() -> None:
         sys.exit(check())
     if args.cmd == "machine":
         sys.exit(show_machine(args.json))
+    if args.cmd == "trial":
+        sys.exit(run_trial(args.model))
     if args.cmd == "whisper":
         if args.action == "try" and not args.file:
             parser.error("whisper try: add meg a fájlt")

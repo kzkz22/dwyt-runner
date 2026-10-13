@@ -86,6 +86,9 @@ SETTINGS: tuple[Setting, ...] = (
       advanced=True, show_if=(("local_llm", "ollama"), ("local_llm", "lmstudio"))),
     S("lmstudio_token", "secret", "llm", "LM Studio API-token", "Csak ha az LM Studióban bekapcsoltad az "
       "API-tokent.", show_if=(("local_llm", "lmstudio"),)),
+    S("llm_prefer_local", "bool", "llm", "A helyi modellszerver az elsődleges", "Akkor is a helyi modellszerver "
+      "dolgozik, ha felhős cím is meg van adva (a Saját gép mód ezt állítja).", advanced=True,
+      show_if=(("local_llm", "ollama"), ("local_llm", "lmstudio"))),
     S("llm_url", "url", "llm", "Felhős vagy saját LLM-szerver címe", "Például https://openrouter.ai/api/v1, vagy a "
       "saját LiteLLM-ed. Ha meg van adva, ez az elsődleges a helyi modellszerverrel szemben."),
     S("llm_key", "secret", "llm", "Az LLM-szerver kulcsa", "Javasolt egy külön kulcs keretkorláttal."),

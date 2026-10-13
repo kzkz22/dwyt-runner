@@ -305,7 +305,7 @@ def server(cfg: Config) -> LocalServer | None:
 def effective(cfg: Config) -> Config:
     """The settings with the local server as the LLM URL when no other URL is given."""
     s = server(cfg)
-    if s is None or cfg.llm_url:
+    if s is None or (cfg.llm_url and not cfg.llm_prefer_local):
         return cfg
     return replace(cfg, llm_url=s.openai_url, llm_key=cfg.lmstudio_token if cfg.local_llm == "lmstudio" else "")
 

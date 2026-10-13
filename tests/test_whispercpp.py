@@ -65,6 +65,7 @@ def builtin(tmp_path, monkeypatch):
         stage("diarize")
         return [(0.0, 5.9, "S0"), (5.9, 10.0, "S1")]
     monkeypatch.setattr(whispercpp, "diarize", fake_diarize)
+    monkeypatch.setattr(whispercpp, "speaker_models", lambda stage=None: (Path("seg.onnx"), Path("emb.onnx")))
     cfg = config.Config(whisper_builtin=True, whisper_cli=str(cli))
     return cfg, log, turns
 

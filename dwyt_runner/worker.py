@@ -10,7 +10,7 @@ import threading
 import time
 from typing import Any
 
-from . import modelinfo, tools, watch, work
+from . import activity, modelinfo, tools, watch, work
 from .config import Config
 from .errors import WorkError
 from .protocol import Central, CentralError, JobGone
@@ -48,6 +48,7 @@ class Job:
 
     def stage(self, name: str) -> None:
         self.stage_name = name
+        activity.stage(name)
         log.info("job %s: %s", self.id, name)
         if time.monotonic() - self._last_beat > 5:
             self.beat()
@@ -55,6 +56,7 @@ class Job:
     def progress(self, data: dict[str, Any]) -> None:
         """Parts done of a long LLM job (shown on the item page); sent with the heartbeats."""
         self.progress_data = data
+        activity.progress(data)
         if time.monotonic() - self._last_beat > 5:
             self.beat()
 
@@ -86,19 +88,24 @@ def deliver(central: Central, call, *args, stop: threading.Event | None = None) 
 def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threading.Event | None = None) -> str:
     job = Job(central, job_data)
     log.info("job %s: %s", job.id, job_data.get("kind"))
+    activity.start(job_data, cfg)
+    outcome, error = "crashed", ""
     beats = threading.Thread(target=job.heartbeats, daemon=True)
     beats.start()
     try:
         result = work.run(job_data, cfg, job.stage, job.cancel.is_set, central, progress=job.progress)
         if job.gone.is_set():
+            outcome = "gone"
             return "gone"
         if job.cancel.is_set():
             raise WorkError("megszakítva")
         job.stage("write")
         deliver(central, central.result, job.id, result, stop=stop)
+        outcome = "done"
         return "done"
     except WorkError as exc:
         log.warning("job %s failed: %s", job.id, exc)
+        outcome, error = "failed", str(exc)
         if not job.gone.is_set():
             deliver(central, central.fail, job.id, str(exc), exc.retry, stop=stop)
         return "failed"
@@ -110,6 +117,7 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
         return "failed"
     finally:
         job.done.set()
+        activity.finish(outcome, error)
 
 
 def loop(cfg: Config, stop: threading.Event, central: Central | None = None, once: bool = False) -> None:

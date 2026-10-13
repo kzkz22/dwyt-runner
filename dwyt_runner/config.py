@@ -58,6 +58,7 @@ class Config:
     local_llm: str = ""          # ollama | lmstudio
     local_llm_url: str = ""      # empty: the server's usual address on 127.0.0.1
     lmstudio_token: str = ""     # only if the API token is switched on in LM Studio
+    llm_prefer_local: bool = False  # "own machine" mode: the local server even when llm_url is set
     llm_public_model: str = ""   # for public sources (YouTube, web pages)
     llm_private_model: str = ""  # for own recordings: point it to a local model
     llm_translate_model: str = ""  # optional: translations of public sources with another model

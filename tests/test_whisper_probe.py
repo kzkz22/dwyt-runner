@@ -76,7 +76,10 @@ args = sys.argv[1:]
 if "--help" in args:
     sys.exit(0)
 base = args[args.index("-of") + 1]
+open(base + ".args", "a", encoding="utf-8").write(" ".join(args) + "\\n")
 words = ["Sziasztok!", "Hova", "szeretnél", "utazni?", "Most", "fogok", "utazni", "Berlinbe."]
+if "--vad" in args:  # speech detection: one word fewer wrong
+    words[3] = "elutazni?"
 segs = [{{"text": " " + w, "offsets": {{"from": i * 3000, "to": i * 3000 + 2500}}}} for i, w in enumerate(words)]
 segs.insert(0, {{"text": "[_BEG_]", "offsets": {{"from": 0, "to": 0}}}})
 open(base + ".json", "w", encoding="utf-8").write(json.dumps({{"transcription": segs}}))
@@ -103,7 +106,7 @@ def run(tmp_path, monkeypatch):
     monkeypatch.setattr(probe, "fetch_audio", lambda url, cache: wav)
     models = tmp_path / "cache" / "models"
     models.mkdir(parents=True)
-    for url in probe.WHISPER_MODELS.values():
+    for url in [*probe.WHISPER_MODELS.values(), probe.VAD_MODEL]:
         (models / Path(url).name).write_bytes(b"fake model")
     ref = tmp_path / "JAVITOTT.txt"
     ref.write_text(REFERENCE.replace("[01:02:03] Szereplő 1: Akkor nem.", ""), encoding="utf-8")
@@ -117,34 +120,47 @@ def run(tmp_path, monkeypatch):
     return go
 
 
-def test_full_run_with_fakes(run, monkeypatch):
+def test_full_run_with_fakes(run, monkeypatch, tmp_path):
     calls = []
 
-    def fake_diarize(wav, cache, speakers, embedding="3dspeaker"):
-        calls.append((speakers, embedding))
+    def fake_diarize(wav, cache, speakers, embedding, segmentation, threshold):
+        calls.append((segmentation, embedding, speakers, threshold))
         if embedding == "wespeaker":
             raise RuntimeError("letöltés sikertelen")
+        if embedding == "titanet" or speakers is None and threshold < 0.7:
+            # one speaker too many: the one-to-one score drops, purity does not
+            return [(0.0, 3.0, "Szereplő 1"), (3.0, 12.0, "Szereplő 2"), (12.0, 30.0, "Szereplő 3")], 1.0
         return [(0.0, 12.0, "Szereplő 1"), (12.0, 30.0, "Szereplő 2")], 1.5
     monkeypatch.setattr(probe, "diarize", fake_diarize)
-    report = run()
-    # once per video and speaker model, not again for each Whisper model
-    assert calls == [(None, "3dspeaker"), (2, "3dspeaker"), (None, "wespeaker"), (2, "wespeaker")]
+    report = run("--segmentations", "pyannote,reverb", "--thresholds", "0.5,0.9")
+    # text: every switch set; VAD runs get the Silero model
     assert "| EREDETI | 37,5% |" in report  # one word wrong and two extra, out of eight
-    assert "| whisper.cpp large-v3-turbo | 12,5% |" in report  # "utazni?" for "elutazni?"
-    assert "| whisper.cpp large-v3 + sherpa-onnx 3dspeaker, ismert szám | 12,5% | " in report
-    assert "| 2 | 100,0% |" in report  # both speakers found, every word right
+    assert "| whisper.cpp large-v3-turbo · alap | 12,5% |" in report  # "utazni?" for "elutazni?"
+    assert "| whisper.cpp large-v3-turbo · vad | 0,0% |" in report
+    args = (tmp_path / "out" / "JAVITOTT.large-v3-turbo.args").read_text(encoding="utf-8").splitlines()
+    assert len(args) == 3 and "--vad" not in args[0]
+    assert "-vm" in args[1] and "ggml-silero" in args[1] and args[2].endswith("--vad -mc 0 -vm " + args[2].split()[-1])
+    # speakers: on the best text, every model pair with the known count, then thresholds for the best pair
+    assert "A legjobb szövegen (whisper.cpp large-v3-turbo · vad)" in report
+    assert calls == [("pyannote", e, 2, 0.5) for e in ("3dspeaker", "wespeaker", "titanet")] + [
+        ("reverb", e, 2, 0.5) for e in ("3dspeaker", "wespeaker", "titanet")] + [
+        ("pyannote", "3dspeaker", None, 0.5), ("pyannote", "3dspeaker", None, 0.9)]
+    assert "| sherpa-onnx pyannote + 3dspeaker, 2 beszélő megadva | 2 | 100,0% | 100,0% | 2 mp |" in report
+    assert "| sherpa-onnx pyannote + titanet, 2 beszélő megadva | 3 | 87,5% | 100,0% |" in report  # nothing mixed
+    assert "| sherpa-onnx pyannote + 3dspeaker, automatikus, küszöb 0.9 | 2 | 100,0% |" in report
+    assert "| EREDETI | 1 | 50,0% | 50,0% | – |" in report
     assert "GPU/backend: whisper_backend_init_gpu: using CUDA0 backend" in report
-    assert "Hiba: sherpa-onnx wespeaker (automatikus): letöltés sikertelen" in report
+    assert "Hiba: sherpa-onnx reverb + wespeaker, 2 beszélő megadva: letöltés sikertelen" in report
 
 
 def test_run_without_speakers(run, tmp_path):
-    report = run("--no-diarize", "--models", "large-v3-turbo")
-    assert "sherpa-onnx 3dspeaker" not in report and "large-v3 |" not in report
+    report = run("--no-diarize", "--text-variants", "alap")
+    assert "Beszélők" not in report.split("8 beszélő")[-1] and "· vad" not in report
     page = (tmp_path / "out" / "report.html").read_text(encoding="utf-8")
     assert "<del>Hova</del>" not in page and "<del>szeretnél" not in page
-    assert "<ins>utazni?</ins>" in page or "<del>elutazni?</del><ins>utazni?</ins>" in page
-    txt = json.dumps(sorted(p.name for p in (tmp_path / "out").iterdir()))
-    assert "JAVITOTT.whisper.cpp_large-v3-turbo.txt" in txt
+    assert "<del>elutazni?</del><ins>utazni?</ins>" in page
+    names = json.dumps(sorted(p.name for p in (tmp_path / "out").iterdir()))
+    assert "JAVITOTT.whisper.cpp_large-v3-turbo_alap.txt" in names
 
 
 def test_download_tries_the_next_mirror(tmp_path, monkeypatch):

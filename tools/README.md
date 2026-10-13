@@ -12,9 +12,20 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 uv run whisper_probe.py "JAVÍTOTT - videó.txt" --compare "EREDETI - videó.txt"
 ```
 
-Mér: szóhiba (WER), karakterhiba, megtalált beszélők száma, a szavak hány százaléka kapta a jó beszélőt,
-futásidő. Eredmény: `whisper-probe-out/report.md`, `report.html` (szavankénti eltérések), és minden változat
-TXT-ben. A letöltések (`whisper-probe-cache/`, kb. 5 GB a két modellel) megmaradnak a következő futáshoz.
+Mér:
+- **szöveg:** whisper.cpp három beállítással (alap; beszédfelismeréssel, VAD; VAD + előző szöveg nélkül), szóhiba
+  (WER), karakterhiba, futásidő;
+- **beszélők** a legjobb szövegen: a sherpa-onnx két beszédszakasz-modellje (pyannote 3.0, reverb-v1) × három
+  hangazonosító modellje (3D-Speaker, WeSpeaker, TitaNet) a valódi beszélőszámmal, utána a legjobb pár automatikus
+  beszélőszámmal több küszöbbel. Két mérőszám: *jó beszélő* (egy-az-egyben) és *tisztaság* (a fölösleges beszélő
+  nem hiba, mert névadással összevonható; a keveredés az).
 
-Kapcsolók: `--models large-v3-turbo`, `--embeddings 3dspeaker`, `--no-diarize`, `--whisper-cli ÚT`
-(saját whisper.cpp), `--language hu`.
+Eredmény: `whisper-probe-out/report.md`, `report.html` (szavankénti eltérések), és minden változat TXT-ben. A
+letöltések (`whisper-probe-cache/`) megmaradnak a következő futáshoz.
+
+Kapcsolók: `--models large-v3-turbo,large-v3`, `--text-variants alap,vad,vad-mc0`, `--segmentations pyannote,reverb`,
+`--embeddings 3dspeaker,wespeaker,titanet`, `--thresholds 0.5,0.7,0.9`, `--no-diarize`, `--whisper-cli ÚT` (a
+whisper-cli.exe vagy a kicsomagolt kiadás mappája), `--language hu`.
+
+NVIDIA-kártyánál a szkript a hivatalos CUDA-s kiadást tölti le. Vulkan-os (AMD/Intel videóvezérlős) Windows-kiadás
+nincs, ott processzoron fut. Az aláíratlan `whisper-cli.exe`-t a Windows alkalmazásvezérlése letilthatja.

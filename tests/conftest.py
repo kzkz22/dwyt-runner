@@ -175,6 +175,12 @@ class FakeAssembly:
             fake.uploaded = len(await request.body())
             return {"upload_url": "https://cdn.example/u1"}
 
+        @app.get("/v2/transcript")
+        async def listing(request: Request):  # the key check
+            if request.headers.get("authorization") != "aai-key":
+                return JSONResponse({"error": "Invalid API key"}, status_code=401)
+            return {"transcripts": []}
+
         @app.post("/v2/transcript")
         async def create(request: Request):
             fake.requests.append(await request.json())
@@ -212,6 +218,12 @@ class FakeLlm:
             if fake.info is None:
                 return JSONResponse({"detail": "Not Found"}, status_code=404)
             return {"data": fake.info}
+
+        @app.get("/v1/models")
+        async def models(request: Request):  # the key check
+            if request.headers.get("authorization") != "Bearer llm-key":
+                return JSONResponse({"error": {"message": "invalid key"}}, status_code=401)
+            return {"data": [{"id": "osszefoglalo"}]}
 
         @app.post("/v1/chat/completions")
         async def chat(request: Request):
@@ -321,8 +333,38 @@ def audio_file(tmp_path_factory) -> str:
     return str(path)
 
 
+class MemoryKeyring:
+    """A key store in memory: the tests never touch the machine's own (Windows Credential Manager on CI)."""
+
+    def __init__(self) -> None:
+        import keyring.backend
+
+        class Backend(keyring.backend.KeyringBackend):
+            priority = 10
+            data: dict = {}
+
+            def get_password(self, service, username):
+                return self.data.get((service, username))
+
+            def set_password(self, service, username, password):
+                self.data[(service, username)] = password
+
+            def delete_password(self, service, username):
+                self.data.pop((service, username), None)
+        self.backend = Backend()
+
+
+KEYRING = MemoryKeyring()
+
+
 @pytest.fixture(autouse=True)
 def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file):
+    import keyring
+
+    from dwyt_runner import keystore
+    KEYRING.backend.data.clear()
+    keyring.set_keyring(KEYRING.backend)
+    keystore.reset()
     monkeypatch.setenv("DWYT_RUNNER_HOME", str(tmp_path / "home"))
     central.reset()
     whisper.reset()

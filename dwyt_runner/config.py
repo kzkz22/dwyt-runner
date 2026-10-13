@@ -80,6 +80,8 @@ class Config:
     max_file_mb: int = 4096
     max_duration_min: int = 360
     work_dir: str = ""
+    # where the secrets above live: auto = the system key store when there is one, else this file
+    secret_store: str = "auto"         # auto | keyring | file
 
     @property
     def paired(self) -> bool:
@@ -90,20 +92,52 @@ def path() -> Path:
     return home() / "config.json"
 
 
+def _keyring_wanted(cfg: Config) -> bool:
+    from . import keystore
+    if cfg.secret_store == "file":
+        return False
+    return keystore.usable()
+
+
 def load() -> Config:
     p = path()
     if not p.exists():
         return Config()
     data = json.loads(p.read_text(encoding="utf-8"))
     known = {f.name for f in fields(Config)}
-    return Config(**{k: v for k, v in data.items() if k in known})
+    cfg = Config(**{k: v for k, v in data.items() if k in known})
+    if data.get("secrets") == "keyring":
+        from . import keystore
+        if keystore.usable():
+            for key in SECRET_KEYS:
+                setattr(cfg, key, keystore.get(key))
+        else:
+            import logging
+            logging.getLogger("dwyt-runner").error("the secrets are in the system key store, which does not answer")
+    elif any(getattr(cfg, k) for k in SECRET_KEYS) and _keyring_wanted(cfg):
+        save(cfg)  # keys still in the file: move them to the key store
+    return cfg
 
 
 def save(cfg: Config) -> None:
     p = path()
     p.parent.mkdir(parents=True, exist_ok=True)
+    data = asdict(cfg)
+    if _keyring_wanted(cfg):
+        from . import keystore
+        for key in SECRET_KEYS:
+            keystore.put(key, data[key])
+            data[key] = ""
+        data["secrets"] = "keyring"
+    else:
+        data["secrets"] = "file"
+        if cfg.secret_store == "file":
+            from . import keystore
+            if keystore.usable():  # moved back to the file: no stale copies in the key store
+                for key in SECRET_KEYS:
+                    keystore.put(key, "")
     tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(asdict(cfg), indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     if os.name == "posix":
         os.chmod(tmp, 0o600)
     os.replace(tmp, p)

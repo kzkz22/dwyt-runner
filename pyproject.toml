@@ -9,6 +9,7 @@ dependencies = [
   "yt-dlp[default,curl-cffi]",   # unpinned on purpose: YouTube changes often
   "imageio-ffmpeg>=0.5",         # a static ffmpeg for Linux, Windows and macOS
   "deno>=2.0",                   # the JavaScript runtime yt-dlp needs for YouTube
+  "keyring>=25",                 # secrets in the system key store (Windows Credential Manager, Keychain, Secret Service)
 ]
 
 [project.optional-dependencies]

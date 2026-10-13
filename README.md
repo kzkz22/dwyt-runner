@@ -93,7 +93,7 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
 5. Ellenőrzés: `dwyt-runner check`. A gép képességei: `dwyt-runner machine` (videókártya, memória, szabad hely, helyi modellszerver: Ollama vagy LM Studio; mire elég, és melyik működési módot ajánlja; `--json` a gépi feldolgozáshoz). Induláskor a futtató csendben újranézi, és szól, ha változott, például új videókártya került a gépbe.
 6. Indítás: `dwyt-runner run` (leállítás: Ctrl+C). A képességeit (melyik mód, melyik modell) induláskor jelenti be, ezért beállításváltozás után indítsd újra.
 
-A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en `~/Library/Application Support/dwyt-runner/config.json`, Linuxon `~/.config/dwyt-runner/config.json`. A fájlt csak te olvashatod; a `config show` a kulcsokat elrejtve mutatja.
+A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en `~/Library/Application Support/dwyt-runner/config.json`, Linuxon `~/.config/dwyt-runner/config.json`. A fájlt csak te olvashatod; a `config show` a kulcsokat elrejtve mutatja. A kulcsok (a párosítás tokenje, az AssemblyAI- és az LLM-kulcs, az LM Studio tokenje) nem ebbe a fájlba kerülnek, hanem a rendszer kulcstárolójába: Windowson a Hitelesítőadat-kezelőbe, macOS-en a kulcskarikába, Linux-asztalon a Secret Service-be (GNOME Kulcstartó, KWallet). Ha a gépen nincs ilyen (például egy szerveren), a fájlban maradnak. A meglévő kulcsokat a futtató az első indításkor átteszi. Hol vannak, és működnek-e: `dwyt-runner keys` (kulcsonként egy próbakérés; a `config set` egy új kulcsot rögtön ki is próbál). Ha mégis a fájlt szeretnéd: `dwyt-runner config set secret_store file`.
 
 ## Saját felvételek
 

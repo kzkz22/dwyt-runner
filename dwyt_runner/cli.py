@@ -9,6 +9,7 @@
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
   machine [--json]           what this machine can do: video card, memory, free space, local model server
+  keys                       where the keys are kept, and whether they work (one test request each)
   trial [--model M] [--llm NAME]  test run: a 33 s sample transcribed and a short summary, timed; recommends a mode
   whisper prepare [--model M] download whisper.cpp, its model and the speaker models (built-in local Whisper)
   whisper try FILE [--model M] [--language hu] [--speakers N]
@@ -165,6 +166,24 @@ def show_machine(as_json: bool) -> int:
     return 0
 
 
+def show_keys() -> int:
+    from . import keystore
+    cfg = config.load()
+    _out(f"A kulcsok helye: {keystore.name()}")
+    ok = True
+    for label, present, check in (("AssemblyAI (felhős átírás)", cfg.assemblyai_key, keystore.check_assemblyai),
+                                  ("LLM (összefoglaló)", cfg.llm_key or cfg.llm_url or cfg.local_llm,
+                                   keystore.check_llm)):
+        if not present:
+            _out(f"  {label}: nincs beállítva")
+            continue
+        good, text = check(cfg)
+        ok = ok and good
+        _out(f"  {label}: {text}")
+    _out(f"  Párosítás a központtal: {'megvan' if cfg.token else 'nincs'}")
+    return 0 if ok else 1
+
+
 def run_trial(model: str, llm_model: str = "") -> int:
     from . import trial
     last = [""]
@@ -295,6 +314,7 @@ def main() -> None:
     sub.add_parser("check")
     mp = sub.add_parser("machine")
     mp.add_argument("--json", action="store_true")
+    sub.add_parser("keys")
     tp = sub.add_parser("trial")
     tp.add_argument("--model", default="large-v3")
     tp.add_argument("--llm", default="", help="a helyi modellszerver ezen modelljével (alapból llm_private_model)")
@@ -326,6 +346,8 @@ def main() -> None:
         sys.exit(check())
     if args.cmd == "machine":
         sys.exit(show_machine(args.json))
+    if args.cmd == "keys":
+        sys.exit(show_keys())
     if args.cmd == "trial":
         sys.exit(run_trial(args.model, args.llm))
     if args.cmd == "whisper":
@@ -347,6 +369,10 @@ def main() -> None:
         sys.exit(1)
     config.save(cfg)
     _out("Mentve.")
+    if args.key in ("assemblyai_key", "llm_key") and args.value.strip():  # a test request right away
+        from . import keystore
+        good, text = (keystore.check_assemblyai if args.key == "assemblyai_key" else keystore.check_llm)(cfg)
+        _out(f"Próba: {text}" + ("" if good else " (a kulcs mentve, de nézd meg)"))
 
 
 if __name__ == "__main__":

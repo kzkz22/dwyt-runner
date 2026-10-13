@@ -17,7 +17,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv venv
       - run: uv pip install -e ".[test]"
-      - run: uv run --no-sync ruff check --select F,E,W dwyt_runner tests
+      - run: uv run --no-sync ruff check --select F,E,W dwyt_runner tests tools
       - run: uv run --no-sync pytest -q
   audit:
     runs-on: ubuntu-latest

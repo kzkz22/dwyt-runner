@@ -27,6 +27,7 @@ from .machine import GREEN, RED, YELLOW, Lamp
 SAMPLE = Path(__file__).parent / "data" / "sample-jfk.mp3"
 SAMPLE_REPEAT = 3
 SUMMARY_TOKENS = 700         # a typical summary's length in tokens, for the estimate
+FAST_TOKENS_S = 15          # below this a big model is good but slow
 BIG_MODEL_GB = 15            # a model file this big is a 30B-class model (or a MoE of that size)
 SUMMARY_TEXT = (
     "Az önkormányzat tegnapi ülésén a képviselők elfogadták a város új közlekedési tervét. A terv szerint jövő "
@@ -105,6 +106,9 @@ def llm_lamp(model: str, tokens_s: float, size_gb: float | None) -> Lamp:
     if tokens_s < 5:
         return Lamp("llm", "Helyi összefoglaló", "túl lassú", RED, note + "; az összefoglaló felhőben ajánlott")
     if size_gb and size_gb >= BIG_MODEL_GB:
+        if tokens_s < FAST_TOKENS_S:  # good text, but a long video's summary (several parts) takes many minutes
+            return Lamp("llm", "Helyi összefoglaló", "jó, de lassú", YELLOW, note + "; nagy modell, a magyar szöveg "
+                        "közelít a felhőshöz, de egy hosszú videó összefoglalója több percig tart")
         return Lamp("llm", "Helyi összefoglaló", "jó", GREEN, note + "; nagy modell, a magyar szöveg közelít a "
                     "felhőshöz")
     return Lamp("llm", "Helyi összefoglaló", "működik, de gyengébb", YELLOW,

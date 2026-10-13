@@ -152,12 +152,13 @@ def show_machine(as_json: bool) -> int:
         return 0
     for line in said:
         _out(line + "\n")
-    _out(machine.report(m, a))
     from . import trial
     last = trial.load()
+    card = m.best_gpu.name if m.best_gpu else ""
+    same_card = last is not None and last.gpu == card
+    _out(machine.report(m, a, last.mode_reason if same_card else ""))
     if last:
-        old = f" · még a régi kártyával ({last.gpu or 'videókártya nélkül'})" if m.best_gpu and \
-            last.gpu != m.best_gpu.name or (not m.best_gpu and last.gpu) else ""
+        old = "" if same_card else f" · még a régi kártyával ({last.gpu or 'videókártya nélkül'})"
         _out("\nUtolsó p" + trial.report(last).split("\n", 1)[0][1:] + old)
         for x in last.lamps:
             _out(f"  {x.label}: {x.value}" + (f" · {x.note}" if x.note else ""))

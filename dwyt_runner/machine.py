@@ -530,7 +530,7 @@ def watch_at_start(cfg: config.Config) -> list[str]:
     return said
 
 
-def report(m: Machine, a: Assessment) -> str:
+def report(m: Machine, a: Assessment, measured: str = "") -> str:
     """The scan as plain text (the command line; the window draws the same data)."""
     lines = ["Gépem", ""]
     width = max(len(r.label) for r in a.rows + a.abilities) + 2
@@ -543,6 +543,9 @@ def report(m: Machine, a: Assessment) -> str:
         lines.append(f"  {r.label:<{width}}{r.value}  [{LAMP_TEXT[r.level]}]")
         if r.note:
             lines.append(f"  {'':<{width}}{r.note}")
-    lines += ["", a.mode_reason.replace("**", ""),
-              "Ez csak becslés; a próbafuttatás méri meg, mennyire gyors ez a gép."]
+    if measured:  # a test run with this card says more than the estimate
+        lines += ["", measured.replace("**", "")]
+    else:
+        lines += ["", a.mode_reason.replace("**", ""),
+                  "Ez csak becslés; a próbafuttatás méri meg, mennyire gyors ez a gép."]
     return "\n".join(lines)

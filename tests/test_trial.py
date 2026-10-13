@@ -31,6 +31,8 @@ def test_lamps_in_plain_words():
     assert small.level == YELLOW and small.note == ("qwen3:8b · 45 token/mp · egy összefoglaló kb. 16 mp, a magyar "
                                                     "szöveg gyengébb a felhősnél")
     assert trial.llm_lamp("qwen3.6-35b-a3b", 38, 20.0).level == GREEN
+    slow_big = trial.llm_lamp("qwen3.6-35b-a3b-apex", 9, 20.0)  # the RTX 5080 with experts in memory
+    assert (slow_big.level, slow_big.value) == (YELLOW, "jó, de lassú")
     assert trial.llm_lamp("x", 2, 5.0).level == RED
 
 
@@ -58,6 +60,12 @@ def test_a_full_test_run(builtin, ollama_server, monkeypatch, capsys):  # noqa: 
     out = capsys.readouterr().out
     assert "Utolsó próbafuttatás" in out and "· NVIDIA GeForce RTX 5080 · még" in out
     assert "még a régi kártyával (NVIDIA GeForce RTX 5080)" in out
+    assert "Ez csak becslés" in out  # another card: the estimate stands
+    monkeypatch.setattr(machine, "scan", lambda c=None: machine.Machine(
+        gpus=[machine.Gpu("nvidia", "NVIDIA GeForce RTX 5080", 16.0)]))
+    cli.show_machine(False)
+    out = capsys.readouterr().out
+    assert "A próba alapján a Vegyes" in out and "Ez csak becslés" not in out and "régi kártyával" not in out
 
 
 def test_slow_machine_and_no_local_model(builtin, monkeypatch):  # noqa: F811

@@ -23,7 +23,7 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
    - **macOS, Linux**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
    Utána nyiss új terminált.
-2. A futtató: `uv tool install git+https://github.com/kzkz22/dwyt-runner`
+2. A futtató: `uv tool install --python 3.13 https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip` (gitre nincs szükség). A `--python 3.13` azért kell, mert a legújabb Pythonhoz (3.15) egyes csomagoknak még nincs kész változata, és akkor C fordítót kérne; a 3.13-at az uv magától letölti, a gép saját Pythonját nem érinti
 3. Párosítás: `dwyt-runner pair https://dwyt.iodate.date`. Kiír egy kódot; a központ **Futtatók** oldalán írd be, és adj nevet a futtatónak.
 4. Kulcsok és modellek (csak ami kell):
 
@@ -117,7 +117,7 @@ Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más
 
 ## Frissítés
 
-`uv tool install --force git+https://github.com/kzkz22/dwyt-runner` (a GitHubról mindig a legfrissebbet telepíti; a `dwyt-runner --version` mutatja a változatot), utána indítsd újra a futtatót. A yt-dlp-t az `uv tool upgrade dwyt-runner` is frissíti; a YouTube gyakran változik, ezért ha a letöltés hibázni kezd, először ezt érdemes futtatni. Ha a központ új protokollt kér, a futtató kiírja, és leáll.
+`uv tool install --force --refresh --python 3.13 https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip` (a GitHubról mindig a legfrissebbet telepíti; a `dwyt-runner --version` mutatja a változatot), utána indítsd újra a futtatót. A yt-dlp-t az `uv tool upgrade dwyt-runner` is frissíti; a YouTube gyakran változik, ezért ha a letöltés hibázni kezd, először ezt érdemes futtatni. Ha a központ új protokollt kér, a futtató kiírja, és leáll.
 
 ## Fejlesztés
 

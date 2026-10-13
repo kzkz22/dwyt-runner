@@ -2,7 +2,7 @@
 name = "dwyt-runner"
 version = "0.8.0.dev0"
 description = "dwyt runner: downloads, captions, cloud transcription and summaries on your own machine"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"  # new Pythons first lack ready-made wheels (brotli for yt-dlp): uv then fetches a fitting one
 license = "MIT"
 dependencies = [
   "httpx>=0.27",

@@ -22,6 +22,8 @@ class Runtime:
         self.pairing: dict[str, Any] = {}
         self.trial: dict[str, Any] = {"running": False, "stage": "", "error": ""}
         self.closing = False
+        self.machine: dict[str, Any] = {"m": None, "said": [], "at": 0.0, "scanning": False, "local_models": []}
+        self.refresh_machine()  # the machine page then opens at once
         if start_worker:
             self.start_worker()
 
@@ -91,6 +93,42 @@ class Runtime:
                 return
         with self.lock:
             self.pairing.update(state="expired", code="")
+
+    # -- the machine check, kept for the machine page --
+    MACHINE_FRESH_S = 300
+
+    def refresh_machine(self) -> bool:
+        if self.machine["scanning"]:
+            return False
+        self.machine["scanning"] = True
+
+        def scan() -> None:
+            from .. import localllm, machine
+            try:
+                cfg = config.load()
+                m = machine.scan(cfg)
+                said = machine.changes(machine.load_snapshot(), m)
+                machine.save_snapshot(m)
+                models: list[str] = []
+                server = localllm.server(cfg)
+                if server and server.running():
+                    try:
+                        models = [x.name for x in server.models()]
+                    except Exception:  # noqa: BLE001
+                        models = []
+                self.machine.update(m=m, said=said, at=time.time(), local_models=models)
+            except Exception:  # noqa: BLE001
+                log.exception("machine check")
+            finally:
+                self.machine["scanning"] = False
+        threading.Thread(target=scan, daemon=True, name="machine-scan").start()
+        return True
+
+    def machine_view(self) -> dict[str, Any]:
+        """The last scan at once; a fresh one starts in the background when it is old."""
+        if self.machine["m"] is not None and time.time() - self.machine["at"] > self.MACHINE_FRESH_S:
+            self.refresh_machine()
+        return dict(self.machine)
 
     # -- the test run --
     def start_trial(self, llm_model: str = "") -> bool:

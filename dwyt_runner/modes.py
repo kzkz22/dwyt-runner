@@ -59,6 +59,19 @@ def apply(cfg: Config, mode: str) -> list[str]:
     return missing
 
 
+def preview(cfg: Config) -> dict[str, list[Box]]:
+    """The picture for every mode, as it would look after choosing it (the window switches between them
+    before saving); Egyéni shows the settings as they are."""
+    from dataclasses import replace
+    out = {}
+    for mode in MODES:
+        trial = replace(cfg)
+        if mode != "egyeni":
+            apply(trial, mode)
+        out[mode] = flow(trial)
+    return out
+
+
 def _provider(url: str) -> str:
     host = urlsplit(url).hostname or url
     return "OpenRouter" if "openrouter.ai" in host else host

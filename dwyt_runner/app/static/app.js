@@ -33,11 +33,25 @@
     }, 2000);
   }
 
+  // Machine tab: a scan in the background; show it when it is done.
+  if (document.querySelector("[data-machine-scanning]")) {
+    var scanTimer = setInterval(function () {
+      fetch("/api/gep", { credentials: "same-origin" }).then(function (r) { return r.json(); })
+        .then(function (g) { if (!g.scanning) { clearInterval(scanTimer); location.reload(); } })
+        .catch(function () {});
+    }, 1000);
+  }
+
   // Mode buttons: the chosen one lights up at once.
   document.querySelectorAll(".segmented input[type=radio]").forEach(function (input) {
     input.addEventListener("change", function () {
       document.querySelectorAll(".segmented .seg").forEach(function (s) { s.classList.remove("on"); });
       input.closest(".seg").classList.add("on");
+      document.querySelectorAll("[data-flow-for]").forEach(function (f) {
+        f.hidden = f.getAttribute("data-flow-for") !== input.value;
+      });
+      var unsaved = document.querySelector("[data-unsaved]");
+      if (unsaved) unsaved.hidden = input.defaultChecked;
     });
   });
 

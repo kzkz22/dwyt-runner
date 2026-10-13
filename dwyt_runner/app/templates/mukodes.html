@@ -12,7 +12,8 @@
     {% endfor %}
     <label class="seg{% if mode == 'egyeni' %} on{% endif %}"><input type="radio" name="mode" value="egyeni"{% if mode == 'egyeni' %} checked{% endif %}>Egyéni</label>
   </div>
-  <div class="flow">
+  {% for id, flow in flows.items() %}
+  <div class="flow" data-flow-for="{{ id }}"{% if id != mode %} hidden{% endif %}>
     {% for b in flow %}
     <div class="box{% if b.local %} local{% elif loop.index in (2, 3) %} cloud{% endif %}">
       <strong>{{ b.title }}</strong><span class="muted">{{ b.where }}</span>
@@ -21,6 +22,8 @@
     {% if not loop.last %}<div class="dots"><i></i><i></i><i></i></div>{% endif %}
     {% endfor %}
   </div>
+  {% endfor %}
+  <p class="muted" data-unsaved hidden>Ez a választott mód képe; a <strong>Mentés</strong> után lép életbe.</p>
   <p class="muted legend"><span class="sw local"></span> ezen a gépen <span class="sw cloud"></span> felhőben · a pöttyök mutatják, merre halad az adat</p>
   <div class="card table">
     <div class="tr"><span class="th">Felirat használata</span><span>A dwyt-ben állítod be (alapból csak a feltöltő saját felirata; gépi feliratnál átírás).</span>

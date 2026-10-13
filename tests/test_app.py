@@ -96,6 +96,11 @@ def test_modes_are_presets_read_back_from_the_settings(window):
     config.save(cfg)
     page = client.get("/mukodes").text
     assert 'value="sajat" checked' in page
+    # every mode's picture is there, the chosen one shown: switching shows it before saving
+    assert page.count("data-flow-for=") == 4 and '<div class="flow" data-flow-for="sajat">' in page
+    assert '<div class="flow" data-flow-for="felho" hidden>' in page
+    felho = page.split('data-flow-for="felho"')[1].split("data-flow-for")[0]
+    assert "felhőben (OpenRouter)" in felho and "ezen a gépen (Whisper)" not in felho
     r = client.post("/mukodes", data={"csrf": csrf(page), "mode": "felho"}, follow_redirects=True)
     assert "AssemblyAI-kulcsot" in r.text  # what is still missing for cloud transcription
     back = config.load()
@@ -130,8 +135,43 @@ def test_keys_are_written_never_shown(window, assembly):
     assert client.post("/kulcsok", data={"csrf": csrf(page), "key": "token", "value": "x"}).status_code == 400
 
 
+def wait_scan(runtime):
+    for _ in range(100):
+        if not runtime.machine["scanning"]:
+            return
+        time.sleep(0.05)
+
+
+def test_machine_page_opens_at_once_from_the_last_scan(window, monkeypatch):
+    from dwyt_runner import machine
+    client, state, runtime = enter(*window[:2]) and window
+    wait_scan(runtime)
+    calls = []
+    real = machine.scan
+    monkeypatch.setattr(machine, "scan", lambda cfg=None: calls.append(1) or real(cfg))
+    for _ in range(3):
+        assert "Videókártya" in client.get("/gepem").text
+    assert calls == []  # the page never waits for a scan
+    page = client.get("/gepem").text
+    client.post("/gepem/ujra", data={"csrf": csrf(page)})
+    wait_scan(runtime)
+    assert calls == [1] and client.get("/api/gep").json()["scanning"] is False
+    runtime.machine.update(m=None)  # the very first scan still running: a waiting page that follows it
+    assert "Megnézem, mi van a gépben" in client.get("/gepem").text
+
+
+def test_closed_local_ports_answer_at_once():
+    from dwyt_runner import localllm, machine
+    started = time.monotonic()
+    assert machine.port_open("http://127.0.0.1:9") is False
+    assert localllm.Ollama("http://127.0.0.1:9").running() is False
+    assert machine._get_json("http://127.0.0.1:9/api/version") is None
+    assert time.monotonic() - started < 2
+
+
 def test_machine_page_and_test_run(window, monkeypatch):
     client, state, runtime = enter(*window[:2]) and window
+    wait_scan(runtime)
     page = client.get("/gepem").text
     assert "Videókártya" in page and "Próbafuttatás" in page
     from dwyt_runner import trial

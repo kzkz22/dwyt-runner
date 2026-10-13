@@ -86,6 +86,7 @@ label.check input { margin-top: 4px; }
 .seg:first-child { border-left: 0; }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
 .seg.on, .seg:has(input:checked) { background: var(--primary); color: var(--primary-text); font-weight: 600; }
+[hidden] { display: none !important; }
 .flow { display: flex; align-items: stretch; gap: 8px; margin: 16px 0 6px; flex-wrap: wrap; }
 .box { flex: 1 1 170px; border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius);
   padding: 14px; display: flex; flex-direction: column; gap: 4px; min-height: 120px; }

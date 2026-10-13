@@ -87,6 +87,9 @@ class LocalServer:
             return {}
 
     def running(self) -> bool:
+        from .machine import port_open
+        if not port_open(self.url):
+            return False
         try:
             self.version()
             return True

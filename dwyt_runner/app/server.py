@@ -112,7 +112,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     def mode_page(request: Request, hiany: str = ""):
         cfg = config.load()
         return state.render(request, "mukodes.html", modes=modes.MODES, mode=modes.current(cfg),
-                            flow=modes.flow(cfg), missing=[m for m in hiany.split("|") if m],
+                            flows=modes.preview(cfg), missing=[m for m in hiany.split("|") if m],
                             groups=settings.describe()["groups"], values=config.masked(cfg))
 
     @api.post("/mukodes")
@@ -157,24 +157,29 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     # -- Gépem --
     @api.get("/gepem")
     def machine_page(request: Request):
-        cfg = config.load()
-        m = machine.scan(cfg)
-        said = machine.changes(machine.load_snapshot(), m)
-        machine.save_snapshot(m)
+        view = runtime.machine_view()
+        m = view["m"]
+        if m is None:  # the very first scan is still running
+            return state.render(request, "gepem_wait.html")
         last = trial.load()
         card = m.best_gpu.name if m.best_gpu else ""
-        local_models = []
-        from .. import localllm
-        server = localllm.server(cfg)
-        if server and server.running():
-            try:
-                local_models = [x.name for x in server.models()]
-            except Exception:  # noqa: BLE001
-                local_models = []
         last_when = time.strftime("%Y-%m-%d %H:%M", time.localtime(last.at)) if last else ""
-        return state.render(request, "gepem.html", m=m, a=machine.assess(m), said=said, last=last, last_when=last_when,
-                            same_card=last is not None and last.gpu == card, trial_state=runtime.trial,
-                            local_models=local_models)
+        scanned = time.strftime("%H:%M", time.localtime(view["at"]))
+        return state.render(request, "gepem.html", m=m, a=machine.assess(m), said=view["said"], last=last,
+                            last_when=last_when, same_card=last is not None and last.gpu == card,
+                            trial_state=runtime.trial, local_models=view["local_models"], scanned=scanned,
+                            scanning=view["scanning"])
+
+    @api.post("/gepem/ujra")
+    async def rescan(request: Request):
+        await state.form(request)
+        runtime.refresh_machine()
+        return RedirectResponse("/gepem", status_code=303)
+
+    @api.get("/api/gep")
+    def machine_json():
+        view = runtime.machine_view()
+        return JSONResponse({"scanning": view["scanning"], "at": view["at"]})
 
     @api.post("/gepem/proba")
     async def start_trial(request: Request):

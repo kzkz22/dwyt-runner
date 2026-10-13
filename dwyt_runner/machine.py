@@ -14,10 +14,12 @@ processor. The test run (later in round 7b) replaces them with this machine's ow
 from __future__ import annotations
 
 import json
+import logging
 import os
 import platform
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -26,6 +28,7 @@ from pathlib import Path
 
 from . import config
 
+log = logging.getLogger("dwyt-runner")
 GREEN, YELLOW, RED = "green", "yellow", "red"
 LAMP_TEXT = {GREEN: "jó", YELLOW: "figyelem", RED: "kevés"}
 VENDORS = {"10de": "nvidia", "1002": "amd", "8086": "intel", "106b": "apple"}
@@ -315,8 +318,22 @@ def folder_gb(path: Path) -> float:
 
 # ---- local model servers -----------------------------------------------------------------------
 
+def port_open(url: str, timeout: float = 0.3) -> bool:
+    """A quick look before an HTTP call: on Windows a refused connection to a closed local port
+    takes about two seconds, and the machine page asks several of them."""
+    from urllib.parse import urlsplit
+    parts = urlsplit(url)
+    try:
+        socket.create_connection((parts.hostname or "127.0.0.1", parts.port or 80), timeout=timeout).close()
+        return True
+    except OSError:
+        return False
+
+
 def _get_json(url: str, timeout: float = 1.5):
     import httpx
+    if not port_open(url):
+        return None
     try:
         r = httpx.get(url, timeout=timeout)
     except httpx.HTTPError:
@@ -375,9 +392,15 @@ def scan(cfg: config.Config | None = None) -> Machine:
         free = _gb(shutil.disk_usage(probe).free)
     except OSError:
         free = None
-    return Machine(system=f"{platform.system()} {platform.release()}", cpu=cpu_name(), threads=os.cpu_count() or 0,
-                   ram_gb=ram_gb(), gpus=scan_gpus(), disk_free_gb=free, models_gb=folder_gb(models_dir()),
-                   servers=[ollama(), lmstudio()], scanned_at=time.time())
+    from concurrent.futures import ThreadPoolExecutor
+    started = time.monotonic()
+    with ThreadPoolExecutor(4) as pool:  # the slow parts side by side: nvidia-smi, the two servers
+        gpus, oll, lms = pool.submit(scan_gpus), pool.submit(ollama), pool.submit(lmstudio)
+        m = Machine(system=f"{platform.system()} {platform.release()}", cpu=cpu_name(), threads=os.cpu_count() or 0,
+                    ram_gb=ram_gb(), gpus=gpus.result(), disk_free_gb=free, models_gb=folder_gb(models_dir()),
+                    servers=[oll.result(), lms.result()], scanned_at=time.time())
+    log.debug("machine scan took %.1f s", time.monotonic() - started)
+    return m
 
 
 def _num(x: float | None) -> str:

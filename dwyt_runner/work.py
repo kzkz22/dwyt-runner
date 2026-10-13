@@ -17,7 +17,8 @@ KINDS = ("transcribe", "summarize", "translate", "ask")
 
 def capabilities(cfg: Config) -> dict[str, Any]:
     cfg = localllm.effective(cfg)
-    modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else []) + (["local"] if cfg.whisper_url else [])
+    local_whisper = bool(cfg.whisper_url or cfg.whisper_builtin)
+    modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else []) + (["local"] if local_whisper else [])
     roles = [r for r, model in (("public", cfg.llm_public_model), ("private", cfg.llm_private_model))
              if cfg.llm_url and model]
     kinds = ["transcribe"] + (["summarize", "translate", "ask"] if roles else [])
@@ -29,8 +30,17 @@ def capabilities(cfg: Config) -> dict[str, Any]:
             "llm_model_info": info, "llm_server": server,
             "llm_defaults": {k: v for k, v in defaults.items() if v} if roles else {},
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
-            "whisper_models": list(cfg.whisper_models) if cfg.whisper_url else [],
+            "whisper_models": whisper_models(cfg),
             "source_kinds": ["upload"] + (["local"] if cfg.watch_dirs else [])}
+
+
+def whisper_models(cfg: Config) -> list[str]:
+    if cfg.whisper_url:
+        return list(cfg.whisper_models)
+    if cfg.whisper_builtin:
+        from . import whispercpp
+        return [m for m in cfg.whisper_models if m in whispercpp.MODELS]
+    return []
 
 
 def model_for(cfg: Config, kind: str, role: str | None) -> str:

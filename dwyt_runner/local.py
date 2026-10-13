@@ -21,7 +21,7 @@ from typing import Any, Callable
 
 import httpx
 
-from . import formatting, media
+from . import formatting, media, whispercpp
 from .config import Config
 from .errors import WorkError
 
@@ -111,10 +111,11 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
     """fetch: where the media comes from (media.from_url, media.from_file); a URL string also works."""
     if isinstance(fetch, str):
         fetch = media.from_url(fetch, cfg)
-    if not cfg.whisper_url:
-        raise WorkError("Ennek a futtatónak nincs helyi Whispere (dwyt-runner config set whisper_url ...).")
+    if not cfg.whisper_url and not cfg.whisper_builtin:
+        raise WorkError("Ennek a futtatónak nincs helyi Whispere (dwyt-runner config set whisper_url ..., vagy "
+                        "ezen a gépen: dwyt-runner config set whisper_builtin igen).")
     model = str(options.get("model") or (cfg.whisper_models or ["large-v3"])[0])
-    if model not in cfg.whisper_models:
+    if model not in cfg.whisper_models or (not cfg.whisper_url and model not in whispercpp.MODELS):
         raise WorkError(f"Ezt a Whisper-modellt a futtató nem ismeri: {model} (whisper_models: "
                         f"{', '.join(cfg.whisper_models)}).")
     started = time.monotonic()
@@ -126,11 +127,14 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
         info = fetch.info()
         if cancelled():
             raise WorkError("megszakítva")
-        stage("prepare-audio")
-        flac = media.to_flac(source, workdir)
-        stage("waiting-for-gpu")
-        raw = transcribe_on_worker(flac, options, model, cfg, stage, cancelled,
-                                   deadline_s(cfg, float(info.get("duration") or 0)))
+        limit = deadline_s(cfg, float(info.get("duration") or 0))
+        if cfg.whisper_url:  # the GPU host through llama-swap
+            stage("prepare-audio")
+            flac = media.to_flac(source, workdir)
+            stage("waiting-for-gpu")
+            raw = transcribe_on_worker(flac, options, model, cfg, stage, cancelled, limit)
+        else:  # whisper.cpp + sherpa-onnx on this machine
+            raw = whispercpp.transcribe(source, options, model, cfg, workdir, stage, cancelled, limit)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
@@ -148,7 +152,8 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
         for seg in segments:
             seg["speaker"] = None
     if raw.get("device") == "cpu" and not any("CPU" in w for w in warnings):
-        warnings.append("A worker CPU-n futott (nem látott GPU-t).")
+        warnings.append("A worker CPU-n futott (nem látott GPU-t)." if cfg.whisper_url
+                        else "Az átírás a processzoron futott.")
     return {"video": media.video_meta(info),
             "transcript": {"mode": "local", "model": model, "language": language, "diarized": diarized,
                            "speakers": speakers, "warnings": warnings, "segments": segments,

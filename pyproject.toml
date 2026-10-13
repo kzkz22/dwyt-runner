@@ -12,6 +12,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+local = ["sherpa-onnx>=1.12", "numpy>=1.26"]  # built-in local transcription: speakers (whisper.cpp is a program)
 test = ["pytest>=8", "fastapi>=0.115", "uvicorn>=0.30", "ruff>=0.6"]
 
 [project.scripts]

@@ -9,6 +9,9 @@
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
   machine [--json]           what this machine can do: video card, memory, free space, local model server
+  whisper prepare [--model M] download whisper.cpp, its model and the speaker models (built-in local Whisper)
+  whisper try FILE [--model M] [--language hu] [--speakers N]
+                             transcribe a file on this machine and print it (nothing goes to the central)
   llm status|start|pull NAME|load NAME|unload [NAME]
                              the local model server (local_llm = ollama | lmstudio)
 """
@@ -17,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import signal
 import socket
 import sys
@@ -24,6 +28,7 @@ import threading
 import time
 
 from . import __version__, config, localllm, machine, tools, work, worker
+from .errors import WorkError
 from .protocol import Central, CentralError, JobGone, Outdated, Unauthorized
 
 
@@ -205,6 +210,50 @@ def local_llm(action: str, name: str | None) -> int:
     return 0
 
 
+def whisper_cmd(action: str, model: str, path: str | None, language: str | None, speakers: int | None) -> int:
+    from . import formatting, local, media, whispercpp
+    cfg = config.load()
+    last = [""]
+
+    def stage(name: str) -> None:
+        if name != last[0]:
+            last[0] = name
+            _out(f"  {name} …")
+    try:
+        if action == "prepare":
+            _out(f"whisper.cpp: {whispercpp.whisper_cli(cfg, stage)}")
+            _out(f"modell: {whispercpp.whisper_model(model, stage)}")
+            _out(f"beszédfelismerés: {whispercpp.vad_model(stage)}")
+            seg, emb = whispercpp.speaker_models(stage)
+            _out(f"beszélők: {seg.name}, {emb.name}")
+            _out("Kész. Bekapcsolás: dwyt-runner config set whisper_builtin igen")
+            return 0
+        cfg.whisper_builtin, cfg.whisper_url = True, ""
+        if model not in cfg.whisper_models:
+            cfg.whisper_models = [*cfg.whisper_models, model]
+
+        class File(media.Fetch):
+            def info(self):
+                return {"title": os.path.basename(path), "duration": media.duration(path)}
+
+            def get(self, workdir):
+                return path
+        started = time.monotonic()
+        out = local.run(File(), {"model": model, "language": language, "diarize": True, "num_speakers": speakers},
+                        cfg, stage)
+        t = out["transcript"]
+        _out(f"\n{t['model']} · {t['language']} · {len(t['speakers'])} beszélő · "
+             f"{time.monotonic() - started:.0f} mp\n")
+        for w in t["warnings"]:
+            _out(f"Figyelem: {w}")
+        for turn in formatting.turns(t["segments"]):
+            _out(f"[{formatting.hms(turn['start'])}] {turn['speaker'] or ''}: {turn['text']}\n")
+        return 0
+    except WorkError as exc:
+        _out(f"Hiba: {exc}")
+        return 1
+
+
 def main() -> None:
     try:
         sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles
@@ -221,6 +270,12 @@ def main() -> None:
     sub.add_parser("check")
     mp = sub.add_parser("machine")
     mp.add_argument("--json", action="store_true")
+    wp = sub.add_parser("whisper")
+    wp.add_argument("action", choices=["prepare", "try"])
+    wp.add_argument("file", nargs="?")
+    wp.add_argument("--model", default="large-v3")
+    wp.add_argument("--language")
+    wp.add_argument("--speakers", type=int)
     lp = sub.add_parser("llm")
     lp.add_argument("action", choices=["status", "start", "pull", "load", "unload"])
     lp.add_argument("name", nargs="?")
@@ -241,6 +296,10 @@ def main() -> None:
         sys.exit(check())
     if args.cmd == "machine":
         sys.exit(show_machine(args.json))
+    if args.cmd == "whisper":
+        if args.action == "try" and not args.file:
+            parser.error("whisper try: add meg a fájlt")
+        sys.exit(whisper_cmd(args.action, args.model, args.file, args.language, args.speakers))
     if args.cmd == "llm":
         if args.action in ("pull", "load") and not args.name:
             parser.error(f"llm {args.action}: add meg a modell nevét")

@@ -41,6 +41,11 @@ class Config:
     whisper_url: str = ""        # e.g. http://AI-ROUTER:8080/upstream/whisper
     whisper_models: list[str] = field(default_factory=lambda: ["large-v3", "large-v3-turbo"])
     whisper_timeout_min: int = 60
+    # or local transcription on this machine: whisper.cpp + sherpa-onnx (models downloaded once)
+    whisper_builtin: bool = False
+    whisper_cli: str = ""          # empty: PATH, or on Windows the official release downloaded by the runner
+    whisper_threads: int = 0       # 0: whisper.cpp decides
+    diarize_threshold: float = 0.8  # automatic speaker count: larger = fewer speakers
     # summaries: any OpenAI-compatible server (LiteLLM, OpenRouter, llama-server, Ollama ...)
     llm_url: str = ""
     llm_key: str = ""
@@ -117,6 +122,8 @@ def set_value(cfg: Config, key: str, value: str) -> None:
         setattr(cfg, key, value.strip().lower() in ("1", "true", "yes", "on", "igen"))
     elif isinstance(current, int) and not isinstance(current, bool):
         setattr(cfg, key, int(value))
+    elif isinstance(current, float):
+        setattr(cfg, key, float(value.replace(",", ".")))
     elif isinstance(current, dict):
         pairs = (part.split("=", 1) for part in value.split(";") if "=" in part)
         setattr(cfg, key, {k.strip(): v.strip() for k, v in pairs if k.strip() and v.strip()})

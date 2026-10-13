@@ -152,20 +152,6 @@ def masked(cfg: Config) -> dict:
 
 
 def set_value(cfg: Config, key: str, value: str) -> None:
-    kinds = {f.name: f.type for f in fields(Config)}
-    if key not in kinds or key in ("token", "runner_id"):
-        raise KeyError(key)
-    current = getattr(cfg, key)
-    if isinstance(current, bool):
-        setattr(cfg, key, value.strip().lower() in ("1", "true", "yes", "on", "igen"))
-    elif isinstance(current, int) and not isinstance(current, bool):
-        setattr(cfg, key, int(value))
-    elif isinstance(current, float):
-        setattr(cfg, key, float(value.replace(",", ".")))
-    elif isinstance(current, dict):
-        pairs = (part.split("=", 1) for part in value.split(";") if "=" in part)
-        setattr(cfg, key, {k.strip(): v.strip() for k, v in pairs if k.strip() and v.strip()})
-    elif isinstance(current, list):
-        setattr(cfg, key, [v.strip() for v in value.split(",") if v.strip()])
-    else:
-        setattr(cfg, key, value.strip())
+    """A setting from text, checked against its description (settings.py); ValueError says why."""
+    from . import settings
+    setattr(cfg, key, settings.parse(key, value))

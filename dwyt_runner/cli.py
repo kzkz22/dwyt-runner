@@ -3,6 +3,7 @@
   pair SERVER [--name NAME]  pair with a dwyt central service (prints a code to approve there)
   run                        ask for work and do it, until stopped (Ctrl+C)
   config show                the settings (secrets masked)
+  config describe [--json]   every setting with its meaning (the window and the dwyt Settings page draw from it)
   config set KEY VALUE       e.g. assemblyai_key, whisper_url, whisper_models, llm_url, llm_key,
                              llm_public_model, llm_private_model, llm_ask_model, allowed_domains (comma-separated,
                              * = any),
@@ -331,6 +332,8 @@ def main() -> None:
     c = sub.add_parser("config")
     csub = c.add_subparsers(dest="action", required=True)
     csub.add_parser("show")
+    dp = csub.add_parser("describe")
+    dp.add_argument("--json", action="store_true")
     s = csub.add_parser("set")
     s.add_argument("key")
     s.add_argument("value")
@@ -363,10 +366,14 @@ def main() -> None:
     if args.action == "show":
         _out(json.dumps(config.masked(cfg), indent=2, ensure_ascii=False))
         return
+    if args.action == "describe":
+        from . import settings
+        _out(json.dumps(settings.describe(), ensure_ascii=False, indent=2) if args.json else settings.summary())
+        return
     try:
         config.set_value(cfg, args.key, args.value)
-    except (KeyError, ValueError):
-        _out(f"Ismeretlen vagy hibás beállítás: {args.key}")
+    except ValueError as exc:
+        _out(f"Nem mentettem: {exc}")
         sys.exit(1)
     config.save(cfg)
     _out("Mentve.")

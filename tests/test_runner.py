@@ -144,7 +144,7 @@ def test_config_set_values():
     try:
         set_value(c, "token", "x")
         raise AssertionError("token must not be settable")
-    except KeyError:
+    except ValueError:  # set by pairing only
         pass
 
 

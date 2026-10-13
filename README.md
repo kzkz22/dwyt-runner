@@ -90,6 +90,8 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
 
    Windowson a futtató a whisper.cpp hivatalos kiadását tölti le (NVIDIA-kártyánál a CUDA-s változatot); Linuxon és macOS-en a `whisper-cli` programnak a PATH-on kell lennie, vagy add meg: `dwyt-runner config set whisper_cli /út/whisper-cli` (egy kicsomagolt kiadás mappája is jó). A beszélők számát a futtató maga becsli (`diarize_threshold`, alapból 0,8; nagyobb érték kevesebb beszélőt ad); ha a beküldéskor megadod, azt használja. Ha a videókártyán nem sikerül, egyszer a processzoron megismétli, és ezt jelzi. Ha a Windows alkalmazásvezérlése (például az Intelligens alkalmazásvezérlés) nem engedi a whisper.cpp programját, a munka ezt az üzenetet adja; ezen a gépen ilyenkor a felhős átírás marad.
 
+   Minden beállítás jelentése, megengedett értékei és alapértéke: `dwyt-runner config describe` (a `config set` ez alapján ellenőriz, és megmondja, ha egy érték nem jó).
+
 5. Ellenőrzés: `dwyt-runner check`. A gép képességei: `dwyt-runner machine` (videókártya, memória, szabad hely, helyi modellszerver: Ollama vagy LM Studio; mire elég, és melyik működési módot ajánlja; `--json` a gépi feldolgozáshoz). Induláskor a futtató csendben újranézi, és szól, ha változott, például új videókártya került a gépbe.
 6. Indítás: `dwyt-runner run` (leállítás: Ctrl+C). A képességeit (melyik mód, melyik modell) induláskor jelenti be, ezért beállításváltozás után indítsd újra.
 

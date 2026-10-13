@@ -349,6 +349,12 @@ def lmstudio() -> ModelServer:
     home = Path.home()
     s = ModelServer("lmstudio", _installed(["lms"], [home / ".lmstudio" / "bin" / "lms",
                                                     home / ".lmstudio" / "bin" / "lms.exe"]))
+    native = _get_json(f"{LMSTUDIO_URL}/api/v1/models")  # LM Studio 0.4+: downloaded models with their type
+    if isinstance(native, dict) and isinstance(native.get("models"), list):
+        s.running = s.installed = True
+        s.models = [m["key"] for m in native["models"] if isinstance(m, dict) and m.get("key")
+                    and m.get("type") in ("llm", None)]
+        return s
     models = _get_json(f"{LMSTUDIO_URL}/v1/models")
     if isinstance(models, dict):
         s.running = s.installed = True

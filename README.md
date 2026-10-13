@@ -41,6 +41,17 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
 
    Saját LiteLLM-mel (például a dwyt-airouterrel) az `llm_url` a LiteLLM címe, a modellnevek az ott beállított nevek.
 
+   **Helyi modellszerver ugyanezen a gépen (Ollama vagy LM Studio):** az `llm_url` maradjon üres, és add meg, melyiket használja; a modellnevek a szerver saját nevei:
+
+   ```
+   dwyt-runner config set local_llm ollama            # vagy: lmstudio
+   dwyt-runner llm pull qwen3:8b                      # letöltés (LM Studióban például: qwen/qwen3-8b)
+   dwyt-runner config set llm_private_model qwen3:8b
+   dwyt-runner llm status                             # fut-e, milyen modellek vannak, mi van betöltve
+   ```
+
+   A futtató elindítja a szervert, ha telepítve van, de nem fut (LM Studiónál `lms server start`), és ugyanígy tölt be és ürít ki modellt (`dwyt-runner llm load NÉV`, `dwyt-runner llm unload`). Ha az LM Studióban bekapcsoltad az API-tokent: `dwyt-runner config set lmstudio_token TOKEN`. Más cím: `local_llm_url`. Ha az `llm_url` meg van adva, az elsőbbséget kap.
+
    Ha a központ elemoldalán más modellt is választhatnál egy összefoglalóhoz vagy fordításhoz, sorold fel őket (nem kötelező):
 
    ```

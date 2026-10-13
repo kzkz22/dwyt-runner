@@ -6,7 +6,7 @@ import re
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import ask, captions, cloud, local, media, modelinfo, summarize, translate, watch
+from . import ask, captions, cloud, local, localllm, media, modelinfo, summarize, translate, watch
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
@@ -16,6 +16,7 @@ KINDS = ("transcribe", "summarize", "translate", "ask")
 
 
 def capabilities(cfg: Config) -> dict[str, Any]:
+    cfg = localllm.effective(cfg)
     modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else []) + (["local"] if cfg.whisper_url else [])
     roles = [r for r, model in (("public", cfg.llm_public_model), ("private", cfg.llm_private_model))
              if cfg.llm_url and model]
@@ -122,6 +123,7 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
             return local.run(url, options, cfg, stage, cancelled)
         raise WorkError(f"Ez a futtató nem tud ilyen módot: {mode}.")
     if kind in ("summarize", "translate", "ask"):
+        cfg = localllm.effective(cfg)
         role = data.get("role")
         model = model_for(cfg, kind, role)
         if not cfg.llm_url or not model:
@@ -132,6 +134,7 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
                 raise WorkError(f"Ezt a modellt a futtató nem ajánlja fel ehhez: {str(wanted)[:80]} (llm_models, "
                                 "llm_private_models).")
             model = str(wanted)
+        localllm.before_llm_job(cfg)
         llm = Llm(cfg.llm_url, cfg.llm_key)
         if kind == "summarize":
             return summarize.run(data, llm, model, stage, progress=progress)

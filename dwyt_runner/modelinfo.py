@@ -92,9 +92,15 @@ def fetch(cfg: Config, timeout: float = 5.0) -> tuple[dict[str, dict[str, Any]],
             break
         if not server:
             server = "OpenRouter" if "openrouter.ai" in cfg.llm_url else "OpenAI-kompatibilis szerver"
+            from . import localllm
+            if localllm.uses_local(cfg):
+                server = localllm.server(cfg).title
     if server == "OpenRouter":  # everything there runs in the cloud
         for name in wanted:
             info.setdefault(name, {"where": "cloud", "target_label": name, "provider": "OpenRouter"})
+    if server in ("Ollama", "LM Studio"):  # a model server on the runner's own machine
+        for name in wanted:
+            info.setdefault(name, {"where": "local", "target_label": name, "provider": server})
     for name, note in (cfg.llm_model_notes or {}).items():
         if name in wanted and _text(note, 200):
             info.setdefault(name, {})["description"] = _text(note, 200)

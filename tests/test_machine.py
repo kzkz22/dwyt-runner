@@ -146,6 +146,10 @@ def test_model_servers_are_found(monkeypatch):
     assert (lm.running, lm.models) == (True, ["qwen3-8b"])
     monkeypatch.setattr(machine, "_get_json", lambda url, timeout=1.5: None)
     assert machine.ollama().running is False
+    answers[f"{machine.LMSTUDIO_URL}/api/v1/models"] = {"models": [
+        {"type": "llm", "key": "google/gemma-3-12b"}, {"type": "embedding", "key": "nomic"}]}
+    monkeypatch.setattr(machine, "_get_json", lambda url, timeout=1.5: answers.get(url))
+    assert machine.lmstudio().models == ["google/gemma-3-12b"]
 
 
 def test_report_and_the_command(tmp_path):

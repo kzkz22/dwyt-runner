@@ -9,6 +9,8 @@
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
   machine [--json]           what this machine can do: video card, memory, free space, local model server
+  llm status|start|pull NAME|load NAME|unload [NAME]
+                             the local model server (local_llm = ollama | lmstudio)
 """
 from __future__ import annotations
 
@@ -21,7 +23,7 @@ import sys
 import threading
 import time
 
-from . import __version__, config, machine, tools, work, worker
+from . import __version__, config, localllm, machine, tools, work, worker
 from .protocol import Central, CentralError, JobGone, Outdated, Unauthorized
 
 
@@ -102,6 +104,11 @@ def check() -> int:
     if cfg.watch_dirs:
         from . import watch
         _out(f"figyelt mappák: {', '.join(cfg.watch_dirs)} ({watch.options(cfg)})")
+    local = localllm.server(cfg)
+    if local:
+        state = "fut" if local.running() else ("telepítve, nem fut (a futtató elindítja)" if local.installed()
+                                               else "NINCS TELEPÍTVE")
+        _out(f"helyi modellszerver: {local.title} ({local.url}): {state}")
     _out(f"engedélyezett tartományok: {', '.join(cfg.allowed_domains)}")
     if not cfg.paired:
         _out("párosítás: még nincs (dwyt-runner pair SERVER)")
@@ -142,6 +149,62 @@ def show_machine(as_json: bool) -> int:
     return 0
 
 
+def local_llm(action: str, name: str | None) -> int:
+    cfg = config.load()
+    s = localllm.server(cfg)
+    if s is None:
+        _out("Nincs beállítva helyi modellszerver: dwyt-runner config set local_llm ollama (vagy lmstudio)")
+        return 1
+    try:
+        if action == "status":
+            if not s.running():
+                _out(f"{s.title}: nem fut ({'telepítve' if s.installed() else 'nincs telepítve'}); "
+                     "indítás: dwyt-runner llm start")
+                return 1
+            version = s.version()
+            _out(f"{s.title}{' ' + version if version else ''}: fut ({s.url}); az összefoglalókhoz: {s.openai_url}")
+            for m in s.models():
+                size = f"{m.size_gb:.1f} GB".replace(".", ",") if m.size_gb else ""
+                state = "betöltve" + (f", {m.vram_gb:.1f} GB a videókártyán".replace(".", ",") if m.vram_gb else "") \
+                    if m.loaded else ""
+                _out(f"  {m.name}  {size}  {state}".rstrip())
+            return 0
+        if action == "start":
+            if s.ensure_running():
+                _out(f"{s.title}: fut ({s.url})")
+                return 0
+            _out(f"{s.title} nincs telepítve ezen a gépen.")
+            return 1
+        if not s.ensure_running():
+            _out(f"{s.title} nincs telepítve ezen a gépen.")
+            return 1
+        if action == "pull":
+            last = [-1]
+
+            def show(frac: float | None, status: str) -> None:
+                if frac is None:
+                    return
+                pct = int(frac * 100)
+                if pct >= last[0] + 5 or pct == 100:
+                    last[0] = pct
+                    _out(f"  {pct}%")
+            _out(f"Letöltés: {name}")
+            s.pull(name, show)
+            _out("Kész.")
+        elif action == "load":
+            s.load(name)
+            _out(f"Betöltve: {name}")
+        elif action == "unload":
+            done = [name] if name else s.unload_all()
+            if name:
+                s.unload(name)
+            _out("Kiürítve: " + (", ".join(done) or "nem volt betöltött modell"))
+    except localllm.LocalLlmError as exc:
+        _out(f"Hiba: {exc}")
+        return 1
+    return 0
+
+
 def main() -> None:
     try:
         sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles
@@ -158,6 +221,9 @@ def main() -> None:
     sub.add_parser("check")
     mp = sub.add_parser("machine")
     mp.add_argument("--json", action="store_true")
+    lp = sub.add_parser("llm")
+    lp.add_argument("action", choices=["status", "start", "pull", "load", "unload"])
+    lp.add_argument("name", nargs="?")
     c = sub.add_parser("config")
     csub = c.add_subparsers(dest="action", required=True)
     csub.add_parser("show")
@@ -175,6 +241,10 @@ def main() -> None:
         sys.exit(check())
     if args.cmd == "machine":
         sys.exit(show_machine(args.json))
+    if args.cmd == "llm":
+        if args.action in ("pull", "load") and not args.name:
+            parser.error(f"llm {args.action}: add meg a modell nevét")
+        sys.exit(local_llm(args.action, args.name))
     cfg = config.load()
     if args.action == "show":
         _out(json.dumps(config.masked(cfg), indent=2, ensure_ascii=False))

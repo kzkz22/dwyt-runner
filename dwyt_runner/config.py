@@ -12,7 +12,7 @@ import sys
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
-SECRET_KEYS = {"token", "assemblyai_key", "llm_key"}
+SECRET_KEYS = {"token", "assemblyai_key", "llm_key", "lmstudio_token"}
 DEFAULT_DOMAINS = ["youtube.com", "youtu.be"]
 
 
@@ -44,6 +44,11 @@ class Config:
     # summaries: any OpenAI-compatible server (LiteLLM, OpenRouter, llama-server, Ollama ...)
     llm_url: str = ""
     llm_key: str = ""
+    # a local model server on this machine (Ollama or LM Studio): used when llm_url is empty; the runner starts it,
+    # downloads, loads and unloads its models
+    local_llm: str = ""          # ollama | lmstudio
+    local_llm_url: str = ""      # empty: the server's usual address on 127.0.0.1
+    lmstudio_token: str = ""     # only if the API token is switched on in LM Studio
     llm_public_model: str = ""   # for public sources (YouTube, web pages)
     llm_private_model: str = ""  # for own recordings: point it to a local model
     llm_translate_model: str = ""  # optional: translations of public sources with another model

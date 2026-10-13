@@ -314,8 +314,31 @@ def ram_gb() -> float | None:
 
 
 def models_dir() -> Path:
-    """Where the runner keeps its own models (whisper.cpp, speech detection, speakers)."""
-    return config.home() / "models"
+    """Where the runner keeps its own models (whisper.cpp, speech detection, speakers): the data folder
+    (config.data_home). Before 0.9.3 they were next to the settings (on Windows in the roaming profile);
+    the first look moves them over once."""
+    target = config.data_home() / "models"
+    old = config.home() / "models"
+    if old != target and old.is_dir() and not target.exists():
+        _move_models(old, target)
+    return target
+
+
+def _move_models(old: Path, target: Path) -> None:
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(old), str(target))
+        log.info("models moved: %s -> %s", old, target)
+    except OSError as exc:  # a file in use, no space: try again next time, the downloads stay usable
+        log.warning("models not moved (%s); will try again", exc)
+        return
+    try:  # a whisper_cli setting that pointed into the old folder follows it
+        cfg = config.load()
+        if cfg.whisper_cli and Path(cfg.whisper_cli).is_relative_to(old):
+            cfg.whisper_cli = str(target / Path(cfg.whisper_cli).relative_to(old))
+            config.save(cfg)
+    except (OSError, ValueError) as exc:
+        log.warning("whisper_cli setting not updated: %s", exc)
 
 
 def folder_gb(path: Path) -> float:
@@ -392,7 +415,7 @@ def lmstudio() -> ModelServer:
 
 def scan(cfg: config.Config | None = None) -> Machine:
     cfg = cfg or config.load()
-    where = Path(cfg.work_dir) if cfg.work_dir else config.home()
+    where = Path(cfg.work_dir) if cfg.work_dir else config.data_home()
     probe = where
     while not probe.exists() and probe.parent != probe:
         probe = probe.parent

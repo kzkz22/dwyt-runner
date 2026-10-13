@@ -5,6 +5,7 @@
   app [--browser] [--hidden] the same with its window (Állapot, Működés, Gépem, Kulcsok) and tray icon;
                              a second start shows the running one's window; extra [desktop]
   autostart on|off|status    start the app (tray only) at login; no admin rights
+  reset [--models] [--yes]   back to the start: login start off, settings and keys deleted (models kept)
   config show                the settings (secrets masked)
   config describe [--json]   every setting with its meaning (the window and the dwyt Settings page draw from it)
   config set KEY VALUE       e.g. assemblyai_key, whisper_url, whisper_models, llm_url, llm_key,
@@ -96,6 +97,34 @@ def run() -> int:
     except Outdated as exc:
         _out(f"{exc} Frissítés: uv tool upgrade dwyt-runner")
         return 3
+    return 0
+
+
+def app_running() -> bool:
+    """The window app of this user answers on the port it wrote down."""
+    try:
+        info = json.loads((config.home() / "window.json").read_text(encoding="utf-8"))
+        return machine.port_open(f"http://127.0.0.1:{int(info['port'])}")
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+
+
+def reset_cmd(models: bool, yes: bool) -> int:
+    from . import machine, reset
+    if app_running():
+        _out("A futtató ablaka fut: az alaphelyzetet ott kérd (Működés lap), vagy előbb lépj ki belőle.")
+        return 1
+    if not yes:
+        what = "a beállítások, a kulcsok" + (" és a letöltött modellek" if models else "")
+        answer = input(f"Törlődnek {what}; a modellek helye: {machine.models_dir()}. Mehet? (igen/nem) ")
+        if answer.strip().lower() not in ("igen", "i", "yes", "y"):
+            _out("Nem töröltem semmit.")
+            return 1
+    server = config.load().server
+    for line in reset.run(models):
+        _out(line)
+    if server:
+        _out(f"A dwyt-ben ({server}/futtatok) a régi futtatót vond vissza.")
     return 0
 
 
@@ -320,6 +349,9 @@ def main() -> None:
     ap.add_argument("--browser", action="store_true", help="a böngészőben, saját ablak helyett")
     ap.add_argument("--hidden", action="store_true", help="csak a tálcaikon indul, az ablak nem nyílik meg")
     sub.add_parser("check")
+    rp = sub.add_parser("reset")
+    rp.add_argument("--models", action="store_true", help="a letöltött modelleket is")
+    rp.add_argument("--yes", action="store_true", help="kérdés nélkül")
     asp = sub.add_parser("autostart")
     asp.add_argument("action", choices=["on", "off", "status"])
     mp = sub.add_parser("machine")
@@ -363,6 +395,8 @@ def main() -> None:
                  "https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip\"")
             sys.exit(1)
         sys.exit(app_main.run(args.browser, args.hidden))
+    if args.cmd == "reset":
+        sys.exit(reset_cmd(args.models, args.yes))
     if args.cmd == "autostart":
         from . import autostart
         if args.action != "status":

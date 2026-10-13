@@ -42,6 +42,7 @@ class App:
         self.instance_secret = secrets.token_urlsafe(24)  # a second start of the app shows this window
         self.on_show = lambda: None
         self.on_quit = lambda: None
+        self.reset_said: list[str] = []   # what the last Alaphelyzet did, shown on the first setup step
         self.sessions: dict[str, str] = {}     # session id -> CSRF token
         self.env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
         self.env.globals.update(version=__version__, lamp_text=machine.LAMP_TEXT,
@@ -144,10 +145,12 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     @api.get("/mukodes")
     def mode_page(request: Request, hiany: str = ""):
         cfg = config.load()
+        models_gb = machine.folder_gb(machine.models_dir())
         return state.render(request, "mukodes.html", modes=modes.MODES, mode=modes.current(cfg),
                             flows=modes.preview(cfg), missing=[m for m in hiany.split("|") if m],
                             groups=settings.describe()["groups"], values=config.masked(cfg),
-                            login_start=autostart.enabled())
+                            login_start=autostart.enabled(), models_gb=models_gb,
+                            models_dir=str(machine.models_dir()))
 
     @api.post("/mukodes")
     async def mode_save(request: Request):
@@ -170,6 +173,21 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         except OSError as exc:
             return RedirectResponse("/mukodes?hiany=" + f"Az indítást nem sikerült beállítani: {exc}", status_code=303)
         return RedirectResponse("/mukodes", status_code=303)
+
+    @api.post("/alaphelyzet")
+    async def reset_all(request: Request):
+        form = await state.form(request)
+        if form.get("ertem") != "on":
+            return RedirectResponse("/mukodes?hiany=" + "Az alaphelyzethez pipáld be, hogy érted, mi törlődik.",
+                                    status_code=303)
+        server = config.load().server
+        from starlette.concurrency import run_in_threadpool
+        said = await run_in_threadpool(runtime.reset, form.get("models") == "on")
+        if server:
+            said.append(f"A dwyt-ben ({server}/futtatok) a régi futtatót vond vissza: onnan ez a gép nem tudja "
+                        "törölni magát.")
+        state.reset_said = said
+        return RedirectResponse("/telepites/1", status_code=303)
 
     @api.post("/mukodes/reszletek")
     async def details_save(request: Request):
@@ -247,7 +265,8 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         cfg = config.load()
         mode = wizard.chosen_mode(cfg)
         if n == 1:
-            return step_page(request, 1)
+            said, state.reset_said = state.reset_said, []
+            return step_page(request, 1, reset_said=said)
         if n == 2:
             view = runtime.machine_view()
             m = view["m"]

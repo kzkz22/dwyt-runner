@@ -184,3 +184,6 @@ form.pick button { min-width: 120px; }
 .trial-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
 .trial-head h2 { margin: 0; display: inline; margin-right: 10px; }
 .trial-head form { margin-left: auto; }
+
+button.danger { border-color: var(--bad); color: var(--bad); }
+.card.reset h2 { margin-top: 0; }

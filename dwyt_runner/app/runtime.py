@@ -63,6 +63,21 @@ class Runtime:
         self.closing = True
         self.stop.set()
 
+    def reset(self, models: bool = False) -> list[str]:
+        """Alaphelyzet: stop the worker (a job it was asking for goes back), then delete settings and keys.
+        The window then starts on the setup steps; a new pairing starts a new worker."""
+        from .. import reset
+        self.stop.set()
+        if self.thread is not None:
+            self.thread.join(timeout=120)  # a claim long-polls for at most ~90 s
+        said = reset.run(models)
+        self.error = ""
+        with self.lock:
+            self.pairing = {}
+        self.trial = {"running": False, "stage": "", "error": ""}
+        self.machine["at"] = 0.0  # look again (what is installed did not change, the snapshot did)
+        return said
+
     # -- pairing --
     def start_pairing(self, server: str, name: str) -> None:
         server = server.strip().rstrip("/")

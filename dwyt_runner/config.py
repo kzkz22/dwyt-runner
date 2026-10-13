@@ -27,6 +27,19 @@ def home() -> Path:
     return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "dwyt-runner"
 
 
+def data_home() -> Path:
+    """Big downloads (models): Windows %LOCALAPPDATA% (never the roaming profile), Linux XDG data, macOS the
+    same folder as the settings. DWYT_RUNNER_DATA overrides; with DWYT_RUNNER_HOME alone it is that folder."""
+    given = os.environ.get("DWYT_RUNNER_DATA") or os.environ.get("DWYT_RUNNER_HOME")
+    if given:
+        return Path(given)
+    if sys.platform == "win32":
+        return Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local") / "dwyt-runner"
+    if sys.platform == "darwin":
+        return home()
+    return Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share") / "dwyt-runner"
+
+
 @dataclass
 class Config:
     server: str = ""

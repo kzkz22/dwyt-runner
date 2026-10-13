@@ -156,6 +156,12 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
             stop.wait(wait)
             wait = min(wait * 2, 60)
             continue
+        if job is not None and stop.is_set():  # stopped while asking (quit, reset): hand it back at once
+            try:
+                central.fail(job["job_id"], "A futtató leállt, mielőtt elkezdte; később újra kiadható.", "later")
+            except CentralError as exc:
+                log.warning("job %s not handed back: %s", job.get("job_id"), exc)
+            return
         if job is not None:
             run_job(central, cfg, job, stop)
             if once:

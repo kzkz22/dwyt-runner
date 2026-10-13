@@ -79,4 +79,16 @@
     <div class="actions"><button class="primary">Mentés</button></div>
   </form>
 </details>
+
+<form method="post" action="/alaphelyzet" class="card reset">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <h2>Alaphelyzet</h2>
+  <p class="muted">Mintha most telepítenéd először: leállítja a futtatót, kikapcsolja a bejelentkezéskori indulást, törli a
+    beállításokat és a kulcsokat, majd a telepítő lépései jönnek. A dwyt-ben a futtatót utána vond vissza a
+    Futtatók oldalon.</p>
+  <label class="check"><input type="checkbox" name="models"><span>A letöltött modelleket is töröld
+    ({{ models_gb|string|replace(".", ",") }} GB, {{ models_dir }}); különben megmaradnak, és nem kell újra letölteni</span></label>
+  <label class="check"><input type="checkbox" name="ertem" required><span>Értem: a beállítások és a kulcsok törlődnek</span></label>
+  <div class="actions"><button class="danger">Alaphelyzet</button></div>
+</form>
 {% endblock %}

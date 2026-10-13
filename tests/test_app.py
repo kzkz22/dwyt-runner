@@ -356,3 +356,16 @@ def test_login_start_switch_in_the_window(window, tmp_path, monkeypatch):
     assert on and 'name="on" checked data-autosubmit' in client.get("/mukodes").text
     client.post("/mukodes/inditas", data={"csrf": csrf(page)})
     assert not on
+
+
+def test_the_test_run_keeps_the_model_it_was_run_with(window):
+    from dwyt_runner import trial
+    client, state, runtime = enter(*window[:2]) and window
+    wait_scan(runtime)
+    config.save(config.Config(local_llm="lmstudio", llm_private_model="qwen/qwen3-8b"))
+    runtime.machine["local_models"] = ["qwen/qwen3-8b", "google/gemma-4-e4b"]
+    page = client.get("/gepem").text
+    assert '<option value="qwen/qwen3-8b" selected>' in page  # nothing tried yet: the set model
+    trial.save(trial.TrialResult(at=time.time(), gpu="", whisper_model="large-v3", llm_model="google/gemma-4-e4b"))
+    page = client.get("/gepem").text
+    assert '<option value="google/gemma-4-e4b" selected>' in page and page.count("<option") == 2

@@ -15,13 +15,13 @@
   {% endfor %}
 </div>
 <div class="card trial"{% if trial_state.running %} data-trial-running{% endif %}>
-  <div class="row"><h2>Próbafuttatás</h2>
-    {% if last %}<span class="muted">kész</span>{% endif %}
-    <form method="post" action="/telepites/2" class="right inline">
+  <div class="trial-head"><div><h2>Próbafuttatás</h2>
+    {% if last %}<span class="muted">kész</span>{% endif %}</div>
+    <form method="post" action="/telepites/2" class="inline">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       {% if servers %}
       <select name="llm" title="Ezzel a helyi modellel próbálja az összefoglalót" aria-label="Helyi modell a próbához">
-        {% for s in servers %}{% for name in s.models %}<option value="{{ name }}">{{ s.title }}: {{ name }}</option>{% endfor %}{% endfor %}
+        {% for s in servers %}{% for name in s.models %}<option value="{{ name }}"{% if last and name == last.llm_model %} selected{% endif %}>{{ s.title }}: {{ name }}</option>{% endfor %}{% endfor %}
       </select>
       <input type="hidden" name="server" value="{{ servers[0].kind }}">
       {% endif %}

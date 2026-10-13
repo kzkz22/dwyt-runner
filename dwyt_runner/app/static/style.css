@@ -179,3 +179,8 @@ form.pick button { min-width: 120px; }
   .arrows { flex-direction: row; white-space: normal; }
   .paircode { font-size: 1.8rem; padding: 16px 20px; }
 }
+
+/* the test run card's head: title and date together, the form beside them */
+.trial-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.trial-head h2 { margin: 0; display: inline; margin-right: 10px; }
+.trial-head form { margin-left: auto; }

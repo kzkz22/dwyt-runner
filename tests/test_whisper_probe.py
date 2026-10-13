@@ -193,3 +193,32 @@ def test_blocked_program_is_explained():
     err.winerror = 4551
     assert "alkalmazásvezérlése" in probe.blocked_hint(err)
     assert probe.blocked_hint(RuntimeError("x")) == ""
+
+
+def test_failed_release_lookup_says_why(tmp_path, monkeypatch):
+    import zipfile
+    monkeypatch.setattr(probe.os, "name", "nt")
+    monkeypatch.setattr(probe, "has_nvidia", lambda: True)
+    release = {"tag_name": "v1.9.5", "assets": [
+        {"name": "whisper-bin-win-cuda-12.4.0-x64.zip", "browser_download_url": "cuda"},
+        {"name": "whisper-bin-x64.zip", "browser_download_url": "cpu"}]}
+
+    def fake_download(url, dest):
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if url == probe.RELEASES:
+            dest.write_text(json.dumps(release), encoding="utf-8")
+        else:
+            with zipfile.ZipFile(dest, "w") as zf:
+                zf.writestr("Release/whisper-cli.exe" if url == "cuda" else "Release/readme.txt", "x")
+        return dest
+    monkeypatch.setattr(probe, "download", fake_download)
+
+    def fake_run(cmd, **kw):
+        raise OSError(22, "blocked")
+    monkeypatch.setattr(probe.subprocess, "run", fake_run)
+    with pytest.raises(SystemExit) as exc:
+        probe.whisper_cli(tmp_path, None)
+    msg = str(exc.value)
+    assert "kiadás: v1.9.5; fájlok: whisper-bin-win-cuda-12.4.0-x64.zip, whisper-bin-x64.zip" in msg
+    assert "whisper-bin-win-cuda-12.4.0-x64.zip: [Errno 22] blocked" in msg
+    assert "whisper-bin-x64.zip: nincs benne whisper-cli.exe" in msg

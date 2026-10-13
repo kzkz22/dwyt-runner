@@ -354,19 +354,36 @@ def whisper_cli(cache: Path, given: str | None) -> tuple[str, str]:
     release = json.loads(download(RELEASES, listing).read_text(encoding="utf-8"))
     assets = [a for a in release.get("assets", []) if a["name"].endswith(".zip") and "x64" in a["name"]]
     order = (["cuda-12", "cublas-12", "cuda", "cublas"] if has_nvidia() else []) + ["blas", "bin-x64"]
+    tried: list[str] = []
+    seen: set[str] = set()
     for want in order:
         for asset in assets:
-            if want in asset["name"]:
-                folder = cache / "whisper.cpp" / asset["name"][:-4]
-                if not folder.exists():
-                    z = download(asset["browser_download_url"], cache / "whisper.cpp" / asset["name"])
-                    with zipfile.ZipFile(z) as zf:
-                        zf.extractall(folder)
-                for path in folder.rglob(exe):
-                    probe = subprocess.run([str(path), "--help"], capture_output=True, check=False)
-                    if probe.returncode == 0:
-                        return str(path), f"{release.get('tag_name')} {asset['name']}"
-    raise SystemExit("Nem találtam használható whisper.cpp-t; töltsd le kézzel, és add meg: --whisper-cli")
+            if want not in asset["name"] or asset["name"] in seen:
+                continue
+            seen.add(asset["name"])
+            folder = cache / "whisper.cpp" / asset["name"][:-4]
+            if not folder.exists():
+                z = download(asset["browser_download_url"], cache / "whisper.cpp" / asset["name"])
+                with zipfile.ZipFile(z) as zf:
+                    zf.extractall(folder)
+            programs = sorted(folder.rglob(exe))
+            if not programs:
+                tried.append(f"{asset['name']}: nincs benne {exe}")
+            for path in programs:
+                try:
+                    probe = subprocess.run([str(path), "--help"], capture_output=True, check=False, timeout=60)
+                except OSError as exc:
+                    tried.append(f"{asset['name']}: {exc}{blocked_hint(exc)}")
+                    continue
+                if probe.returncode == 0:
+                    return str(path), f"{release.get('tag_name')} {asset['name']}"
+                err = probe.stderr.decode("utf-8", "replace").strip()[-300:]
+                tried.append(f"{asset['name']}: kilépési kód {probe.returncode:#x} {err}".strip())
+    names = ", ".join(a["name"] for a in release.get("assets", [])) or "nincs"
+    raise SystemExit("Nem találtam használható whisper.cpp-t; töltsd le kézzel, és add meg: --whisper-cli\n"
+                     f"  kiadás: {release.get('tag_name')}; fájlok: {names}\n"
+                     f"  NVIDIA: {'igen' if has_nvidia() else 'nem'}"
+                     + "".join(f"\n  {t}" for t in tried))
 
 
 def backend_of(log: str) -> str:

@@ -161,6 +161,10 @@ a.button.primary { background: var(--primary); border-color: var(--primary); col
 .lampline { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; }
 .server { margin: 8px 0; }
 .inline-label { display: flex; flex-direction: column; gap: 4px; }
+form.pick { align-items: flex-end; margin: 12px 0; }
+form.pick .inline-label { flex: 0 1 420px; }
+form.pick .inline-label select, form.pick .inline-label input { width: 100%; }
+form.pick button { min-width: 120px; }
 .paircode { margin: 22px auto; padding: 22px 36px; border: 2px dashed var(--line); border-radius: var(--radius);
   font: 700 2.4rem/1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .18em; text-align: center;
   width: fit-content; max-width: 100%; }

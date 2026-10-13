@@ -61,6 +61,10 @@ def test_machine_step_shows_lamps_and_the_recommendation(setup_window, monkeypat
     page = client.get("/telepites/2").text
     assert "Mire képes a géped?" in page and "RTX 4070" in page and "Vegyes" in page
     assert '<option value="qwen3:8b">Ollama: qwen3:8b</option>' in page
+    assert "kapja: az Ollama" in page and "kiveszem a memóriából" in page  # the test run never waits
+    fake_machine(runtime, [])
+    assert "kiveszem a memóriából" not in client.get("/telepites/2").text
+    fake_machine(runtime, [machine.ModelServer("ollama", installed=True, running=True, models=["qwen3:8b"])])
     started = []
     monkeypatch.setattr(runtime, "start_trial", lambda llm="", server="": started.append((llm, server)))
     client.post("/telepites/2", data={"csrf": csrf(page), "llm": "qwen3:8b", "server": "ollama"})
@@ -112,7 +116,7 @@ def test_own_machine_mode_picks_a_local_model_or_downloads_one(setup_window, mon
     wizard.save(mode="sajat")
     monkeypatch.setattr(whispercpp, "prepared", lambda cfg, model: True)
     page = client.get("/telepites/4").text
-    assert "Ollama" in page and "<option>qwen3:8b</option>" in page and 'value="qwen3:8b" required' in page
+    assert "Ollama" in page and "<option>qwen3:8b</option>" in page and 'value="qwen3:30b" required' in page
     pulls = []
     monkeypatch.setattr(runtime, "start_pull", lambda kind, name: pulls.append((kind, name)))
     client.post("/telepites/4", data={"csrf": csrf(page), "action": "pull", "server": "ollama", "name": "qwen3:14b"})
@@ -198,6 +202,9 @@ def test_ingredient_rules():
     assert wizard.ingredients(config.Config(whisper_url="http://gpu"), "vegyes", {}, False)[0].need == "nem kell"
     assert wizard.cloud_model_default(config.Config(llm_public_model="qwen3:8b")) == wizard.CLOUD_MODEL
     assert wizard.suggested_local_model(24, "ollama") == "qwen3:30b"
+    assert wizard.suggested_local_model(16, "lmstudio", 62) == "qwen/qwen3-30b-a3b"  # MoE with system memory
+    assert wizard.suggested_local_model(16, "lmstudio", 16) == "qwen/qwen3-8b"
+    assert wizard.suggested_local_model(8, "ollama", 16, ["qwen3:8b"]) == ""  # already there
 
 
 def test_openrouter_keys_are_checked_where_a_wrong_key_shows(monkeypatch):

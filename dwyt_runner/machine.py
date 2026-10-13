@@ -107,6 +107,14 @@ class Machine:
         return (g.vram_gb or 0.0) if g else 0.0
 
 
+def card_swap_servers(m: Machine) -> list[str]:
+    """The running local model servers whose models leave the video card for a built-in transcription."""
+    g = m.best_gpu
+    if not g or g.vendor != "nvidia":
+        return []
+    return [s.title for s in m.servers if s.running]
+
+
 @dataclass
 class Lamp:
     key: str

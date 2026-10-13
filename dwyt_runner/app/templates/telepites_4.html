@@ -76,7 +76,7 @@
   {% endfor %}
   {% for s in running %}
   {% if s.models %}
-  <form method="post" action="/telepites/4" class="inline">
+  <form method="post" action="/telepites/4" class="inline pick">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="server" value="{{ s.kind }}">
     <label class="inline-label">Ez írja az összefoglalót ({{ s.title }})
       <select name="model">{% for name in s.models %}<option{% if name == cfg.llm_private_model %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
@@ -90,10 +90,11 @@
       <span class="muted" data-text>{{ pull.text }}</span></div>
   {% else %}
   {% if pull.error %}<div class="note warn">{{ pull.error }}</div>{% endif %}
-  <form method="post" action="/telepites/4" class="inline">
+  <form method="post" action="/telepites/4" class="inline pick">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="server" value="{{ s.kind }}">
     <label class="inline-label">{% if s.models %}Vagy tölts le másikat{% else %}Tölts le egy modellt{% endif %}
-      <input name="name" value="{{ suggested if s.kind == kind else '' }}" required></label>
+      <input name="name" value="{{ suggested if s.kind == kind else '' }}" required
+        placeholder="{{ 'például qwen/qwen3-8b' if s.kind == 'lmstudio' else 'például qwen3:8b' }}"></label>
     <button name="action" value="pull">Letöltés</button>
   </form>
   <p class="muted">A javasolt modell a videókártyád memóriájához illik. A kis helyi modellek magyar összefoglalója

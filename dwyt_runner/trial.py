@@ -127,8 +127,10 @@ def measure_whisper(cfg: Config, model: str, stage) -> tuple[float, str]:
         started = time.monotonic()
         raw = whispercpp.transcribe(wav, {"language": "en", "diarize": True}, model, cfg, workdir, stage,
                                     lambda: False, 900)
-        # loading the model takes the same few seconds for 30 s or an hour of audio: not part of the speed
-        took = max(time.monotonic() - started - float(raw.get("load_s") or 0), 0.1)
+        # loading the model takes the same few seconds for 30 s or an hour of audio, and freeing the video
+        # card happens once per job: neither is part of the speed
+        took = max(time.monotonic() - started - float(raw.get("load_s") or 0) - float(raw.get("swap_s") or 0),
+                   0.1)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     if not raw.get("segments"):
@@ -153,7 +155,9 @@ def run(cfg: Config | None = None, whisper_model: str = "large-v3", stage=lambda
     cfg = cfg or config.load()
     m = machine.scan(cfg)
     r = TrialResult(at=time.time(), gpu=m.best_gpu.name if m.best_gpu else "", whisper_model=whisper_model)
-    tried = replace(cfg, whisper_builtin=True, whisper_url="")
+    # the user asked for the test now: no polite waiting, the loaded language models leave the card at once
+    # (the window says so next to the button); the server reloads them on its next request
+    tried = replace(cfg, whisper_builtin=True, whisper_url="", polite_mode=False)
     try:
         r.whisper_speed, r.whisper_device = measure_whisper(tried, whisper_model, stage)
         r.lamps.append(whisper_lamp(r.whisper_speed, r.whisper_device, whisper_model))

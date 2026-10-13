@@ -27,6 +27,10 @@
       {% endif %}
       <button{% if trial_state.running %} disabled{% endif %}>{% if last %}Újra{% else %}Próbafuttatás{% endif %}</button>
     </form></div>
+{% set swap = card_swap(m) %}
+  {% if swap %}<p class="note warn swap-note">Amíg a próba fut, a videókártyát a beszédfelismerő kapja: az {{ swap|join(" és az ") }}
+    éppen betöltött nyelvi modelljét erre az időre kiveszem a memóriából. Ha közben épp beszélgetsz vele, a válasza
+    megszakadhat. A modellt a következő kérésnél az {{ swap|join(" és az ") }} magától visszatölti.</p>{% endif %}
   {% if trial_state.running %}
   <p><span class="spinner"></span> <span data-trial-stage>{{ trial_state.stage }}</span> …</p>
   {% elif trial_state.error %}

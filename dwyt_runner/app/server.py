@@ -44,7 +44,8 @@ class App:
         self.on_quit = lambda: None
         self.sessions: dict[str, str] = {}     # session id -> CSRF token
         self.env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
-        self.env.globals.update(version=__version__, lamp_text=machine.LAMP_TEXT)
+        self.env.globals.update(version=__version__, lamp_text=machine.LAMP_TEXT,
+                                card_swap=machine.card_swap_servers)
 
     @property
     def start_url(self) -> str:
@@ -277,7 +278,8 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
                              pull=wizard.pull_view(runtime.pull), checks=wizard.load().get("checks", {}),
                              cloud_model=wizard.cloud_model_default(cfg), servers=servers, kind=kind,
                              server_models=server_models, error=hiba,
-                             suggested=wizard.suggested_local_model(m.vram_gb if m else 0, kind))
+                             suggested=wizard.suggested_local_model(m.vram_gb if m else 0, kind,
+                                                                    (m.ram_gb or 0) if m else 0, server_models))
         if n == 5:
             with runtime.lock:
                 pairing = dict(runtime.pairing)

@@ -108,11 +108,17 @@ def can_go_on(items: list[Ingredient]) -> bool:
     return all(i.ok for i in items if i.need == "kell")
 
 
-def suggested_local_model(vram_gb: float, kind: str) -> str:
-    """A first local model for the summary, by video memory (Ollama names; LM Studio takes model keys)."""
+def suggested_local_model(vram_gb: float, kind: str, ram_gb: float = 0, have: list[str] | None = None) -> str:
+    """A local model for the summary, by memory (Ollama names; LM Studio takes model keys): the 30B-A3B
+    mixture-of-experts model fits a big card, or a 12 GB+ card with plenty of system memory (machine.MOE_*).
+    Empty when it is already there."""
+    from .. import machine
+    big = vram_gb >= machine.LARGE_LLM_VRAM_GB or (vram_gb >= machine.MOE_VRAM_GB and ram_gb >= machine.MOE_RAM_GB)
     if kind == "lmstudio":
-        return "qwen/qwen3-30b-a3b" if vram_gb >= 20 else "qwen/qwen3-8b"
-    return "qwen3:30b" if vram_gb >= 20 else "qwen3:8b"
+        name = "qwen/qwen3-30b-a3b" if big else "qwen/qwen3-8b"
+    else:
+        name = "qwen3:30b" if big else "qwen3:8b"
+    return "" if name in (have or []) else name
 
 
 def size_text(n: int) -> str:

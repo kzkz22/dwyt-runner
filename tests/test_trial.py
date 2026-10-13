@@ -1,4 +1,6 @@
 """The test run (decision 18.8): timed sample transcription and summary, plain sentences, a recommendation."""
+from dataclasses import replace
+
 import pytest
 from test_localllm import FakeOllama
 from test_whispercpp import builtin  # noqa: F401 - the fake whisper.cpp fixture
@@ -91,3 +93,29 @@ def test_model_load_is_not_part_of_the_speed(builtin, monkeypatch):  # noqa: F81
     monkeypatch.setattr(trial, "time", Clock)
     speed, device = trial.measure_whisper(cfg, "large-v3", lambda s: None)
     assert speed == pytest.approx(33.0 / 2.5, rel=0.05) and device == "gpu"
+
+
+def test_freeing_the_card_is_not_part_of_the_speed_and_never_waits(builtin, monkeypatch):  # noqa: F811
+    cfg, _, _ = builtin
+    from dwyt_runner import gpuswap, whispercpp
+    seen = []
+    real = whispercpp.transcribe
+
+    def transcribe(*a, **k):
+        seen.append(a[3].polite_mode)
+        out = real(*a, **k)
+        out["swap_s"] = 60.0  # a minute spent waiting for the card
+        return out
+    monkeypatch.setattr(whispercpp, "transcribe", transcribe)
+    clock = iter([100.0, 164.0])  # 64 s in all: 60 s freeing the card, 1.5 s loading, 2.5 s transcribing
+
+    class Clock:
+        monotonic = staticmethod(lambda: next(clock))
+    monkeypatch.setattr(trial, "time", Clock)
+    speed, _ = trial.measure_whisper(replace(cfg, polite_mode=False), "large-v3", lambda s: None)
+    assert speed == pytest.approx(33.0 / 2.5, rel=0.05)
+    seen.clear()
+    monkeypatch.setattr(trial, "measure_whisper", lambda c, m, s: (seen.append(c.polite_mode), (10.0, "gpu"))[1])
+    monkeypatch.setattr(trial, "time", __import__("time"))
+    trial.run(replace(cfg, polite_mode=True), "large-v3")
+    assert seen == [False] and gpuswap.STATE["phase"] == "idle"

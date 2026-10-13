@@ -42,8 +42,6 @@ from .errors import WorkError
 HF = "https://huggingface.co"
 WHISPER_CPP_VERSION = "v1.9.5"
 RELEASE_API = f"https://api.github.com/repos/ggml-org/whisper.cpp/releases/tags/{WHISPER_CPP_VERSION}"
-WINDOWS_BUILDS = {"cuda": "whisper-bin-win-cuda-12.4.0-x64.zip", "blas": "whisper-blas-bin-x64.zip",
-                  "cpu": "whisper-bin-x64.zip"}
 MODELS = {"large-v3": f"{HF}/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
           "large-v3-turbo": f"{HF}/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"}
 VAD_MODEL = f"{HF}/ggml-org/whisper-vad/resolve/main/ggml-silero-v6.2.0.bin"
@@ -135,8 +133,20 @@ def speaker_models(stage: Callable[[str], None] | None = None) -> tuple[Path, Pa
     return seg, emb
 
 
-def windows_build() -> str:
-    return "cuda" if machine.nvidia_smi() else "blas"
+def pick_asset(assets: list[dict], nvidia: bool) -> dict | None:
+    """The Windows x64 build to use: CUDA 12 (then any CUDA) with an NVIDIA card, else OpenBLAS, else plain."""
+    zips = [a for a in assets if isinstance(a, dict) and str(a.get("name", "")).endswith(".zip")
+            and a.get("browser_download_url")]
+    win = [a for a in zips if re.search(r"x64", a["name"], re.I) and not re.search(r"ubuntu|linux|mac|xcframework|"
+                                                                                   r"arm64|win32", a["name"], re.I)]
+    order = ([r"(cuda|cublas)-?12", r"cuda|cublas"] if nvidia else []) + [r"blas", r"."]
+    for pattern in order:
+        for a in win:
+            name = a["name"].lower()
+            if re.search(pattern, name) and (nvidia or not re.search(r"cuda|cublas", name)) and \
+                    (pattern != "blas" or "cublas" not in name):
+                return a
+    return None
 
 
 def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
@@ -153,28 +163,32 @@ def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
         return str(path)
     folder = models_dir() / "whisper.cpp"
     if sys.platform == "win32":
-        asset = WINDOWS_BUILDS[windows_build()]
-        target = folder / f"{WHISPER_CPP_VERSION}-{asset[:-4]}"
-        hits = sorted(target.rglob("whisper-cli.exe")) if target.exists() else []
-        if hits:
-            return str(hits[0])
-        digest = None
-        try:  # GitHub publishes each asset's SHA-256
+        done = sorted(folder.glob(f"{WHISPER_CPP_VERSION}-*/**/whisper-cli.exe")) if folder.exists() else []
+        if done:
+            return str(done[0])
+        try:  # the release's files and their SHA-256 as GitHub lists them
             r = httpx.get(RELEASE_API, timeout=30, headers={"User-Agent": "dwyt-runner"})
-            for a in r.json().get("assets", []) if r.status_code == 200 else []:
-                if a.get("name") == asset and str(a.get("digest", "")).startswith("sha256:"):
-                    digest = a["digest"].split(":", 1)[1]
-        except (httpx.HTTPError, ValueError):
-            pass
-        url = f"https://github.com/ggml-org/whisper.cpp/releases/download/{WHISPER_CPP_VERSION}/{asset}"
-        archive = download(url, folder / asset, stage, sha256=digest)
+            assets = r.json().get("assets", []) if r.status_code == 200 else []
+        except (httpx.HTTPError, ValueError) as exc:
+            raise WorkError(f"Nem érem el a whisper.cpp kiadását a GitHubon ({exc}); később újrapróbálom.",
+                            "later") from exc
+        asset = pick_asset(assets, bool(machine.nvidia_smi()))
+        if asset is None:
+            names = ", ".join(a.get("name", "") for a in assets) or "nincs"
+            raise WorkError(f"A whisper.cpp {WHISPER_CPP_VERSION} kiadásában nem találok Windowsos csomagot "
+                            f"({names[:400]}). Töltsd le kézzel, és add meg: dwyt-runner config set whisper_cli MAPPA")
+        name = asset["name"]
+        digest = str(asset.get("digest") or "")
+        target = folder / f"{WHISPER_CPP_VERSION}-{name[:-4]}"
+        archive = download(asset["browser_download_url"], folder / name, stage,
+                           sha256=digest.split(":", 1)[1] if digest.startswith("sha256:") else None)
         with zipfile.ZipFile(archive) as zf:
             zf.extractall(target)
         archive.unlink(missing_ok=True)
         hits = sorted(target.rglob("whisper-cli.exe"))
         if hits:
             return str(hits[0])
-        raise WorkError(f"A whisper.cpp csomagjában nincs whisper-cli.exe ({asset}).")
+        raise WorkError(f"A whisper.cpp csomagjában nincs whisper-cli.exe ({name}).")
     found = shutil.which("whisper-cli")
     if found:
         return found

@@ -212,3 +212,17 @@ def test_try_command(builtin, audio_file, capsys):
     out = capsys.readouterr().out
     assert "large-v3 · hu · 2 beszélő" in out
     assert "[00:00] Szereplő 1: Sziasztok! Hova utaznál?" in out and "Szereplő 2: Berlinbe megyek." in out
+
+
+def test_the_windows_build_is_picked_from_the_release():
+    names = ["whisper-bin-Win32.zip", "whisper-bin-x64.zip", "whisper-blas-bin-x64.zip",
+             "whisper-cublas-11.8.0-bin-x64.zip", "whisper-cublas-12.4.0-bin-x64.zip", "whisper-bin-ubuntu-x64.tar.gz",
+             "whisper-v1.9.5-xcframework.zip", "whisper-bin-win-arm64.zip"]
+    assets = [{"name": n, "browser_download_url": f"https://example/{n}"} for n in names]
+    assert whispercpp.pick_asset(assets, True)["name"] == "whisper-cublas-12.4.0-bin-x64.zip"
+    assert whispercpp.pick_asset(assets, False)["name"] == "whisper-blas-bin-x64.zip"
+    other = [{"name": n, "browser_download_url": "u"} for n in ("whisper-bin-win-cuda-12.4.0-x64.zip",
+                                                                  "whisper-bin-win-cpu-x64.zip")]
+    assert whispercpp.pick_asset(other, True)["name"] == "whisper-bin-win-cuda-12.4.0-x64.zip"
+    assert whispercpp.pick_asset(other, False)["name"] == "whisper-bin-win-cpu-x64.zip"
+    assert whispercpp.pick_asset([], True) is None

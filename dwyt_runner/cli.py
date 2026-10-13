@@ -288,6 +288,8 @@ def main() -> None:
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s")
+    if not args.verbose:  # every HTTP request is not news
+        logging.getLogger("httpx").setLevel(logging.WARNING)
     if args.cmd == "pair":
         sys.exit(pair(args.server, args.name))
     if args.cmd == "run":

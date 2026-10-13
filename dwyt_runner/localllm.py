@@ -45,6 +45,7 @@ class LocalModel:
     size_gb: float | None = None
     loaded: bool = False
     vram_gb: float | None = None   # Ollama tells how much of a loaded model is on the video card
+    expires_at: str = ""           # Ollama: moves on with every request (a sign of use)
 
 
 def _gb(n: float | int | None) -> float | None:
@@ -153,8 +154,10 @@ class Ollama(LocalServer):
     def models(self) -> list[LocalModel]:
         tags = self._req("GET", "/api/tags").get("models") or []
         running = {m.get("name"): m for m in self._req("GET", "/api/ps").get("models") or []}
-        out = [LocalModel(m["name"], _gb(m.get("size")), m["name"] in running, _gb(running.get(m["name"], {})
-                          .get("size_vram"))) for m in tags if isinstance(m, dict) and m.get("name")]
+        out = [LocalModel(m["name"], _gb(m.get("size")), m["name"] in running,
+                          _gb(running.get(m["name"], {}).get("size_vram")),
+                          str(running.get(m["name"], {}).get("expires_at") or ""))
+               for m in tags if isinstance(m, dict) and m.get("name")]
         return out
 
     def pull(self, name: str, progress: Callable[[float | None, str], None] | None = None) -> None:
@@ -282,6 +285,13 @@ def _detail(r: httpx.Response) -> str:
         return str(err.get("message") if isinstance(err, dict) else err or r.text)[:300]
     except ValueError:
         return r.text[:300]
+
+
+USED_BY_RUNNER: set[str] = set()  # models this runner's own jobs used: freeing them disturbs nobody
+
+
+def mark_used(name: str) -> None:
+    USED_BY_RUNNER.add(name)
 
 
 def server(cfg: Config) -> LocalServer | None:

@@ -351,8 +351,13 @@ def transcribe(src: str, options: dict[str, Any], model_name: str, cfg: Config, 
     vad = vad_model(stage)
     stage("prepare-audio")
     wav = to_wav(src, workdir)
-    words, language, device, warnings = transcribe_text(wav, model, vad, options.get("language"), cfg, workdir,
-                                                        stage, cancelled, deadline)
+    from . import gpuswap
+    gpuswap.before_whisper(cfg, stage, cancelled)  # one video card: the language model makes room
+    try:
+        words, language, device, warnings = transcribe_text(wav, model, vad, options.get("language"), cfg,
+                                                            workdir, stage, cancelled, deadline)
+    finally:
+        gpuswap.after_whisper()
     diarized = False
     if words and options.get("diarize", True):
         count = options.get("num_speakers") or (options.get("min_speakers") if options.get("min_speakers") and

@@ -84,6 +84,8 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
    dwyt-runner config set whisper_builtin igen
    ```
 
+   Ha ugyanezen a gépen helyi modellszerver is fut (`local_llm`), egy átírás előtt a futtató kiüríti a betöltött nyelvi modellt a videókártyáról (a szerver a következő kérésnél magától visszatölti). Amit csak a futtató használt, azt azonnal; amit más töltött be, annál *udvarias módban* (alapból be) előbb megvárja, hogy egy percig ne használja senki (a videókártya terhelése és Ollamánál a modell kérései alapján), legfeljebb 10 percig: `dwyt-runner config set polite_wait_min 10`, kikapcsolás: `dwyt-runner config set polite_mode nem`.
+
    Windowson a futtató a whisper.cpp hivatalos kiadását tölti le (NVIDIA-kártyánál a CUDA-s változatot); Linuxon és macOS-en a `whisper-cli` programnak a PATH-on kell lennie, vagy add meg: `dwyt-runner config set whisper_cli /út/whisper-cli` (egy kicsomagolt kiadás mappája is jó). A beszélők számát a futtató maga becsli (`diarize_threshold`, alapból 0,8; nagyobb érték kevesebb beszélőt ad); ha a beküldéskor megadod, azt használja. Ha a videókártyán nem sikerül, egyszer a processzoron megismétli, és ezt jelzi. Ha a Windows alkalmazásvezérlése (például az Intelligens alkalmazásvezérlés) nem engedi a whisper.cpp programját, a munka ezt az üzenetet adja; ezen a gépen ilyenkor a felhős átírás marad.
 
 5. Ellenőrzés: `dwyt-runner check`. A gép képességei: `dwyt-runner machine` (videókártya, memória, szabad hely, helyi modellszerver: Ollama vagy LM Studio; mire elég, és melyik működési módot ajánlja; `--json` a gépi feldolgozáshoz). Induláskor a futtató csendben újranézi, és szól, ha változott, például új videókártya került a gépbe.

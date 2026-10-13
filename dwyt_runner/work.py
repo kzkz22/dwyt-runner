@@ -145,6 +145,8 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
                                 "llm_private_models).")
             model = str(wanted)
         localllm.before_llm_job(cfg)
+        if localllm.uses_local(cfg):
+            localllm.mark_used(model)
         llm = Llm(cfg.llm_url, cfg.llm_key)
         if kind == "summarize":
             return summarize.run(data, llm, model, stage, progress=progress)

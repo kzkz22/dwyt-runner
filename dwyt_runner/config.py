@@ -46,6 +46,10 @@ class Config:
     whisper_cli: str = ""          # empty: PATH, or on Windows the official release downloaded by the runner
     whisper_threads: int = 0       # 0: whisper.cpp decides
     diarize_threshold: float = 0.8  # automatic speaker count: larger = fewer speakers
+    # one video card for both: before a local transcription the local model server's models are unloaded;
+    # polite mode waits (at most polite_wait_min) while someone else is using a model
+    polite_mode: bool = True
+    polite_wait_min: int = 10
     # summaries: any OpenAI-compatible server (LiteLLM, OpenRouter, llama-server, Ollama ...)
     llm_url: str = ""
     llm_key: str = ""

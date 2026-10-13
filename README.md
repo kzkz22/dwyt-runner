@@ -97,6 +97,17 @@ Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélk
 
 A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en `~/Library/Application Support/dwyt-runner/config.json`, Linuxon `~/.config/dwyt-runner/config.json`. A fájlt csak te olvashatod; a `config show` a kulcsokat elrejtve mutatja. A kulcsok (a párosítás tokenje, az AssemblyAI- és az LLM-kulcs, az LM Studio tokenje) nem ebbe a fájlba kerülnek, hanem a rendszer kulcstárolójába: Windowson a Hitelesítőadat-kezelőbe, macOS-en a kulcskarikába, Linux-asztalon a Secret Service-be (GNOME Kulcstartó, KWallet). Ha a gépen nincs ilyen (például egy szerveren), a fájlban maradnak. A meglévő kulcsokat a futtató az első indításkor átteszi. Hol vannak, és működnek-e: `dwyt-runner keys` (kulcsonként egy próbakérés; a `config set` egy új kulcsot rögtön ki is próbál). Ha mégis a fájlt szeretnéd: `dwyt-runner config set secret_store file`.
 
+## Ablak (asztali kezelőfelület)
+
+A futtató saját ablakban is futhat: négy lap, ahogy a [mintákon](https://github.com/kzkz22/dwyt-docs/tree/main/docs/minta-7): **Állapot** (párosítás, a mostani munka, a legutóbbiak, a mai összesítés), **Működés** (működési mód: Felhő, Vegyes, Saját gép vagy Egyéni, ábrával; udvarias mód; részletes beállítások), **Gépem** (gépvizsgálat, próbafuttatás egy gombnyomásra), **Kulcsok** (beírás és próba; kiolvasni nem lehet).
+
+```
+uv tool install --force --python 3.13 "dwyt-runner[desktop,local] @ https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip"
+dwyt-runner app
+```
+
+Az ablak a gépen belül, a 127.0.0.1-en futó oldal: csak az az ablak láthatja, amelyik megnyitotta. Ha a saját ablak nem indul (Linuxon a pywebview GTK-t vagy Qt-t kér), a `dwyt-runner app --browser` a böngészőben nyitja meg. A beállítások a futó munkát nem zavarják: a következő munkától érvényesek. A tálcaikon, a telepítő és az automatikus indulás a következő lépésben jön.
+
 ## Saját felvételek
 
 Két úton:

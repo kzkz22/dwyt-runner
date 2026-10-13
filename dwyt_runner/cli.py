@@ -2,6 +2,7 @@
 
   pair SERVER [--name NAME]  pair with a dwyt central service (prints a code to approve there)
   run                        ask for work and do it, until stopped (Ctrl+C)
+  app [--browser]            the same with its window (Állapot, Működés, Gépem, Kulcsok); extra [desktop]
   config show                the settings (secrets masked)
   config describe [--json]   every setting with its meaning (the window and the dwyt Settings page draw from it)
   config set KEY VALUE       e.g. assemblyai_key, whisper_url, whisper_models, llm_url, llm_key,
@@ -313,6 +314,8 @@ def main() -> None:
     p.add_argument("server")
     p.add_argument("--name")
     sub.add_parser("run")
+    ap = sub.add_parser("app")
+    ap.add_argument("--browser", action="store_true", help="a böngészőben, saját ablak helyett")
     sub.add_parser("check")
     mp = sub.add_parser("machine")
     mp.add_argument("--json", action="store_true")
@@ -346,6 +349,15 @@ def main() -> None:
         sys.exit(pair(args.server, args.name))
     if args.cmd == "run":
         sys.exit(run())
+    if args.cmd == "app":
+        try:
+            from .app import main as app_main
+        except ImportError:
+            _out("Az ablakhoz telepítsd a futtatót a desktop kiegészítővel: "
+                 "uv tool install --force --python 3.13 \"dwyt-runner[desktop,local] @ "
+                 "https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip\"")
+            sys.exit(1)
+        sys.exit(app_main.run(args.browser))
     if args.cmd == "check":
         sys.exit(check())
     if args.cmd == "machine":

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block main %}
+{% for line in said %}<div class="note info">{{ line }}</div>{% endfor %}
+{% if last and not same_card %}<div class="note info">A legutóbbi próbafuttatás még {{ last.gpu or "videókártya nélkül" }} futott. Futtass újat: lehet, hogy most más mód is jól menne.</div>{% endif %}
+<h1>Gépem</h1>
+<div class="card table">
+  {% for r in a.rows %}
+  <div class="tr"><span class="th">{{ r.label }}</span><span>{{ r.value }}{% if r.note %}<small class="muted block">{{ r.note }}</small>{% endif %}</span>
+    <span class="right dot {{ r.level }}" title="{{ lamp_text[r.level] }}"></span></div>
+  {% endfor %}
+</div>
+<div class="card trial" {% if trial_state.running %}data-trial-running{% endif %}>
+  <div class="row"><h2>{% if last %}Utolsó próbafuttatás{% else %}Próbafuttatás{% endif %}</h2>
+    {% if last %}<span class="muted">{{ last_when }}{% if last.gpu %} · {{ last.gpu }}{% endif %}</span>{% endif %}
+    <form method="post" action="/gepem/proba" class="right inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% if local_models %}
+      <select name="llm" title="Ezzel a helyi modellel próbálja az összefoglalót">
+        <option value="">{{ cfg.llm_private_model or cfg.llm_public_model or "beállított modell" }}</option>
+        {% for name in local_models %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <button class="primary"{% if trial_state.running %} disabled{% endif %}>Próbafuttatás (kb. 1 perc)</button>
+    </form></div>
+  {% if trial_state.running %}
+  <p><span class="spinner"></span> <span data-trial-stage>{{ trial_state.stage }}</span> …</p>
+  {% elif trial_state.error %}
+  <div class="note warn">{{ trial_state.error }}</div>
+  {% endif %}
+  {% if last %}
+  {% for x in last.lamps %}
+  <p><span class="dot {{ x.level }}"></span> <strong>{{ x.label }}: {{ x.value }}</strong>{% if x.note %} · {{ x.note }}{% endif %}</p>
+  {% endfor %}
+  {% else %}
+  <p class="muted">Átír egy 33 másodperces mintát, és egy rövid összefoglalót íratja a helyi modellel. Megmondja, mennyi idő alatt készülne el egy 1 órás videó.</p>
+  {% endif %}
+</div>
+{% if not same_card %}
+<h2>Mire képes (becslés)</h2>
+<div class="card table">
+  {% for r in a.abilities %}
+  <div class="tr"><span class="th">{{ r.label }}</span><span>{{ r.value }}{% if r.note %}<small class="muted block">{{ r.note }}</small>{% endif %}</span>
+    <span class="right dot {{ r.level }}" title="{{ lamp_text[r.level] }}"></span></div>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="note info">{{ (last.mode_reason if same_card else a.mode_reason)|replace("**", "") }}</div>
+<p class="muted foot">A program minden indításkor csendben megnézi, változott-e a hardver, és szól, ha igen. Csak ajánl: a működési módot mindig te választod.</p>
+{% endblock %}

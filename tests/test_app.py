@@ -1,0 +1,152 @@
+"""The desktop window (round 7c): its local page, modes, activity, pairing."""
+import re
+import time
+
+import pytest
+from fastapi.testclient import TestClient
+
+from dwyt_runner import activity, config, gpuswap, modes
+from dwyt_runner.app.runtime import Runtime
+from dwyt_runner.app.server import COOKIE, create
+from conftest import KEYRING
+
+
+@pytest.fixture
+def window():
+    runtime = Runtime(start_worker=False)
+    api, state = create(runtime, "testserver")
+    client = TestClient(api)
+    return client, state, runtime
+
+
+def enter(client, state):
+    r = client.get(f"/belepes?t={state.launch_code}", follow_redirects=False)
+    assert r.status_code == 303 and COOKIE in r.cookies
+    return client
+
+
+def csrf(page: str) -> str:
+    return re.search(r'name="csrf" value="([^"]+)"', page).group(1)
+
+
+def test_only_the_window_that_opened_it_gets_in(window):
+    client, state, _ = window
+    assert client.get("/allapot").status_code == 403  # no session
+    code = state.launch_code
+    enter(client, state)
+    assert client.get("/allapot").status_code == 200
+    other = TestClient(client.app)
+    assert other.get(f"/belepes?t={code}").status_code == 403  # one time only
+    assert client.get("/allapot", headers={"host": "evil.example:80"}).status_code == 403  # DNS rebinding
+    r = client.get("/allapot")
+    assert "script-src 'self'" in r.headers["content-security-policy"] and "<script>" not in r.text
+    assert client.post("/mukodes", data={"mode": "felho"}).status_code == 403  # no CSRF token
+
+
+def test_pairing_from_the_window(window, central):
+    client, state, runtime = enter(*window[:2]) and window
+    page = client.get("/allapot").text
+    assert "Párosítás a dwyt-vel" in page
+    central.approved = False
+    r = client.post("/parositas", data={"csrf": csrf(page), "server": central.url, "name": "laptop"},
+                    follow_redirects=True)
+    assert "ABC-234" in r.text and 'data-live="1"' in r.text
+    central.approved = True
+    for _ in range(50):
+        if runtime.pairing.get("state") == "done":
+            break
+        time.sleep(0.2)
+    cfg = config.load()
+    assert (cfg.server, cfg.token, cfg.name) == (central.url, "tok-1", "laptop")
+    assert runtime.running()  # the worker starts right after pairing
+    runtime.shutdown()
+    runtime.thread.join(timeout=60)
+    assert not runtime.running()
+
+
+def test_status_shows_the_current_job_and_today(window):
+    client, state, _ = enter(*window[:2]) and window
+    config.save(config.Config(server="https://dwyt.example", token="tok-1", name="otthoni gép"))
+    job = {"job_id": 5, "kind": "transcribe", "input": {"source": {"kind": "youtube", "url": "https://youtu.be/x"},
+                                                         "options": {"mode": "local"}}}
+    activity.start(job, config.Config(whisper_builtin=True))
+    activity.stage("diarize")
+    gpuswap.STATE.update(phase="whisper", models=["qwen3:8b"])
+    page = client.get("/allapot").text
+    assert "beszélők szétválasztása" in page and "ezen a gépen" in page and "Dolgozom" in page
+    activity.finish("done")
+    gpuswap.after_whisper()
+    data = client.get("/api/allapot").json()
+    assert data["current"] == {} and data["today"] == {"transcribe": 1} and data["recent"][0]["kind_label"] == "Átírás"
+    assert "Ma: 1 átírás" in client.get("/allapot").text
+
+
+def test_modes_are_presets_read_back_from_the_settings(window):
+    client, state, _ = enter(*window[:2]) and window
+    cfg = config.Config(llm_url="https://openrouter.ai/api/v1", llm_public_model="osszefoglalo")
+    assert modes.current(cfg) == "felho"
+    assert modes.apply(cfg, "vegyes") == [] and modes.current(cfg) == "vegyes" and cfg.whisper_builtin
+    assert modes.apply(cfg, "sajat") == ["Válaszd ki a helyi modellszervert (Ollama vagy LM Studio)."]
+    assert "helyi modell írja" in modes.apply(config.Config(local_llm="ollama"), "sajat")[0]
+    cfg.local_llm, cfg.llm_private_model = "ollama", "qwen3:8b"
+    assert modes.apply(cfg, "sajat") == [] and modes.current(cfg) == "sajat"
+    assert cfg.llm_url == "https://openrouter.ai/api/v1"  # the cloud address is kept
+    boxes = modes.flow(cfg)
+    assert (boxes[1].where, boxes[2].where) == ("ezen a gépen (Whisper)", "ezen a gépen (Ollama)")
+    config.save(cfg)
+    page = client.get("/mukodes").text
+    assert 'value="sajat" checked' in page
+    r = client.post("/mukodes", data={"csrf": csrf(page), "mode": "felho"}, follow_redirects=True)
+    assert "AssemblyAI-kulcsot" in r.text  # what is still missing for cloud transcription
+    back = config.load()
+    assert not back.whisper_builtin and not back.llm_prefer_local and back.polite_mode is False
+
+
+def test_detailed_settings_are_checked_and_never_touch_secrets(window):
+    client, state, _ = enter(*window[:2]) and window
+    config.save(config.Config(llm_key="sk-secret", local_llm="lmstudio"))
+    page = client.get("/mukodes").text
+    assert "sk-secret" not in page and 'data-when=' in page
+    form = {"csrf": csrf(page), "name": "dolgozószoba", "polite_wait_min": "5", "diarize_threshold": "0,7",
+            "local_llm": "lmstudio", "watch_mode": "local", "secret_store": "auto", "allowed_domains": "youtube.com",
+            "llm_model_notes": "a=Egy\nb=Kettő", "polite_mode": "on"}
+    client.post("/mukodes/reszletek", data=form)
+    cfg = config.load()
+    assert (cfg.name, cfg.polite_wait_min, cfg.diarize_threshold, cfg.llm_key) == ("dolgozószoba", 5, 0.7, "sk-secret")
+    assert cfg.llm_model_notes == {"a": "Egy", "b": "Kettő"} and cfg.polite_mode and not cfg.whisper_builtin
+    r = client.post("/mukodes/reszletek", data={**form, "polite_wait_min": "999"}, follow_redirects=True)
+    assert "0 és 120 között" in r.text and config.load().polite_wait_min == 5
+
+
+def test_keys_are_written_never_shown(window, assembly):
+    client, state, _ = enter(*window[:2]) and window
+    config.save(config.Config(assemblyai_url=assembly.url))
+    page = client.get("/kulcsok").text
+    assert "a rendszer kulcstárolója" in page
+    r = client.post("/kulcsok", data={"csrf": csrf(page), "key": "assemblyai_key", "value": " aai-key "},
+                    follow_redirects=True)
+    assert "aai-key" not in r.text and "beállítva" in r.text and "próba: rendben" in r.text
+    assert KEYRING.backend.data[("dwyt-runner", "assemblyai_key")] == "aai-key"
+    assert client.post("/kulcsok", data={"csrf": csrf(page), "key": "token", "value": "x"}).status_code == 400
+
+
+def test_machine_page_and_test_run(window, monkeypatch):
+    client, state, runtime = enter(*window[:2]) and window
+    page = client.get("/gepem").text
+    assert "Videókártya" in page and "Próbafuttatás" in page
+    from dwyt_runner import trial
+    monkeypatch.setattr(trial, "run", lambda cfg, model, stage, llm="": (stage("transcribe"), time.sleep(0.3)))
+    client.post("/gepem/proba", data={"csrf": csrf(page)})
+    assert client.get("/api/proba").json()["running"] is True
+    for _ in range(30):
+        if not client.get("/api/proba").json()["running"]:
+            break
+        time.sleep(0.1)
+    assert client.get("/api/proba").json() == {"running": False, "stage": "átírás", "error": ""}
+
+
+def test_activity_titles():
+    assert activity.title_of({"kind": "ask", "input": {"question": "Melyik olcsóbb?"}}) == "„Melyik olcsóbb?”"
+    assert activity.title_of({"kind": "summarize", "input": {"meta": {"title": "Kerti videó"}}}) == "Kerti videó"
+    assert activity.where_of({"kind": "transcribe", "input": {"options": {"mode": "cloud"}}}, config.Config()) == \
+        "felhőben"

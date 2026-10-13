@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Kulcsok</h1>
+<p>A kulcsok helye: <strong>{{ store }}</strong>. Innen csak beírni és kipróbálni lehet őket; kiolvasni nem.
+  Javasolt egy külön kulcs keretkorláttal.</p>
+<div class="card table">
+  {% for r in rows %}
+  <div class="tr key">
+    <span class="th">{{ r.label }}</span>
+    <span>{% if r.set %}beállítva{% else %}<span class="muted">nincs</span>{% endif %}
+      {% if checks.get(r.key) %}{% set ok, text = checks[r.key] %} · <span class="{{ 'good' if ok else 'bad' }}">próba: {{ text }}</span>{% endif %}</span>
+    <form method="post" action="/kulcsok" class="right inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ r.key }}">
+      <input type="password" name="value" autocomplete="off" placeholder="{{ 'új kulcs' if r.set else 'kulcs' }}">
+      <button>{{ "Csere" if r.set else "Mentés" }}</button>
+    </form>
+  </div>
+  {% endfor %}
+  <div class="tr"><span class="th">Párosítás a dwyt-vel</span><span>{% if cfg.token %}megvan ({{ cfg.server }}){% else %}<span class="muted">nincs</span>{% endif %}</span></div>
+</div>
+<p><a href="/kulcsok?proba=1">Kulcsok kipróbálása</a> <span class="muted">(kulcsonként egy kérés)</span> · Üres mezővel mentve a kulcs törlődik.</p>
+{% endblock %}

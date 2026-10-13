@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Működési mód</h1>
+{% if missing %}
+<div class="note warn"><strong>Még hiányzik:</strong><ul>{% for m in missing %}<li>{{ m }}</li>{% endfor %}</ul></div>
+{% endif %}
+<form method="post" action="/mukodes">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="segmented" role="radiogroup">
+    {% for id, label in modes.items() if id != "egyeni" %}
+    <label class="seg{% if mode == id %} on{% endif %}"><input type="radio" name="mode" value="{{ id }}"{% if mode == id %} checked{% endif %}>{{ label }}</label>
+    {% endfor %}
+    <label class="seg{% if mode == 'egyeni' %} on{% endif %}"><input type="radio" name="mode" value="egyeni"{% if mode == 'egyeni' %} checked{% endif %}>Egyéni</label>
+  </div>
+  <div class="flow">
+    {% for b in flow %}
+    <div class="box{% if b.local %} local{% elif loop.index in (2, 3) %} cloud{% endif %}">
+      <strong>{{ b.title }}</strong><span class="muted">{{ b.where }}</span>
+      {% if b.cost %}<span class="cost{% if b.local %} free{% endif %}">{{ b.cost }}</span>{% endif %}
+    </div>
+    {% if not loop.last %}<div class="dots"><i></i><i></i><i></i></div>{% endif %}
+    {% endfor %}
+  </div>
+  <p class="muted legend"><span class="sw local"></span> ezen a gépen <span class="sw cloud"></span> felhőben · a pöttyök mutatják, merre halad az adat</p>
+  <div class="card table">
+    <div class="tr"><span class="th">Felirat használata</span><span>A dwyt-ben állítod be (alapból csak a feltöltő saját felirata; gépi feliratnál átírás).</span>
+      {% if cfg.server %}<a class="right" href="{{ cfg.server }}/beallitasok" target="_blank" rel="noopener">Módosítás a dwyt-ben</a>{% endif %}</div>
+    <div class="tr"><span class="th">Ha a gép ki van kapcsolva</span><span>A munkák a dwyt-ben várnak, és bekapcsoláskor folytatódnak. Felhőbe magától nem kerülnek.</span></div>
+  </div>
+  {% if cfg.local_llm %}
+  <div class="note warn"><strong>Fontos, ha te is használod az Ollamát vagy az LM Studiót.</strong>
+    A videókártyán egyszerre csak egy nagy modell fér el. Amikor a dwyt átír egy videót, kiveszi a memóriából az éppen betöltött nyelvi modellt; a következő kérésnél a modellszerver magától visszatölti. Ha közben te is beszélgetsz egy modellel, a válaszod lelassulhat vagy megszakadhat.</div>
+  {% endif %}
+  <label class="check"><input type="checkbox" name="polite_mode"{% if cfg.polite_mode %} checked{% endif %}>
+    <span><strong>Udvarias mód:</strong> ha épp te használsz egy modellt, legfeljebb {{ cfg.polite_wait_min }} percet várok, mielőtt kiveszem a memóriából</span></label>
+  <div class="actions"><button class="primary">Mentés</button></div>
+</form>
+
+<details class="card details"{% if mode == "egyeni" %} open{% endif %}>
+  <summary>Részletes beállítások</summary>
+  <form method="post" action="/mukodes/reszletek" data-show-if>
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label class="check small"><input type="checkbox" data-toggle-advanced> Haladó beállítások is</label>
+    {% for g in groups %}
+    <fieldset><legend>{{ g.title }}</legend>
+      {% for s in g.settings if not s.readonly and s.kind != "secret" %}
+      <div class="field{% if s.advanced %} advanced{% endif %}" data-key="{{ s.key }}"{% if s.show_if %} data-when='{{ s.show_if|tojson }}'{% endif %}>
+        {% set v = values[s.key] %}
+        {% if s.kind == "bool" %}
+        <label class="check"><input type="checkbox" name="{{ s.key }}"{% if v %} checked{% endif %}><span><strong>{{ s.label }}</strong><small>{{ s.help }}</small></span></label>
+        {% else %}
+        <label><strong>{{ s.label }}</strong>{% if s.unit %} <span class="muted">({{ s.unit }})</span>{% endif %}<small>{{ s.help }}</small>
+        {% if s.kind == "choice" %}
+          <select name="{{ s.key }}">{% for c in s.choices %}<option value="{{ c.value }}"{% if c.value == v %} selected{% endif %}>{{ c.label }}</option>{% endfor %}</select>
+        {% elif s.kind == "list" %}
+          <input name="{{ s.key }}" value="{{ v|join(', ') }}">
+        {% elif s.kind == "map" %}
+          <textarea name="{{ s.key }}" rows="2">{% for k, x in v.items() %}{{ k }}={{ x }}{% if not loop.last %}
+{% endif %}{% endfor %}</textarea>
+        {% else %}
+          <input name="{{ s.key }}" value="{{ v if v is not none else '' }}"{% if s.kind in ("int", "float") %} inputmode="decimal"{% endif %}>
+        {% endif %}
+        </label>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </fieldset>
+    {% endfor %}
+    <div class="actions"><button class="primary">Mentés</button></div>
+  </form>
+</details>
+{% endblock %}

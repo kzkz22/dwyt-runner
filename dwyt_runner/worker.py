@@ -19,6 +19,7 @@ log = logging.getLogger("dwyt-runner")
 HEARTBEAT_S = 60
 DELIVERY_DELAYS = (2, 5, 15, 30, 60, 120, 300, 600)
 WATCH_INTERVAL_S = 60
+RELOAD = threading.Event()  # the window saved new settings: read them before the next claim (never mid-job)
 
 
 class Job:
@@ -123,6 +124,7 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
 def loop(cfg: Config, stop: threading.Event, central: Central | None = None, once: bool = False) -> None:
     """Ask for work until stopped. Unauthorized/Outdated propagate: the user must act."""
     central = central or Central(cfg.server, cfg.token)
+    RELOAD.clear()  # cfg is the current settings; only changes from now on count
     caps = work.capabilities(cfg)
     versions = tools.versions()
     log.info("capabilities: %s", caps)
@@ -130,6 +132,13 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
     last_scan = 0.0
     last_caps = time.monotonic()
     while not stop.is_set():
+        if RELOAD.is_set():
+            RELOAD.clear()
+            from . import config
+            cfg = config.load()
+            caps = work.capabilities(cfg)
+            last_caps = time.monotonic()
+            log.info("settings reloaded; capabilities: %s", caps)
         if time.monotonic() - last_caps >= modelinfo.REFRESH_S:  # what the model names mean may change
             last_caps = time.monotonic()
             caps = work.capabilities(cfg)

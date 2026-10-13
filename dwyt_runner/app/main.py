@@ -91,6 +91,7 @@ def run(browser: bool = False, hidden: bool = False) -> int:
     if wake_running():
         print("A futtató már fut; előhoztam az ablakát.")
         return 0
+    keep_login_start_current()
     server, state, runtime = serve()
     port = int(state.host.rsplit(":", 1)[1])
     write_instance(port, state.instance_secret)
@@ -152,3 +153,37 @@ def run(browser: bool = False, hidden: bool = False) -> int:
         server.should_exit = True
         remove_instance(state.instance_secret)
     return 0
+
+
+def keep_login_start_current() -> None:
+    """After an update or a move the program may live elsewhere: point the login start at this one."""
+    from .. import autostart
+    try:
+        if autostart.enabled():
+            autostart.enable()
+    except Exception:  # noqa: BLE001 - never a reason not to start
+        log.debug("login start refresh", exc_info=True)
+
+
+def entry() -> None:
+    """`dwyt-runner-app`: the app without a console window (Windows: pythonw), logging to app.log."""
+    import argparse
+    import logging.handlers
+    import sys
+    ap = argparse.ArgumentParser(prog="dwyt-runner-app")
+    ap.add_argument("--browser", action="store_true")
+    ap.add_argument("--hidden", action="store_true")
+    args = ap.parse_args()
+    if sys.stdout is None:  # pythonw: no console; some libraries (uvicorn) ask sys.stdout.isatty()
+        sys.stdout = sys.stderr = open(os.devnull, "w", encoding="utf-8")  # noqa: SIM115
+    home = config.home()
+    home.mkdir(parents=True, exist_ok=True)
+    handler = logging.handlers.RotatingFileHandler(home / "app.log", maxBytes=1_000_000, backupCount=2,
+                                                   encoding="utf-8")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[handler])
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    sys.exit(run(args.browser, args.hidden))
+
+
+if __name__ == "__main__":
+    entry()

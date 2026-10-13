@@ -76,7 +76,7 @@ def sample_wav(workdir: str) -> tuple[str, float]:
     dst = os.path.join(workdir, "sample.wav")
     subprocess.run([tools.ffmpeg(), "-nostdin", "-loglevel", "error", "-y", "-stream_loop", str(SAMPLE_REPEAT - 1),
                     "-i", str(SAMPLE), "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", dst],
-                   check=True, capture_output=True, timeout=120)
+                   check=True, capture_output=True, timeout=120, **tools.no_window())
     import wave
     with wave.open(dst, "rb") as w:
         return dst, w.getnframes() / w.getframerate()

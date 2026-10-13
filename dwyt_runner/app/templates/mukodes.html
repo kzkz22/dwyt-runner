@@ -39,6 +39,13 @@
   <div class="actions"><button class="primary">Mentés</button></div>
 </form>
 
+<form method="post" action="/mukodes/inditas" class="card login-start">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label class="check"><input type="checkbox" name="on"{% if login_start %} checked{% endif %} data-autosubmit>
+    <span><strong>Indítás bejelentkezéskor:</strong> a futtató a gép bekapcsolása után magától elindul a tálcán, ablak nélkül, és felveszi a munkákat</span></label>
+  <noscript><div class="actions"><button>Mentés</button></div></noscript>
+</form>
+
 <details class="card details"{% if mode == "egyeni" %} open{% endif %}>
   <summary>Részletes beállítások</summary>
   <form method="post" action="/mukodes/reszletek" data-show-if>

@@ -6,7 +6,14 @@ from __future__ import annotations
 import functools
 import os
 import shutil
+import subprocess
+import sys
 from importlib import metadata
+
+
+def no_window() -> dict:
+    """subprocess kwargs: no console window flashing up from the console-less app on Windows."""
+    return {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
 
 
 @functools.lru_cache(maxsize=1)

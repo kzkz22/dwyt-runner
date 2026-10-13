@@ -18,7 +18,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .. import __version__, config, keystore, machine, modes, settings, trial
+from .. import __version__, autostart, config, keystore, machine, modes, settings, trial
 from .runtime import Runtime
 
 HERE = Path(__file__).parent
@@ -140,7 +140,8 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         cfg = config.load()
         return state.render(request, "mukodes.html", modes=modes.MODES, mode=modes.current(cfg),
                             flows=modes.preview(cfg), missing=[m for m in hiany.split("|") if m],
-                            groups=settings.describe()["groups"], values=config.masked(cfg))
+                            groups=settings.describe()["groups"], values=config.masked(cfg),
+                            login_start=autostart.enabled())
 
     @api.post("/mukodes")
     async def mode_save(request: Request):
@@ -154,6 +155,15 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         config.save(cfg)
         runtime.settings_changed()
         return RedirectResponse("/mukodes" + ("?hiany=" + "|".join(missing) if missing else ""), status_code=303)
+
+    @api.post("/mukodes/inditas")
+    async def login_start_save(request: Request):
+        form = await state.form(request)
+        try:
+            autostart.set_enabled(form.get("on") == "on")
+        except OSError as exc:
+            return RedirectResponse("/mukodes?hiany=" + f"Az indítást nem sikerült beállítani: {exc}", status_code=303)
+        return RedirectResponse("/mukodes", status_code=303)
 
     @api.post("/mukodes/reszletek")
     async def details_save(request: Request):

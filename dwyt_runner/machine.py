@@ -26,7 +26,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from . import config
+from . import config, tools
 
 log = logging.getLogger("dwyt-runner")
 GREEN, YELLOW, RED = "green", "yellow", "red"
@@ -129,7 +129,7 @@ class Assessment:
 def _run(cmd: list[str], timeout: float = 10) -> str:
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              timeout=timeout, check=False)
+                              timeout=timeout, check=False, **tools.no_window())
     except (OSError, subprocess.SubprocessError):
         return ""
     return proc.stdout if proc.returncode == 0 else ""

@@ -20,6 +20,9 @@ test = ["pytest>=8", "fastapi>=0.115", "uvicorn>=0.30", "ruff>=0.6", "jinja2>=3.
 [project.scripts]
 dwyt-runner = "dwyt_runner.cli:main"
 
+[project.gui-scripts]
+dwyt-runner-app = "dwyt_runner.app.main:entry"  # no console window (start at login, shortcuts)
+
 [build-system]
 requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"

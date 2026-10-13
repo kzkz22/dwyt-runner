@@ -63,7 +63,7 @@ def to_flac(src: str, workdir: str) -> str:
     try:
         subprocess.run([tools.ffmpeg(), "-nostdin", "-loglevel", "error", "-y", "-i", src, "-vn",
                         "-ac", "1", "-ar", "16000", "-c:a", "flac", dst],
-                       check=True, capture_output=True, timeout=3600)
+                       check=True, capture_output=True, timeout=3600, **tools.no_window())
     except subprocess.CalledProcessError as exc:
         raise WorkError("Az ffmpeg nem tudta kinyerni a hangot: "
                         + exc.stderr.decode("utf-8", "replace")[-300:]) from exc
@@ -131,7 +131,7 @@ def duration(path: str) -> float | None:
     """Seconds of a media file, read from ffmpeg's banner (no ffprobe in imageio-ffmpeg)."""
     try:
         proc = subprocess.run([tools.ffmpeg(), "-nostdin", "-hide_banner", "-i", path], capture_output=True,
-                              timeout=60, check=False)
+                              timeout=60, check=False, **tools.no_window())
     except (OSError, subprocess.TimeoutExpired):
         return None
     m = _DURATION.search(proc.stderr.decode("utf-8", "replace"))

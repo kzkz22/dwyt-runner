@@ -75,4 +75,9 @@
     form.addEventListener("change", update);
     update();
   }
+
+  // a switch that saves itself (Indítás bejelentkezéskor)
+  document.querySelectorAll("[data-autosubmit]").forEach(function (input) {
+    input.addEventListener("change", function () { input.form.submit(); });
+  });
 })();

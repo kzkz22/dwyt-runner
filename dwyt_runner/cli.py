@@ -4,6 +4,7 @@
   run                        ask for work and do it, until stopped (Ctrl+C)
   app [--browser] [--hidden] the same with its window (Állapot, Működés, Gépem, Kulcsok) and tray icon;
                              a second start shows the running one's window; extra [desktop]
+  autostart on|off|status    start the app (tray only) at login; no admin rights
   config show                the settings (secrets masked)
   config describe [--json]   every setting with its meaning (the window and the dwyt Settings page draw from it)
   config set KEY VALUE       e.g. assemblyai_key, whisper_url, whisper_models, llm_url, llm_key,
@@ -319,6 +320,8 @@ def main() -> None:
     ap.add_argument("--browser", action="store_true", help="a böngészőben, saját ablak helyett")
     ap.add_argument("--hidden", action="store_true", help="csak a tálcaikon indul, az ablak nem nyílik meg")
     sub.add_parser("check")
+    asp = sub.add_parser("autostart")
+    asp.add_argument("action", choices=["on", "off", "status"])
     mp = sub.add_parser("machine")
     mp.add_argument("--json", action="store_true")
     sub.add_parser("keys")
@@ -360,6 +363,14 @@ def main() -> None:
                  "https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip\"")
             sys.exit(1)
         sys.exit(app_main.run(args.browser, args.hidden))
+    if args.cmd == "autostart":
+        from . import autostart
+        if args.action != "status":
+            autostart.set_enabled(args.action == "on")
+        on = autostart.enabled()
+        _out(("Bejelentkezéskor elindul: " + " ".join(autostart.command())) if on
+             else "Bejelentkezéskor nem indul el.")
+        sys.exit(0)
     if args.cmd == "check":
         sys.exit(check())
     if args.cmd == "machine":

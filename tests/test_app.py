@@ -273,3 +273,86 @@ def test_quit_from_the_window(window):
             break
         time.sleep(0.1)
     assert quit_called == [1]
+
+
+def test_login_start_linux_and_mac(tmp_path, monkeypatch):
+    from dwyt_runner import autostart
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(autostart.Path, "home", lambda: tmp_path / "home")
+    monkeypatch.setattr(autostart, "command", lambda platform=None: ["/opt/my apps/dwyt-runner", "app", "--hidden"])
+    assert autostart.enabled("linux") is False
+    autostart.enable("linux")
+    text = (tmp_path / "cfg" / "autostart" / "dwyt-runner.desktop").read_text(encoding="utf-8")
+    assert 'Exec="/opt/my apps/dwyt-runner" app --hidden' in text and autostart.enabled("linux")
+    autostart.disable("linux")
+    assert not autostart.enabled("linux")
+    autostart.disable("linux")  # twice is fine
+    autostart.enable("darwin")
+    plist = (tmp_path / "home" / "Library" / "LaunchAgents" / "hu.dwyt.runner.plist").read_text(encoding="utf-8")
+    assert "<string>/opt/my apps/dwyt-runner</string><string>app</string>" in plist
+    assert "<key>RunAtLoad</key><true/>" in plist
+    assert autostart.enabled("darwin")
+    autostart.set_enabled(False, "darwin")
+    assert not autostart.enabled("darwin")
+
+
+def test_login_start_windows_registry(monkeypatch):
+    import sys
+    import types
+    from dwyt_runner import autostart
+    values: dict = {}
+
+    class Key:
+        def __init__(self, path):
+            self.path = path
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    fake = types.SimpleNamespace(HKEY_CURRENT_USER="HKCU", KEY_SET_VALUE=2, REG_SZ=1,
+                                 CreateKey=lambda root, path: Key(path),
+                                 OpenKey=lambda root, path, *a: Key(path),
+                                 SetValueEx=lambda k, name, _r, _t, v: values.__setitem__((k.path, name), v),
+                                 QueryValueEx=lambda k, name: (values[(k.path, name)], 1) if (k.path, name) in values
+                                 else (_ for _ in ()).throw(FileNotFoundError()),
+                                 DeleteValue=lambda k, name: values.pop((k.path, name)) if (k.path, name) in values
+                                 else (_ for _ in ()).throw(FileNotFoundError()))
+    monkeypatch.setitem(sys.modules, "winreg", fake)
+    exe = r"C:\Users\Teszt Elek\.local\bin\dwyt-runner-app.exe"
+    monkeypatch.setattr(autostart, "command", lambda platform=None: [exe, "--hidden"])
+    assert not autostart.enabled("win32")
+    autostart.enable("win32")
+    assert values == {(autostart.RUN_KEY, "dwyt-runner"):
+                      f'"{exe}" --hidden'}
+    assert autostart.enabled("win32")
+    autostart.disable("win32")
+    autostart.disable("win32")
+    assert values == {} and not autostart.enabled("win32")
+
+
+def test_login_start_command_prefers_the_console_less_app(tmp_path, monkeypatch):
+    import sys
+    from dwyt_runner import autostart
+    (tmp_path / "dwyt-runner-app.exe").write_text("")
+    (tmp_path / "dwyt-runner").write_text("")
+    monkeypatch.setattr(sys, "argv", [str(tmp_path / "dwyt-runner")])
+    assert autostart.command("win32") == [str((tmp_path / "dwyt-runner-app.exe").resolve()), "--hidden"]
+    assert autostart.command("linux") == [str((tmp_path / "dwyt-runner").resolve()), "app", "--hidden"]
+
+
+def test_login_start_switch_in_the_window(window, tmp_path, monkeypatch):
+    from dwyt_runner import autostart
+    client, state, _ = enter(*window[:2]) and window
+    on = []
+    monkeypatch.setattr(autostart, "enabled", lambda platform=None: bool(on))
+    monkeypatch.setattr(autostart, "set_enabled", lambda v, platform=None: on.append(1) if v else on.clear())
+    page = client.get("/mukodes").text
+    assert 'action="/mukodes/inditas"' in page and 'name="on" data-autosubmit' in page.replace(" checked", "")
+    client.post("/mukodes/inditas", data={"csrf": csrf(page), "on": "on"})
+    assert on and 'name="on" checked data-autosubmit' in client.get("/mukodes").text
+    client.post("/mukodes/inditas", data={"csrf": csrf(page)})
+    assert not on

@@ -9,7 +9,7 @@
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
   machine [--json]           what this machine can do: video card, memory, free space, local model server
-  trial [--model M]          test run: a 33 s sample transcribed and a short summary, timed; recommends a mode
+  trial [--model M] [--llm NAME]  test run: a 33 s sample transcribed and a short summary, timed; recommends a mode
   whisper prepare [--model M] download whisper.cpp, its model and the speaker models (built-in local Whisper)
   whisper try FILE [--model M] [--language hu] [--speakers N]
                              transcribe a file on this machine and print it (nothing goes to the central)
@@ -157,7 +157,7 @@ def show_machine(as_json: bool) -> int:
     if last:
         old = f" · még a régi kártyával ({last.gpu or 'videókártya nélkül'})" if m.best_gpu and \
             last.gpu != m.best_gpu.name or (not m.best_gpu and last.gpu) else ""
-        _out("\nUtolsó " + trial.report(last).split("\n", 1)[0].lower() + old)
+        _out("\nUtolsó p" + trial.report(last).split("\n", 1)[0][1:] + old)
         for x in last.lamps:
             _out(f"  {x.label}: {x.value}" + (f" · {x.note}" if x.note else ""))
     else:
@@ -165,7 +165,7 @@ def show_machine(as_json: bool) -> int:
     return 0
 
 
-def run_trial(model: str) -> int:
+def run_trial(model: str, llm_model: str = "") -> int:
     from . import trial
     last = [""]
 
@@ -174,7 +174,7 @@ def run_trial(model: str) -> int:
             last[0] = name
             _out(f"  {name} …")
     _out("Próbafuttatás (az első alkalommal a modellek letöltése hosszabb) …")
-    r = trial.run(config.load(), model, stage)
+    r = trial.run(config.load(), model, stage, llm_model)
     _out("\n" + trial.report(r))
     return 0 if not r.errors else 1
 
@@ -297,6 +297,7 @@ def main() -> None:
     mp.add_argument("--json", action="store_true")
     tp = sub.add_parser("trial")
     tp.add_argument("--model", default="large-v3")
+    tp.add_argument("--llm", default="", help="a helyi modellszerver ezen modelljével (alapból llm_private_model)")
     wp = sub.add_parser("whisper")
     wp.add_argument("action", choices=["prepare", "try"])
     wp.add_argument("file", nargs="?")
@@ -326,7 +327,7 @@ def main() -> None:
     if args.cmd == "machine":
         sys.exit(show_machine(args.json))
     if args.cmd == "trial":
-        sys.exit(run_trial(args.model))
+        sys.exit(run_trial(args.model, args.llm))
     if args.cmd == "whisper":
         if args.action == "try" and not args.file:
             parser.error("whisper try: add meg a fájlt")

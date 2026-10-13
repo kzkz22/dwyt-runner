@@ -116,13 +116,15 @@ def measure_whisper(cfg: Config, model: str, stage) -> tuple[float, str]:
     whispercpp.whisper_model(model, stage)
     whispercpp.vad_model(stage)
     whispercpp.whisper_cli(cfg, stage)
+    whispercpp.speaker_models(stage)
     workdir = tempfile.mkdtemp(prefix="dwyt_trial_", dir=cfg.work_dir or None)
     try:
         wav, seconds = sample_wav(workdir)
         started = time.monotonic()
-        raw = whispercpp.transcribe(wav, {"language": "en", "diarize": False}, model, cfg, workdir, stage,
+        raw = whispercpp.transcribe(wav, {"language": "en", "diarize": True}, model, cfg, workdir, stage,
                                     lambda: False, 900)
-        took = max(time.monotonic() - started, 0.1)
+        # loading the model takes the same few seconds for 30 s or an hour of audio: not part of the speed
+        took = max(time.monotonic() - started - float(raw.get("load_s") or 0), 0.1)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     if not raw.get("segments"):
@@ -142,7 +144,8 @@ def measure_llm(cfg: Config, model: str) -> tuple[float, float | None]:
     return tokens / max(answer.seconds, 0.1), size
 
 
-def run(cfg: Config | None = None, whisper_model: str = "large-v3", stage=lambda s: None) -> TrialResult:
+def run(cfg: Config | None = None, whisper_model: str = "large-v3", stage=lambda s: None,
+        llm_model: str = "") -> TrialResult:
     cfg = cfg or config.load()
     m = machine.scan(cfg)
     r = TrialResult(at=time.time(), gpu=m.best_gpu.name if m.best_gpu else "", whisper_model=whisper_model)
@@ -153,7 +156,7 @@ def run(cfg: Config | None = None, whisper_model: str = "large-v3", stage=lambda
     except WorkError as exc:
         r.errors.append(f"Helyi átírás: {exc}")
         r.lamps.append(Lamp("whisper", "Helyi átírás", "nem sikerült", RED, str(exc)[:300]))
-    model = cfg.llm_private_model or cfg.llm_public_model
+    model = llm_model or cfg.llm_private_model or cfg.llm_public_model
     if localllm.server(cfg) and model:
         try:
             stage("summarize")

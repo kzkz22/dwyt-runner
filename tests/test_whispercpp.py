@@ -35,6 +35,7 @@ base = args[args.index("-of") + 1]
 words = ["Sziasztok!", "Hova", "utaznál?", "Berlinbe", "megyek."]
 segs = [{{"text": " " + w, "offsets": {{"from": i * 2000, "to": i * 2000 + 1500}}}} for i, w in enumerate(words)]
 segs.insert(0, {{"text": "[_BEG_]", "offsets": {{"from": 0, "to": 0}}}})
+sys.stderr.write("whisper_print_timings:     load time =  1500.00 ms\n")
 lang = args[args.index("-l") + 1]
 json.dump({{"result": {{"language": "hu" if lang == "auto" else lang}}, "transcription": segs}},
           open(base + ".json", "w", encoding="utf-8"))

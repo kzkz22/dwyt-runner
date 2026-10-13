@@ -52,6 +52,7 @@ EMBEDDING = (f"{SHERPA}/speaker-recongition-models/nemo_en_titanet_large.onnx", 
              f"{HF}/csukuangfj/speaker-embedding-models/resolve/main/nemo_en_titanet_large.onnx")
 DEFAULT_THRESHOLD = 0.8
 PROGRESS = re.compile(r"progress\s*=\s*(\d+)%")
+LOAD_TIME = re.compile(r"load time\s*=\s*([\d.]+)\s*ms")
 BLOCKED = (4551, 1260)  # Windows: "an application control policy has blocked this file"
 
 
@@ -269,8 +270,8 @@ def device_of(log: str) -> str:
 
 def transcribe_text(wav: str, model: Path, vad: Path, language: str | None, cfg: Config, workdir: str,
                     stage: Callable[[str], None], cancelled: Callable[[], bool],
-                    deadline: float) -> tuple[list[dict], str, str, list[str]]:
-    """(words with start/end, language, device, warnings)."""
+                    deadline: float) -> tuple[list[dict], str, str, list[str], float]:
+    """(words with start/end, language, device, warnings, model load seconds)."""
     cli = whisper_cli(cfg, stage)
     base = os.path.join(workdir, "whisper")
     args = [cli, "-m", str(model), "-f", wav, "-l", language or "auto", "-ml", "1", "-sow", "-oj", "-of", base,
@@ -296,7 +297,8 @@ def transcribe_text(wav: str, model: Path, vad: Path, language: str | None, cfg:
             continue
         off = seg.get("offsets") or {}
         words.append({"text": text, "start": off.get("from", 0) / 1000, "end": off.get("to", 0) / 1000})
-    return words, found, device, warnings
+    load = LOAD_TIME.search(log)  # whisper_print_timings: the model's loading, not the audio's length
+    return words, found, device, warnings, float(load.group(1)) / 1000 if load else 0.0
 
 
 def diarize(wav: str, speakers: int | None, threshold: float, stage: Callable[[str], None]) -> list[tuple]:
@@ -354,7 +356,7 @@ def transcribe(src: str, options: dict[str, Any], model_name: str, cfg: Config, 
     from . import gpuswap
     gpuswap.before_whisper(cfg, stage, cancelled)  # one video card: the language model makes room
     try:
-        words, language, device, warnings = transcribe_text(wav, model, vad, options.get("language"), cfg,
+        words, language, device, warnings, load_s = transcribe_text(wav, model, vad, options.get("language"), cfg,
                                                             workdir, stage, cancelled, deadline)
     finally:
         gpuswap.after_whisper()
@@ -367,4 +369,5 @@ def transcribe(src: str, options: dict[str, Any], model_name: str, cfg: Config, 
             assign_speakers(words, turns)
             diarized = True
     return {"language": language, "segments": segments_from_words(words), "diarized": diarized, "device": device,
+            "load_s": load_s,
             "warnings": warnings}

@@ -56,7 +56,8 @@ def test_a_full_test_run(builtin, ollama_server, monkeypatch, capsys):  # noqa: 
         gpus=[machine.Gpu("nvidia", "NVIDIA GeForce RTX 5090", 32.0)]))
     cli.show_machine(False)
     out = capsys.readouterr().out
-    assert "Utolsó próbafuttatás" in out and "még a régi kártyával (NVIDIA GeForce RTX 5080)" in out
+    assert "Utolsó próbafuttatás" in out and "· NVIDIA GeForce RTX 5080 · még" in out
+    assert "még a régi kártyával (NVIDIA GeForce RTX 5080)" in out
 
 
 def test_slow_machine_and_no_local_model(builtin, monkeypatch):  # noqa: F811
@@ -71,3 +72,14 @@ def test_slow_machine_and_no_local_model(builtin, monkeypatch):  # noqa: F811
     r = trial.run(config.Config(), "large-v3")
     assert r.lamps[0].value == "nem sikerült" and r.errors == ["Helyi átírás: A whisper.cpp nem indult el"]
     assert "Próbafuttatás" in trial.report(r)
+
+
+def test_model_load_is_not_part_of_the_speed(builtin, monkeypatch):  # noqa: F811
+    cfg, _, _ = builtin
+    clock = iter([100.0, 104.0])  # 4 s for the run, 1.5 s of it loading the model (the fake whisper.cpp says so)
+
+    class Clock:
+        monotonic = staticmethod(lambda: next(clock))
+    monkeypatch.setattr(trial, "time", Clock)
+    speed, device = trial.measure_whisper(cfg, "large-v3", lambda s: None)
+    assert speed == pytest.approx(33.0 / 2.5, rel=0.05) and device == "gpu"

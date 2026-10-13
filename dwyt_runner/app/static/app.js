@@ -80,4 +80,45 @@
   document.querySelectorAll("[data-autosubmit]").forEach(function (input) {
     input.addEventListener("change", function () { input.form.submit(); });
   });
+
+  // Progress bars: the width comes from data-percent (no inline style: strict CSP).
+  var bars = function () {
+    document.querySelectorAll("[data-bar][data-percent]").forEach(function (b) {
+      b.style.width = b.getAttribute("data-percent") + "%";
+    });
+  };
+  bars();
+
+  // Setup steps: follow downloads and the pairing; reload when one is over.
+  var watched = document.querySelectorAll("[data-watch][data-running]");
+  if (watched.length) {
+    var setupTimer = setInterval(function () {
+      fetch("/api/telepites", { credentials: "same-origin" }).then(function (r) { return r.json(); })
+        .then(function (s) {
+          var over = false;
+          watched.forEach(function (w) {
+            var key = w.getAttribute("data-watch");
+            var st = s[key] || {};
+            if (key === "pairing") { if (st.state !== "waiting") over = true; return; }
+            if (!st.running) { over = true; return; }
+            var bar = w.querySelector("[data-bar]"), text = w.querySelector("[data-text]");
+            if (bar) {
+              if (st.percent === null || st.percent === undefined) { bar.classList.add("busy"); }
+              else { bar.classList.remove("busy"); bar.style.width = st.percent + "%"; }
+            }
+            if (text) text.textContent = st.text || "";
+          });
+          if (over) { clearInterval(setupTimer); location.reload(); }
+        }).catch(function () {});
+    }, 1500);
+  }
+
+  // Setup, mode cards: show the chosen mode's picture at once.
+  document.querySelectorAll("[data-mode-card]").forEach(function (input) {
+    input.addEventListener("change", function () {
+      document.querySelectorAll("[data-flow-for]").forEach(function (f) {
+        f.hidden = f.getAttribute("data-flow-for") !== input.value;
+      });
+    });
+  });
 })();

@@ -8,8 +8,12 @@ style (strict CSP), like the central's pages. Keys can be written and tried here
 from __future__ import annotations
 
 import secrets
+import socket
 import threading
 import time
+import webbrowser
+from dataclasses import replace
+from urllib.parse import urlencode
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +22,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .. import __version__, autostart, config, keystore, machine, modes, settings, trial
+from .. import __version__, autostart, config, keystore, machine, modes, settings, trial, whispercpp
+from . import wizard
 from .runtime import Runtime
 
 HERE = Path(__file__).parent
@@ -90,7 +95,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         state.launch_code = ""  # one time only
         sid = secrets.token_urlsafe(24)
         state.sessions[sid] = secrets.token_urlsafe(24)
-        r = RedirectResponse("/allapot", status_code=303)
+        r = RedirectResponse("/telepites/1" if wizard.needed(config.load()) else "/allapot", status_code=303)
         r.set_cookie(COOKIE, sid, httponly=True, samesite="strict")
         return r
 
@@ -227,6 +232,194 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     @api.get("/api/proba")
     def trial_json():
         return JSONResponse(runtime.trial)
+
+    # -- Telepítés (the setup steps) --
+    def step_page(request: Request, n: int, **ctx: Any) -> HTMLResponse:
+        return state.render(request, f"telepites_{n}.html", step=n, steps=wizard.STEPS, **ctx)
+
+    @api.get("/telepites")
+    def setup_start():
+        return RedirectResponse("/telepites/1", status_code=303)
+
+    @api.get("/telepites/{n}")
+    def setup_page(request: Request, n: int, hiba: str = ""):
+        cfg = config.load()
+        mode = wizard.chosen_mode(cfg)
+        if n == 1:
+            return step_page(request, 1)
+        if n == 2:
+            view = runtime.machine_view()
+            m = view["m"]
+            servers = [s for s in m.servers if s.running and s.models] if m else []
+            return step_page(request, 2, m=m, a=machine.assess(m) if m else None, last=trial.load(),
+                             trial_state=runtime.trial, servers=servers, scanning=view["scanning"])
+        if n == 3:
+            view = runtime.machine_view()
+            last = trial.load()
+            recommended = (last.mode if last and last.mode else
+                           machine.assess(view["m"]).mode if view["m"] else "vegyes")
+            return step_page(request, 3, modes=modes.MODES, mode=wizard.load().get("mode") or recommended,
+                             recommended=recommended,
+                             texts=wizard.MODE_TEXT,
+                             flows=modes.preview(replace(cfg, llm_url=cfg.llm_url or wizard.CLOUD_LLM_URL)))
+        if n == 4:
+            view = runtime.machine_view()
+            m = view["m"]
+            items = wizard.ingredients(cfg, mode, runtime.prepare,
+                                       wizard.needs_whisper(cfg, mode) and
+                                       whispercpp.prepared(cfg, wizard.whisper_model(cfg)))
+            servers = m.servers if m else []
+            kind = cfg.local_llm or next((s.kind for s in servers if s.running), "") or \
+                next((s.kind for s in servers if s.installed), "ollama")
+            server_models = next((s.models for s in servers if s.kind == kind), [])
+            return step_page(request, 4, mode=mode, mode_label=modes.MODES.get(mode, mode), items=items,
+                             go_on=wizard.can_go_on(items), prepare=wizard.prepare_view(runtime.prepare),
+                             pull=wizard.pull_view(runtime.pull), checks=wizard.load().get("checks", {}),
+                             cloud_model=wizard.cloud_model_default(cfg), servers=servers, kind=kind,
+                             server_models=server_models, error=hiba,
+                             suggested=wizard.suggested_local_model(m.vram_gb if m else 0, kind))
+        if n == 5:
+            with runtime.lock:
+                pairing = dict(runtime.pairing)
+            return step_page(request, 5, pairing=pairing, paired=cfg.paired, error=hiba,
+                             default_name=cfg.name or socket.gethostname(),
+                             approve_url=_approve_url(pairing) if pairing.get("code") else "")
+        if n == 6:
+            return step_page(request, 6, login_start=autostart.enabled() or not wizard.load().get("done"))
+        return RedirectResponse("/telepites/1", status_code=303)
+
+    def _approve_url(pairing: dict[str, Any]) -> str:
+        return f"{pairing['server']}/futtatok?" + urlencode({"kod": pairing["code"], "nev": pairing.get("name", "")})
+
+    @api.get("/api/telepites")
+    def setup_json():
+        with runtime.lock:
+            pairing = {k: runtime.pairing.get(k) for k in ("state", "code")}
+        return JSONResponse({"prepare": wizard.prepare_view(runtime.prepare), "pull": wizard.pull_view(runtime.pull),
+                             "trial": runtime.trial, "pairing": pairing})
+
+    @api.post("/telepites/kihagyas")
+    async def setup_skip(request: Request):
+        await state.form(request)
+        wizard.save(done=True, skipped=True)
+        return RedirectResponse("/allapot", status_code=303)
+
+    @api.post("/telepites/2")
+    async def setup_machine(request: Request):
+        form = await state.form(request)
+        if form.get("action") == "ujra":
+            runtime.refresh_machine()
+        else:
+            runtime.start_trial(str(form.get("llm", "")), str(form.get("server", "")))
+        return RedirectResponse("/telepites/2", status_code=303)
+
+    @api.post("/telepites/3")
+    async def setup_mode(request: Request):
+        form = await state.form(request)
+        mode = str(form.get("mode", ""))
+        if mode not in modes.MODES:
+            return RedirectResponse("/telepites/3", status_code=303)
+        cfg = config.load()
+        if mode != "egyeni":
+            modes.apply(cfg, mode)
+            if mode in ("felho", "vegyes") and not cfg.llm_url:
+                cfg.llm_url = wizard.CLOUD_LLM_URL
+            config.save(cfg)
+            runtime.settings_changed()
+        wizard.save(mode=mode)
+        if wizard.needs_whisper(cfg, mode) and not whispercpp.prepared(cfg, wizard.whisper_model(cfg)):
+            runtime.start_prepare(wizard.whisper_model(cfg))
+        return RedirectResponse("/telepites/4", status_code=303)
+
+    @api.post("/telepites/4")
+    async def setup_ingredients(request: Request):
+        form = await state.form(request)
+        action = str(form.get("action", ""))
+        cfg = config.load()
+        checks = wizard.load().get("checks", {})
+        if action == "llm":
+            key = str(form.get("key", "")).strip()
+            if key:
+                cfg.llm_key = key
+            cfg.llm_url = cfg.llm_url or wizard.CLOUD_LLM_URL
+            cfg.llm_public_model = str(form.get("model", "")).strip() or wizard.CLOUD_MODEL
+            config.save(cfg)
+            checks["llm"] = keystore.check_llm(config.load())
+        elif action == "assemblyai":
+            key = str(form.get("key", "")).strip()
+            if key:
+                cfg.assemblyai_key = key
+                config.save(cfg)
+            checks["assemblyai"] = keystore.check_assemblyai(config.load())
+        elif action == "local":
+            kind = str(form.get("server", ""))
+            name = str(form.get("model", "")).strip()
+            if kind in ("ollama", "lmstudio") and name:
+                cfg.local_llm = kind
+                cfg.llm_private_model = name
+                if wizard.chosen_mode(cfg) == "sajat":
+                    cfg.llm_public_model = name  # Saját gép: public sources also use the local server
+                config.save(cfg)
+        elif action == "pull":
+            kind = str(form.get("server", ""))
+            name = str(form.get("name", "")).strip()
+            if kind in ("ollama", "lmstudio") and name:
+                runtime.start_pull(kind, name)
+        elif action == "start":
+            kind = str(form.get("server", ""))
+            if kind in ("ollama", "lmstudio"):
+                from starlette.concurrency import run_in_threadpool
+
+                from .. import localllm
+
+                def start() -> None:
+                    try:
+                        localllm.server(replace(cfg, local_llm=kind)).ensure_running()
+                    finally:
+                        runtime.rescan_and_wait()
+                try:
+                    await run_in_threadpool(start)
+                except Exception as exc:  # noqa: BLE001 - shown on the page
+                    return RedirectResponse("/telepites/4?" + urlencode({"hiba": str(exc)}), status_code=303)
+        elif action == "rescan":
+            from starlette.concurrency import run_in_threadpool
+            await run_in_threadpool(runtime.rescan_and_wait)
+        elif action == "prepare":
+            runtime.start_prepare(wizard.whisper_model(cfg))
+        wizard.save(checks=checks)
+        runtime.settings_changed()
+        return RedirectResponse("/telepites/4", status_code=303)
+
+    @api.post("/telepites/5")
+    async def setup_pair(request: Request):
+        form = await state.form(request)
+        try:
+            runtime.start_pairing(str(form.get("server", "")), str(form.get("name", "")))
+        except Exception as exc:  # noqa: BLE001 - shown on the page
+            return RedirectResponse("/telepites/5?" + urlencode({"hiba": str(exc)}), status_code=303)
+        with runtime.lock:
+            pairing = dict(runtime.pairing)
+        try:
+            webbrowser.open(_approve_url(pairing))
+        except Exception:  # noqa: BLE001 - the page has the link too
+            pass
+        return RedirectResponse("/telepites/5", status_code=303)
+
+    @api.post("/telepites/6")
+    async def setup_done(request: Request):
+        form = await state.form(request)
+        try:
+            autostart.set_enabled(form.get("login_start") == "on")
+        except OSError:
+            pass
+        wizard.save(done=True)
+        cfg = config.load()
+        if form.get("open_dwyt") == "on" and cfg.server:
+            try:
+                webbrowser.open(cfg.server.rstrip("/") + "/uj")
+            except Exception:  # noqa: BLE001
+                pass
+        return RedirectResponse("/allapot", status_code=303)
 
     # -- Kulcsok --
     @api.get("/kulcsok")

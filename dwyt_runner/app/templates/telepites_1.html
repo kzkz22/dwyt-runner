@@ -1,0 +1,23 @@
+{% extends "telepites.html" %}
+{% block step %}
+<h1>Üdvözöl a dwyt futtató</h1>
+<p class="lead">Ez a kis program a <strong>te gépeden</strong> végzi el a munkát a dwyt-nek: letölti a videót, átírja
+  szöveggé, és összefoglalót készít belőle. Az eredményt a dwyt-ben látod, telefonról is.</p>
+<div class="trio">
+  <div class="box local"><strong>Ez a gép</strong><span class="muted">dwyt futtató<br>itt vannak a kulcsaid</span></div>
+  <div class="arrows muted"><span>munkát kér →</span><span>← eredményt küld</span></div>
+  <div class="box cloud"><strong>dwyt</strong><span class="muted">könyvtár, keresés<br>a kulcsaidat nem látja</span></div>
+  <div class="arrows muted"><span>← olvasod</span></div>
+  <div class="box"><strong>Te</strong><span class="muted">böngészőben,<br>gépen vagy telefonon</span></div>
+</div>
+<ul>
+  <li>Rendszergazdai jog nem kell, a program csak a saját fiókodban fut.</li>
+  <li>A futtató csak kifelé kapcsolódik; a gépedet kívülről senki nem éri el.</li>
+  <li><strong>A munka csak akkor halad, ha ez a gép be van kapcsolva.</strong></li>
+</ul>
+<div class="actions">
+  <form method="post" action="/telepites/kihagyas"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button title="A beállításokat később az ablak fülein is megadhatod">Mégse</button></form>
+  <a class="button primary" href="/telepites/2">Tovább</a>
+</div>
+{% endblock %}

@@ -56,6 +56,10 @@ LOAD_TIME = re.compile(r"load time\s*=\s*([\d.]+)\s*ms")
 BLOCKED = (4551, 1260)  # Windows: "an application control policy has blocked this file"
 
 
+# the setup window follows downloads: (file name, bytes so far, total bytes or 0)
+ON_DOWNLOAD: Callable[[str, int, int], None] | None = None
+
+
 def models_dir() -> Path:
     return machine.models_dir()
 
@@ -84,10 +88,15 @@ def download(urls: str | list[str], dest: Path, stage: Callable[[str], None] | N
                 if r.status_code != 200:
                     errors.append(f"{url}: HTTP {r.status_code}")
                     continue
+                total = int(r.headers.get("content-length") or 0)
+                got = 0
                 with open(tmp, "wb") as f:
                     for chunk in r.iter_bytes(1 << 20):
                         f.write(chunk)
                         digest.update(chunk)
+                        got += len(chunk)
+                        if ON_DOWNLOAD:
+                            ON_DOWNLOAD(dest.name, got, total)
         except httpx.HTTPError as exc:
             errors.append(f"{url}: {exc}")
             continue
@@ -132,6 +141,34 @@ def speaker_models(stage: Callable[[str], None] | None = None) -> tuple[Path, Pa
             raise WorkError("A beszélő-szétválasztó modell csomagjában nincs model.onnx.")
     emb = download(list(EMBEDDING), folder / Path(EMBEDDING[0]).name, stage)
     return seg, emb
+
+
+def prepared(cfg: Config, model: str) -> bool:
+    """Everything the built-in Whisper needs is here already (nothing is downloaded to find out)."""
+    folder = models_dir()
+    files = [folder / "whisper" / Path(MODELS[model]).name if model in MODELS else None,
+             folder / "whisper" / Path(VAD_MODEL).name,
+             folder / "speakers" / "sherpa-onnx-pyannote-segmentation-3-0" / "model.onnx",
+             folder / "speakers" / Path(EMBEDDING[0]).name]
+    if not all(f is not None and f.exists() and f.stat().st_size > 0 for f in files):
+        return False
+    if cfg.whisper_cli:
+        return Path(cfg.whisper_cli).exists()
+    if sys.platform == "win32":
+        cli = folder / "whisper.cpp"
+        return cli.exists() and any(cli.glob("*/**/whisper-cli.exe"))
+    return shutil.which("whisper-cli") is not None
+
+
+def prepare(cfg: Config, model: str, step: Callable[[str], None] | None = None) -> None:
+    """Fetch what the built-in Whisper needs (the setup window's Hozzávalók step, `whisper prepare`)."""
+    for label, get in (("whisper.cpp program", lambda: whisper_cli(cfg)),
+                       ("beszédfelismerő modell", lambda: whisper_model(model)),
+                       ("beszédérzékelő (VAD)", vad_model),
+                       ("beszélő-szétválasztó modellek", speaker_models)):
+        if step:
+            step(label)
+        get()
 
 
 def pick_release(releases: list[dict], nvidia: bool) -> tuple[str, dict | None]:

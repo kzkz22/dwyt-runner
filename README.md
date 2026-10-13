@@ -101,6 +101,8 @@ A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en 
 
 A futtató saját ablakban is futhat: négy lap, ahogy a [mintákon](https://github.com/kzkz22/dwyt-docs/tree/main/docs/minta-7): **Állapot** (párosítás, a mostani munka, a legutóbbiak, a mai összesítés), **Működés** (működési mód: Felhő, Vegyes, Saját gép vagy Egyéni, ábrával; udvarias mód; részletes beállítások), **Gépem** (gépvizsgálat, próbafuttatás egy gombnyomásra), **Kulcsok** (beírás és próba; kiolvasni nem lehet).
 
+**Telepítő lépések:** egy még nem párosított futtató ablaka a telepítő hat lépésével nyílik: *Üdvözlés*, *Gépvizsgálat* (lámpák, próbafuttatás, ajánlott mód), *Működési mód* (négy kártya, ábrával), *Hozzávalók* (amit a választott mód kér: a beszédfelismerő letöltése folyamatjelzővel, az OpenRouter-kulcs próbával, AssemblyAI-kulcs, helyi modellszerver és modell, letöltéssel), *Párosítás* (a futtató megnyitja a dwyt Futtatók oldalát kitöltött kóddal; ott egy gombbal jóváhagyod, miután összevetetted a kódot az ablakban láthatóval) és *Kész* (indulás bejelentkezéskor, a dwyt megnyitása). A *Mégse* kihagyja a lépéseket; később az Állapot lapról újra elindíthatók. A kitöltött kódot a dwyt-central 0.14.2 fogadja.
+
 ```
 uv tool install --force --python 3.13 "dwyt-runner[desktop,local] @ https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip"
 dwyt-runner app

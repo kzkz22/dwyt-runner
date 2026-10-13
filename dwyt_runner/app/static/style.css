@@ -122,3 +122,56 @@ legend { font-weight: 700; padding-right: 8px; }
   .tab svg { display: none; }  /* four tabs and Kilépés fit in 390 px */
   .dots { display: none; }
 }
+
+/* Setup steps (docs/minta-7 1–6) */
+body.setup { display: flex; min-height: 100vh; }
+.steps { width: 230px; flex: none; background: var(--panel); border-right: 1px solid var(--line); padding: 24px 14px; }
+.steps ol { list-style: none; margin: 0; padding: 0; }
+.steps li { margin: 4px 0; }
+.steps li > a, .steps li > span:first-child { display: flex; }
+.steps li a, .steps li { color: var(--muted); text-decoration: none; }
+.steps li a, .steps li:not(:has(a)) { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; }
+.steps .num { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); display: inline-flex;
+  align-items: center; justify-content: center; font-weight: 600; font-size: .9rem; background: var(--bg); flex: none; }
+.steps li.done .num { border-color: var(--local-line); background: var(--local-bg); color: var(--good); }
+.steps li.now { background: var(--info-bg); color: var(--text); font-weight: 700; border-radius: 10px; }
+.steps li.now .num { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+main.step { flex: 1; max-width: 1000px; padding: 8px 32px 28px; margin: 0; display: flex; flex-direction: column; }
+main.step .actions { margin-top: auto; padding-top: 18px; }
+.lead { font-size: 1.05rem; }
+.center { text-align: center; }
+a.button { display: inline-block; font: inherit; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); text-decoration: none; }
+a.button.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); font-weight: 600; }
+.trio { display: flex; align-items: center; gap: 10px; margin: 18px 0; flex-wrap: wrap; }
+.trio .box { min-height: 0; flex: 1 1 160px; }
+.arrows { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; white-space: nowrap; }
+.modecards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.modecard { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex;
+  flex-direction: column; gap: 6px; cursor: pointer; position: relative; }
+.modecard input { position: absolute; opacity: 0; pointer-events: none; }
+.modecard:has(input:checked) { border: 2px solid var(--primary); background: var(--info-bg); padding: 13px 15px; }
+.modecard:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.modecard .name { font-weight: 700; font-size: 1.05rem; }
+.badge { display: inline-block; font-size: .8rem; font-weight: 600; padding: 1px 10px; border-radius: 999px;
+  background: var(--local-bg); border: 1px solid var(--local-line); color: var(--good); vertical-align: 2px; }
+.ingredient.off { opacity: .6; }
+.ingredient .row .dot { margin-top: 0; }
+.dot.blue { background: var(--primary); } .steps ~ main .dot.orange { background: #ea8014; } .dot.grey { background: var(--line); }
+.lampline { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; }
+.server { margin: 8px 0; }
+.inline-label { display: flex; flex-direction: column; gap: 4px; }
+.paircode { margin: 22px auto; padding: 22px 36px; border: 2px dashed var(--line); border-radius: var(--radius);
+  font: 700 2.4rem/1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .18em; text-align: center;
+  width: fit-content; max-width: 100%; }
+@media (max-width: 640px) {
+  body.setup { flex-direction: column; }
+  .steps { width: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px; }
+  .steps ol { display: flex; gap: 4px; justify-content: space-between; }
+  .steps li a, .steps li:not(:has(a)) { padding: 6px; }
+  .steps .label { display: none; }
+  .steps li.now .label { display: inline; }
+  main.step { padding: 4px 16px 20px; }
+  .arrows { flex-direction: row; white-space: normal; }
+  .paircode { font-size: 1.8rem; padding: 16px 20px; }
+}

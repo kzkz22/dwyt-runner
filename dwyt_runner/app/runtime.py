@@ -23,6 +23,9 @@ class Runtime:
         self.trial: dict[str, Any] = {"running": False, "stage": "", "error": ""}
         self.closing = False
         self.machine: dict[str, Any] = {"m": None, "said": [], "at": 0.0, "scanning": False, "local_models": []}
+        self.prepare: dict[str, Any] = {"running": False, "label": "", "file": "", "got": 0, "total": 0,
+                                        "error": "", "ready": False}
+        self.pull: dict[str, Any] = {"running": False, "name": "", "fraction": None, "status": "", "error": ""}
         self.refresh_machine()  # the machine page then opens at once
         if start_worker:
             self.start_worker()
@@ -124,21 +127,80 @@ class Runtime:
         threading.Thread(target=scan, daemon=True, name="machine-scan").start()
         return True
 
+    def rescan_and_wait(self, timeout: float = 30) -> None:
+        deadline = time.monotonic() + timeout
+        while self.machine["scanning"] and time.monotonic() < deadline:
+            time.sleep(0.1)
+        self.refresh_machine()
+        while self.machine["scanning"] and time.monotonic() < deadline:
+            time.sleep(0.1)
+
     def machine_view(self) -> dict[str, Any]:
         """The last scan at once; a fresh one starts in the background when it is old."""
         if self.machine["m"] is not None and time.time() - self.machine["at"] > self.MACHINE_FRESH_S:
             self.refresh_machine()
         return dict(self.machine)
 
+    # -- the built-in Whisper's files (setup: Hozzávalók) --
+    def start_prepare(self, model: str) -> bool:
+        from .. import whispercpp
+        if self.prepare["running"]:
+            return False
+        self.prepare.update(running=True, label="", file="", got=0, total=0, error="", ready=False)
+
+        def progress(name: str, got: int, total: int) -> None:
+            self.prepare.update(file=name, got=got, total=total)
+
+        def run() -> None:
+            whispercpp.ON_DOWNLOAD = progress
+            try:
+                whispercpp.prepare(config.load(), model, lambda label: self.prepare.update(
+                    label=label, file="", got=0, total=0))
+                self.prepare["ready"] = True
+            except Exception as exc:  # noqa: BLE001 - shown in the window
+                log.exception("whisper prepare")
+                self.prepare["error"] = str(exc)
+            finally:
+                whispercpp.ON_DOWNLOAD = None
+                self.prepare["running"] = False
+        threading.Thread(target=run, daemon=True, name="prepare").start()
+        return True
+
+    # -- a local model (setup: Hozzávalók, Saját gép) --
+    def start_pull(self, kind: str, name: str) -> bool:
+        from .. import localllm
+        if self.pull["running"]:
+            return False
+        self.pull = {"running": True, "name": name, "fraction": None, "status": "indul", "error": ""}
+
+        def run() -> None:
+            try:
+                cfg = config.load()
+                cfg.local_llm = kind
+                server = localllm.server(cfg)
+                server.ensure_running()
+                server.pull(name, lambda fraction, status: self.pull.update(fraction=fraction, status=status))
+                self.rescan_and_wait()  # the model list changed: the page shows the new one
+            except Exception as exc:  # noqa: BLE001
+                log.exception("model pull")
+                self.pull["error"] = str(exc)
+            finally:
+                self.pull["running"] = False
+        threading.Thread(target=run, daemon=True, name="pull").start()
+        return True
+
     # -- the test run --
-    def start_trial(self, llm_model: str = "") -> bool:
+    def start_trial(self, llm_model: str = "", server_kind: str = "") -> bool:
         if self.trial["running"]:
             return False
         self.trial = {"running": True, "stage": "indul", "error": ""}
 
         def run() -> None:
             try:
-                trial.run(config.load(), "large-v3", lambda s: self.trial.update(
+                cfg = config.load()
+                if server_kind and not cfg.local_llm:  # setup: a detected server, before it is chosen
+                    cfg.local_llm = server_kind
+                trial.run(cfg, "large-v3", lambda s: self.trial.update(
                     stage=activity.STAGE_LABELS.get(s, s)), llm_model)
             except Exception as exc:  # noqa: BLE001
                 log.exception("test run")

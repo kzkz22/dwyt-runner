@@ -92,6 +92,9 @@ def run(browser: bool = False, hidden: bool = False) -> int:
         print("A futtató már fut; előhoztam az ablakát.")
         return 0
     keep_login_start_current()
+    from . import wizard
+    if hidden and wizard.needed(config.load()):
+        hidden = False  # the setup steps need the window
     server, state, runtime = serve()
     port = int(state.host.rsplit(":", 1)[1])
     write_instance(port, state.instance_secret)

@@ -87,7 +87,9 @@ def flow(cfg: Config) -> list[Box]:
         transcribe = Box("Átírás", "felhőben (AssemblyAI), ha kéred", "fizetős, a te kulcsoddal", False)
     else:
         transcribe = Box("Átírás", "YouTube-feliratból", "ingyenes", False)
-    if localllm.uses_local(cfg):
+    if cfg.llm_prefer_local and localllm.server(cfg) is None:
+        llm = Box("Összefoglaló, fordítás, kérdések", "ezen a gépen (Ollama vagy LM Studio)", "ingyenes", True)
+    elif localllm.uses_local(cfg):
         server = localllm.server(cfg)
         llm = Box("Összefoglaló, fordítás, kérdések", f"ezen a gépen ({server.title})", "ingyenes", True)
     elif cfg.llm_url:

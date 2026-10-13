@@ -112,6 +112,18 @@ def check_llm(cfg) -> tuple[bool, str]:
     if not eff.llm_url:
         return False, "nincs megadva LLM-cím"
     base = eff.llm_url.rstrip("/")
+    headers = {"Authorization": f"Bearer {eff.llm_key}"} if eff.llm_key else {}
+    if "openrouter.ai" in base:
+        # OpenRouter lists its models to anyone: only the key endpoint says whether the key is good
+        for path in ("/key", "/auth/key"):
+            try:
+                r = httpx.get(base + path, headers=headers, timeout=15)
+            except httpx.HTTPError as exc:
+                return False, f"nem érhető el ({exc})"
+            if r.status_code == 200:
+                return True, "rendben"
+            if r.status_code in (401, 403):
+                return False, "a kulcsot nem fogadja el"
     url = (base if base.endswith("/v1") else base + "/v1") + "/models"
     try:
         r = httpx.get(url, headers={"Authorization": f"Bearer {eff.llm_key}"} if eff.llm_key else {}, timeout=15)

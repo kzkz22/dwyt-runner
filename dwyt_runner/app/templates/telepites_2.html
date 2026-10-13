@@ -1,0 +1,53 @@
+{% extends "telepites.html" %}
+{% block step %}
+<h1>Mire képes a géped?</h1>
+{% if not m %}
+<div class="card" data-machine-scanning>
+  <p><span class="spinner"></span> Megnézem, mi van a gépben (videókártya, memória, szabad hely, helyi modellszerver) …</p>
+</div>
+{% else %}
+<p class="lead muted">Megnéztük, mi van a gépben. A próbafuttatás ki is próbálja: átír egy fél perces mintát, és ha van
+  helyi modellszerver, összefoglal vele egy rövid szöveget.</p>
+<div class="card table">
+  {% for r in a.rows %}
+  <div class="tr"><span class="th">{{ r.label }}</span><span>{{ r.value }}{% if r.note %}<small>{{ r.note }}</small>{% endif %}</span>
+    <span class="right dot {{ r.level }}" title="{{ lamp_text[r.level] }}"></span></div>
+  {% endfor %}
+</div>
+<div class="card trial"{% if trial_state.running %} data-trial-running{% endif %}>
+  <div class="row"><h2>Próbafuttatás</h2>
+    {% if last %}<span class="muted">kész</span>{% endif %}
+    <form method="post" action="/telepites/2" class="right inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% if servers %}
+      <select name="llm" title="Ezzel a helyi modellel próbálja az összefoglalót" aria-label="Helyi modell a próbához">
+        {% for s in servers %}{% for name in s.models %}<option value="{{ name }}">{{ s.title }}: {{ name }}</option>{% endfor %}{% endfor %}
+      </select>
+      <input type="hidden" name="server" value="{{ servers[0].kind }}">
+      {% endif %}
+      <button{% if trial_state.running %} disabled{% endif %}>{% if last %}Újra{% else %}Próbafuttatás{% endif %}</button>
+    </form></div>
+  {% if trial_state.running %}
+  <p><span class="spinner"></span> <span data-trial-stage>{{ trial_state.stage }}</span> …</p>
+  {% elif trial_state.error %}
+  <div class="note warn">{{ trial_state.error }}</div>
+  {% endif %}
+  {% if last %}
+  {% for x in last.lamps %}
+  <p class="lampline"><span class="dot {{ x.level }}"></span><span><strong>{{ x.label }}: {{ x.value }}</strong>{% if x.note %}<small>{{ x.note }}</small>{% endif %}</span></p>
+  {% endfor %}
+  {% else %}
+  <p class="muted">Nem kötelező. Először letölti a beszédfelismerőt (kb. 3,5 GB, egyszer), utána kb. egy perc.
+    Megmondja, mennyi idő alatt készülne el egy 1 órás videó ezen a gépen.</p>
+  {% for x in a.abilities %}
+  <p class="lampline"><span class="dot {{ x.level }}"></span><span><strong>{{ x.label }}: {{ x.value }}</strong>{% if x.note %}<small>{{ x.note }}</small>{% endif %}</span></p>
+  {% endfor %}
+  {% endif %}
+</div>
+<div class="note">{{ (last.mode_reason if last and last.mode_reason else a.mode_reason)|replace("**", "") }}</div>
+{% endif %}
+<div class="actions">
+  <a class="button" href="/telepites/1">Vissza</a>
+  <a class="button primary" href="/telepites/3">Tovább</a>
+</div>
+{% endblock %}

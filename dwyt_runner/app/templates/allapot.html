@@ -3,6 +3,8 @@
 <div data-poll="/allapot"{% if s.paired or s.pairing.state == "waiting" %} data-live="1"{% endif %}>
 {% if not s.paired %}
   <h1>Párosítás a dwyt-vel</h1>
+  <p><a class="button primary" href="/telepites/1">A telepítő lépései</a>
+    <span class="muted">· gépvizsgálat, működési mód, hozzávalók és párosítás, lépésről lépésre</span></p>
   {% if s.pairing.state == "waiting" %}
   <div class="note info">
     <p class="big">Párosítókód: <strong class="code">{{ s.pairing.code }}</strong></p>

@@ -135,9 +135,12 @@ def test_machine_page_and_test_run(window, monkeypatch):
     page = client.get("/gepem").text
     assert "Videókártya" in page and "Próbafuttatás" in page
     from dwyt_runner import trial
-    monkeypatch.setattr(trial, "run", lambda cfg, model, stage, llm="": (stage("transcribe"), time.sleep(0.3)))
-    client.post("/gepem/proba", data={"csrf": csrf(page)})
+    import threading
+    release = threading.Event()
+    monkeypatch.setattr(trial, "run", lambda cfg, model, stage, llm="": (stage("transcribe"), release.wait(10)))
+    client.post("/gepem/proba", data={"csrf": csrf(page)}, follow_redirects=False)
     assert client.get("/api/proba").json()["running"] is True
+    release.set()
     for _ in range(30):
         if not client.get("/api/proba").json()["running"]:
             break

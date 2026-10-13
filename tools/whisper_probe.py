@@ -1,6 +1,7 @@
 # /// script
-# requires-python = ">=3.10"
-# dependencies = ["yt-dlp[default]", "deno", "imageio-ffmpeg", "numpy", "sherpa-onnx", "rapidfuzz"]
+# requires-python = ">=3.10,<3.14"
+# dependencies = ["yt-dlp", "yt-dlp-ejs", "certifi", "requests", "deno", "imageio-ffmpeg", "numpy", "sherpa-onnx",
+#                 "rapidfuzz"]
 # ///
 """whisper.cpp + sherpa-onnx compared with WhisperX on Hungarian videos (plan 15b, round 7b check).
 
@@ -15,6 +16,10 @@ sherpa-onnx (pyannote segmentation 3.0 + two speaker-embedding models; each once
 automatic clustering, once with the true number of speakers), and compares every version with the
 reference: word error rate, character error rate, speakers found, and how many words got the
 right speaker. `--compare` adds other transcripts of the same video (e.g. the WhisperX one).
+
+Only packages with ready-made wheels (no C compiler on Windows): yt-dlp without its
+`[default]` extra (brotli and pycryptodomex would need building on new Pythons), and Python
+below 3.14 (uv fetches one if the machine has only a newer one).
 
 Output (`whisper-probe-out/`): report.md, report.html (word-level differences), and every
 version as a dwyt-style TXT. Downloads are cached in `whisper-probe-cache/`.

@@ -170,3 +170,10 @@ def test_whisper_cli_may_be_given_as_the_release_folder(tmp_path):
         empty = tmp_path / "empty"
         empty.mkdir()
         probe.whisper_cli(tmp_path, str(empty))
+
+
+def test_blocked_program_is_explained():
+    err = OSError(22, "Egy alkalmazásvezérlési házirend letiltotta ezt a fájlt")
+    err.winerror = 4551
+    assert "alkalmazásvezérlése" in probe.blocked_hint(err)
+    assert probe.blocked_hint(RuntimeError("x")) == ""

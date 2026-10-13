@@ -349,6 +349,15 @@ def backend_of(log: str) -> str:
     return ""
 
 
+def blocked_hint(exc: BaseException) -> str:
+    """Windows application control (Smart App Control, App Control for Business) refuses
+    unsigned programs; nothing in this script can or should get around that."""
+    if getattr(exc, "winerror", None) in (4551, 1260):
+        return (" – a Windows alkalmazásvezérlése (Intelligens alkalmazásvezérlés vagy céges házirend) nem "
+                "engedi futtatni az aláíratlan whisper-cli.exe-t; olyan gépen futtasd, ahol ez nincs bekapcsolva")
+    return ""
+
+
 def transcribe(cli: str, model: Path, wav: Path, out: Path, language: str) -> tuple[list[Word], float, str]:
     """whisper.cpp with one word per segment (-ml 1 -sow): words with start and end."""
     base = out.with_suffix("")
@@ -526,7 +535,7 @@ def main(argv: list[str] | None = None) -> int:
                 words, took, backend_line = transcribe(cli, model, wav,
                                                        args.out / f"{ref_path.stem}.{name}.json", args.language)
             except Exception as exc:  # noqa: BLE001
-                failures.append(f"whisper.cpp {name}: {exc}")
+                failures.append(f"whisper.cpp {name}: {exc}{blocked_hint(exc)}")
                 continue
             backend = backend or backend_line
             variants.append(Transcript(f"whisper.cpp {name}", ref.url, words, took, backend_line))

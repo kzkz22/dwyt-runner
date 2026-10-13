@@ -8,6 +8,7 @@
                              * = any),
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
+  machine [--json]           what this machine can do: video card, memory, free space, local model server
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ import sys
 import threading
 import time
 
-from . import __version__, config, tools, work, worker
+from . import __version__, config, machine, tools, work, worker
 from .protocol import Central, CentralError, JobGone, Outdated, Unauthorized
 
 
@@ -69,6 +70,11 @@ def run() -> int:
     if hasattr(signal, "SIGTERM"):
         signal.signal(signal.SIGTERM, lambda *_: stop.set())
     _out(f"dwyt-runner {__version__}: munkát kérek innen: {cfg.server} (leállítás: Ctrl+C)")
+    try:
+        for line in machine.watch_at_start(cfg):
+            _out(line)
+    except Exception as exc:  # noqa: BLE001 - the quiet hardware check must never stop the work
+        logging.debug("gépvizsgálat: %s", exc)
     try:
         worker.loop(cfg, stop)
     except Unauthorized as exc:
@@ -119,6 +125,23 @@ def check() -> int:
     return 0 if ok else 1
 
 
+def show_machine(as_json: bool) -> int:
+    cfg = config.load()
+    m = machine.scan(cfg)
+    said = machine.changes(machine.load_snapshot(), m)
+    machine.save_snapshot(m)
+    a = machine.assess(m)
+    if as_json:
+        from dataclasses import asdict
+        _out(json.dumps({"machine": asdict(m), "assessment": asdict(a), "changes": said}, ensure_ascii=False,
+                        indent=2))
+        return 0
+    for line in said:
+        _out(line + "\n")
+    _out(machine.report(m, a))
+    return 0
+
+
 def main() -> None:
     try:
         sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles
@@ -133,6 +156,8 @@ def main() -> None:
     p.add_argument("--name")
     sub.add_parser("run")
     sub.add_parser("check")
+    mp = sub.add_parser("machine")
+    mp.add_argument("--json", action="store_true")
     c = sub.add_parser("config")
     csub = c.add_subparsers(dest="action", required=True)
     csub.add_parser("show")
@@ -148,6 +173,8 @@ def main() -> None:
         sys.exit(run())
     if args.cmd == "check":
         sys.exit(check())
+    if args.cmd == "machine":
+        sys.exit(show_machine(args.json))
     cfg = config.load()
     if args.action == "show":
         _out(json.dumps(config.masked(cfg), indent=2, ensure_ascii=False))

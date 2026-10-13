@@ -65,7 +65,7 @@ def test_reset_deletes_settings_and_keys_and_keeps_the_models(monkeypatch):
     assert (models / "whisper" / "ggml-large-v3.bin").exists() and not config.load().paired
     monkeypatch.setattr(autostart, "enabled", lambda platform=None: False)
     said = reset.run(models=True)
-    assert "A letöltött modelleket töröltem." in said and not models.exists()
+    assert any(line.startswith("A letöltött modelleket töröltem") for line in said) and not models.exists()
 
 
 def test_reset_from_the_window_stops_the_worker_and_opens_the_setup(monkeypatch):
@@ -115,3 +115,25 @@ def test_reset_command(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "A beállításokat töröltem." in out and "https://dwyt.example/futtatok" in out
     assert not config.load().paired
+
+
+def test_reset_never_takes_models_unasked_and_drops_the_settings_first(tmp_path, monkeypatch):
+    from dwyt_runner import keystore
+    home, _ = fill_home()
+    leftover = home / "models"  # e.g. a move that failed: still next to the settings
+    monkeypatch.setenv("DWYT_RUNNER_DATA", str(tmp_path / "local"))
+    (tmp_path / "local" / "models").mkdir(parents=True)
+    monkeypatch.setattr(autostart, "enabled", lambda platform=None: False)
+    said = reset.run()
+    assert leftover.exists() and (tmp_path / "local" / "models").exists()
+    assert sum("megmaradtak" in line for line in said) == 2
+    config.save(config.Config(server="https://dwyt.example", token="tok-1", llm_key="sk-1"))
+
+    def broken(key, value):
+        raise RuntimeError("key store gone")
+    monkeypatch.setattr(keystore, "put", broken)
+    try:
+        reset.run()
+    except RuntimeError:
+        pass
+    assert not config.path().exists()  # whatever happens after, no settings that expect missing keys

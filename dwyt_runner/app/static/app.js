@@ -121,4 +121,14 @@
       });
     });
   });
+
+  // A form that takes a moment: say so at once, and no second press.
+  document.querySelectorAll("form[data-busy]").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      form.querySelectorAll("button").forEach(function (b) {
+        b.disabled = true;
+        b.textContent = form.getAttribute("data-busy");
+      });
+    });
+  });
 })();

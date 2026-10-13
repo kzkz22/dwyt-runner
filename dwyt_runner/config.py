@@ -127,7 +127,9 @@ def load() -> Config:
                 setattr(cfg, key, keystore.get(key))
         else:
             import logging
-            logging.getLogger("dwyt-runner").error("the secrets are in the system key store, which does not answer")
+            logging.getLogger("dwyt-runner").error(
+                "A kulcsok a rendszer kulcstárolójában vannak, de az most nem válaszol (%s); kulcsok nélkül "
+                "indulok. Ha ez marad, nézd meg: dwyt-runner keys", keystore.why_not or "ismeretlen ok")
     elif any(getattr(cfg, k) for k in SECRET_KEYS) and _keyring_wanted(cfg):
         save(cfg)  # keys still in the file: move them to the key store
     return cfg

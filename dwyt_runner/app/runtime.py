@@ -69,7 +69,9 @@ class Runtime:
         from .. import reset
         self.stop.set()
         if self.thread is not None:
-            self.thread.join(timeout=120)  # a claim long-polls for at most ~90 s
+            # no waiting for a long poll (up to ~90 s): a job that arrives after this is handed back unread,
+            # and the worker never writes the settings
+            self.thread.join(timeout=3)
         said = reset.run(models)
         self.error = ""
         with self.lock:

@@ -56,7 +56,7 @@ def test_the_file_by_choice_and_a_store_that_went_away(caplog):
     keystore.reset()
     gone = config.load()
     assert gone.llm_key == "" and gone.server == ""
-    assert "does not answer" in caplog.text
+    assert "nem válaszol" in caplog.text
 
 
 def test_keys_are_tried(assembly, llm, capsys):

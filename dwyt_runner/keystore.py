@@ -13,6 +13,7 @@ import logging
 SERVICE = "dwyt-runner"
 log = logging.getLogger("dwyt-runner")
 _usable: bool | None = None
+why_not = ""  # the last probe's failure, for the message
 
 
 def _keyring():
@@ -26,23 +27,26 @@ def _keyring():
 
 def usable() -> bool:
     """A real key store answers (probed once: set, read back, delete)."""
-    global _usable
+    global _usable, why_not
     if _usable is not None:
         return _usable
     keyring, fail = _keyring()
     _usable = False
     if keyring is None:
+        why_not = "a keyring csomag nincs telepítve"
         return False
     try:
         backend = keyring.get_keyring()
         if isinstance(backend, fail.Keyring) or "chainer" in type(backend).__name__.lower() and \
                 not getattr(backend, "backends", None):
+            why_not = f"nincs kulcstároló ({type(backend).__name__})"
             return False
         keyring.set_password(SERVICE, "_probe", "ok")
         _usable = keyring.get_password(SERVICE, "_probe") == "ok"
         keyring.delete_password(SERVICE, "_probe")
     except Exception as exc:  # noqa: BLE001 - a locked or broken store: fall back to the file
-        log.debug("key store not usable: %s", exc)
+        why_not = f"{type(exc).__name__}: {exc}"
+        log.warning("key store not usable: %s", why_not)
         _usable = False
     return _usable
 

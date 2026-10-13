@@ -18,7 +18,16 @@ jobs:
       - run: uv venv
       - run: uv pip install -e ".[test]"
       - run: uv run --no-sync ruff check --select F,E,W dwyt_runner tests tools
-      - run: uv run --no-sync pytest -q
+      - run: uv run --no-sync pytest -q -rf --junitxml=pytest.xml
+      - name: failures as annotations (readable without the log)
+        if: failure()
+        shell: python
+        run: |
+          import xml.etree.ElementTree as ET
+          for case in ET.parse("pytest.xml").iter("testcase"):
+              for bad in list(case.iter("failure")) + list(case.iter("error")):
+                  text = ((bad.get("message") or "") + "\n" + (bad.text or ""))[-3000:]
+                  print(f"::error title={case.get('name')}::" + text.replace("%", "%25").replace("\r", "").replace("\n", "%0A"))
   audit:
     runs-on: ubuntu-latest
     steps:

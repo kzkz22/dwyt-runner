@@ -54,5 +54,23 @@
 </div>
 {% endif %}
 <div class="note info">{{ (last.mode_reason if same_card else a.mode_reason)|replace("**", "") }}</div>
+<div class="card">
+  <div class="trial-head"><div><h2>A YouTube-letöltő (yt-dlp)</h2></div>
+    <form method="post" action="/gepem/ytdlp" class="inline" data-busy="Keresem …">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button{% if ytdlp.running %} disabled{% endif %}>Újabb keresése</button></form></div>
+  <div{% if ytdlp.running %} data-watch="ytdlp" data-running{% endif %}>
+  <p class="lampline"><span class="dot {{ 'yellow' if ytdlp.newer else 'green' if ytdlp.latest else 'grey' }}"></span><span>
+    <strong>Telepítve: {{ ytdlp.installed or "ismeretlen" }}</strong>
+    {% if ytdlp.running %}<small><span class="spinner"></span> keresem, és ha van, telepítem …</small>
+    {% elif ytdlp.newer %}<small>Újabb van: {{ ytdlp.latest }}. {% if cfg.ytdlp_auto_update %}A futtató a következő két munka között telepíti.{% else %}A magától frissítés ki van kapcsolva (Működés lap).{% endif %}</small>
+    {% elif ytdlp.latest %}<small>Ez a legújabb ({{ ytdlp.checked_text }}).{% if ytdlp.updated %} Frissítve: {{ ytdlp.updated }}.{% endif %}</small>
+    {% else %}<small>Még nem néztem meg, van-e újabb.</small>{% endif %}
+    {% if ytdlp.error %}<small class="bad">A keresés nem sikerült: {{ ytdlp.error }}</small>{% endif %}
+  </span></p>
+  </div>
+  <p class="muted">A YouTube gyakran változik; ha egy videó letöltése „HTTP 403” hibával akad el, többnyire egy újabb
+    yt-dlp segít. A futtató ezt naponta magától megnézi, és egy ilyen hiba után is.</p>
+</div>
 <p class="muted foot">A program minden indításkor csendben megnézi, változott-e a hardver, és szól, ha igen. Csak ajánl: a működési módot mindig te választod.</p>
 {% endblock %}

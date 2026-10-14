@@ -372,7 +372,9 @@ def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file)
     llm.reset()
     yt_dlp.reset()
     yt_dlp.REGISTRY["audio"] = audio_file
-    from dwyt_runner import modelinfo, worker
+    from dwyt_runner import modelinfo, worker, ytdlp_update
+    ytdlp_update.STATE.update(checked=time.time(), running=False, error="", updated="")  # no PyPI in tests
+    ytdlp_update._wanted_soon.clear()
     monkeypatch.setattr(worker, "DELIVERY_DELAYS", (0.05, 0.05, 0.05))
     modelinfo.reset()
     yield

@@ -229,7 +229,28 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         return state.render(request, "gepem.html", m=m, a=machine.assess(m), said=view["said"], last=last,
                             last_when=last_when, same_card=last is not None and last.gpu == card,
                             trial_state=runtime.trial, local_models=view["local_models"], scanned=scanned,
-                            scanning=view["scanning"])
+                            scanning=view["scanning"], ytdlp=_ytdlp_view())
+
+    def _ytdlp_view() -> dict[str, Any]:
+        from .. import ytdlp_update
+        st = dict(ytdlp_update.STATE)
+        st["installed"] = st["installed"] or ytdlp_update.installed()
+        st["checked_text"] = time.strftime("%Y-%m-%d %H:%M", time.localtime(st["checked"])) if st["checked"] else ""
+        st["newer"] = ytdlp_update.newer(st["latest"], st["installed"])
+        return st
+
+    @api.post("/gepem/ytdlp")
+    async def ytdlp_now(request: Request):
+        """Look for a newer yt-dlp now; install it at once when no job runs, else between jobs."""
+        from .. import activity, ytdlp_update
+        await state.form(request)
+        busy = bool(activity.current())
+        if busy:
+            ytdlp_update._wanted_soon.set()
+        threading.Thread(target=ytdlp_update.check, kwargs={"update": not busy}, daemon=True,
+                         name="ytdlp").start()
+        time.sleep(0.1)  # the page then already shows the search
+        return RedirectResponse("/gepem", status_code=303)
 
     @api.post("/gepem/ujra")
     async def rescan(request: Request):
@@ -317,7 +338,9 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     def setup_json():
         with runtime.lock:
             pairing = {k: runtime.pairing.get(k) for k in ("state", "code")}
+        from .. import ytdlp_update
         return JSONResponse({"prepare": wizard.prepare_view(runtime.prepare), "pull": wizard.pull_view(runtime.pull),
+                             "ytdlp": {"running": ytdlp_update.STATE["running"], "text": ""},
                              "starting": {"running": runtime.starting["running"],
                                           "text": f"{int(time.time() - runtime.starting['since'])} mp"},
                              "trial": runtime.trial, "pairing": pairing})

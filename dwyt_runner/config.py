@@ -87,6 +87,7 @@ class Config:
     # which sites this runner downloads from ("*" = any)
     allowed_domains: list[str] = field(default_factory=lambda: list(DEFAULT_DOMAINS))
     cookies_file: str = ""
+    ytdlp_auto_update: bool = True  # a newer yt-dlp from PyPI between jobs (daily, and after a 403)
     # own recordings: watched folders (the files never leave this machine) and uploads via the central
     watch_dirs: list[str] = field(default_factory=list)
     watch_mode: str = "local"          # local | cloud

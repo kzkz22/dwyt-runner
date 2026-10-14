@@ -148,6 +148,10 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
                 watch.scan(cfg, central)
             except (OSError, CentralError) as exc:
                 log.warning("watched folders: %s", exc)
+        from . import ytdlp_update
+        if ytdlp_update.due(cfg.ytdlp_auto_update):  # idle here: a newer yt-dlp is installed between jobs
+            ytdlp_update.run_if_due(cfg.ytdlp_auto_update)
+            versions = tools.versions()
         try:
             job = central.claim(caps, versions)
             wait = 2

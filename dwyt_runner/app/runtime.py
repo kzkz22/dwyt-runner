@@ -26,6 +26,7 @@ class Runtime:
         self.prepare: dict[str, Any] = {"running": False, "label": "", "file": "", "got": 0, "total": 0,
                                         "error": "", "ready": False}
         self.pull: dict[str, Any] = {"running": False, "name": "", "fraction": None, "status": "", "error": ""}
+        self.starting: dict[str, Any] = {"running": False, "kind": "", "since": 0.0, "error": ""}
         self.refresh_machine()  # the machine page then opens at once
         if start_worker:
             self.start_worker()
@@ -181,6 +182,27 @@ class Runtime:
                 whispercpp.ON_DOWNLOAD = None
                 self.prepare["running"] = False
         threading.Thread(target=run, daemon=True, name="prepare").start()
+        return True
+
+    # -- starting a local model server (setup: Hozzávalók) --
+    def start_server(self, kind: str) -> bool:
+        from dataclasses import replace
+
+        from .. import localllm
+        if self.starting["running"]:
+            return False
+        self.starting = {"running": True, "kind": kind, "since": time.time(), "error": ""}
+
+        def run() -> None:
+            try:
+                localllm.server(replace(config.load(), local_llm=kind)).ensure_running()
+            except Exception as exc:  # noqa: BLE001 - shown in the window
+                log.warning("starting %s: %s", kind, exc)
+                self.starting["error"] = str(exc)
+            finally:
+                self.rescan_and_wait()
+                self.starting["running"] = False
+        threading.Thread(target=run, daemon=True, name="server-start").start()
         return True
 
     # -- a local model (setup: Hozzávalók, Saját gép) --

@@ -187,3 +187,6 @@ form.pick button { min-width: 120px; }
 
 button.danger { border-color: var(--bad); color: var(--bad); }
 .card.reset h2 { margin-top: 0; }
+
+.actions { flex-wrap: wrap; }
+.actions .right-note { flex-basis: 100%; text-align: right; margin: 0; }

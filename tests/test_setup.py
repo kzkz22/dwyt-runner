@@ -98,7 +98,7 @@ def test_ingredients_ask_for_what_the_mode_needs(setup_window, monkeypatch):
     monkeypatch.setattr(whispercpp, "prepared", lambda cfg, model: True)
     page = client.get("/telepites/4").text
     assert "Ami a(z) Vegyes módhoz kell" in page and "Kész: a beszédfelismerő a gépen van." in page
-    assert "Előbb add meg" in page and 'value="qwen/qwen3.8-flash"' in page  # the key is missing
+    assert "A Tovább gomb akkor lesz aktív" in page and 'value="qwen/qwen3.8-flash"' in page  # the key is missing
     tried = []
     monkeypatch.setattr(keystore, "check_llm", lambda cfg: tried.append(cfg.llm_key) or (True, "rendben"))
     r = client.post("/telepites/4", data={"csrf": csrf(page), "action": "llm", "key": " sk-or-1 ",
@@ -225,3 +225,30 @@ def test_openrouter_keys_are_checked_where_a_wrong_key_shows(monkeypatch):
     assert asked == ["https://openrouter.ai/api/v1/key"]
     cfg.llm_key = "good"
     assert keystore.check_llm(cfg) == (True, "rendben")
+
+
+def test_starting_a_server_shows_at_once_and_is_followed(setup_window, monkeypatch):
+    import threading
+    client, runtime, _ = setup_window
+    fake_machine(runtime, [machine.ModelServer("ollama", installed=True, running=False)])
+    config.save(config.Config(whisper_builtin=True, llm_prefer_local=True))
+    wizard.save(mode="sajat")
+    monkeypatch.setattr(whispercpp, "prepared", lambda cfg, model: True)
+    go = threading.Event()
+    from dwyt_runner import localllm
+    monkeypatch.setattr(localllm.Ollama, "ensure_running",
+                        lambda self, wait_s=60: go.wait(10) and (_ for _ in ()).throw(
+                            localllm.LocalLlmError("A(z) Ollama nem indult el 60 másodperc alatt.")))
+    monkeypatch.setattr(runtime, "rescan_and_wait", lambda timeout=30: None)
+    page = client.get("/telepites/4").text
+    assert 'data-busy="Indítás …"' in page and "A Tovább gomb akkor lesz aktív" in page
+    client.post("/telepites/4", data={"csrf": csrf(page), "action": "start", "server": "ollama"})
+    page = client.get("/telepites/4").text  # back at once, while the server is still starting
+    assert 'data-watch="starting"' in page and "indul …" in page
+    assert client.get("/api/telepites").json()["starting"]["running"] is True
+    go.set()
+    for _ in range(50):
+        if not runtime.starting["running"]:
+            break
+        time.sleep(0.05)
+    assert "nem indult el 60 másodperc alatt" in client.get("/telepites/4").text

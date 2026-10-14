@@ -154,8 +154,12 @@ class LocalServer:
             if self.running():
                 return True
             time.sleep(1)
+        why = self.why_not_started()
         raise LocalLlmError(f"A(z) {self.title} nem indult el {int(wait_s)} másodperc alatt. Indítsd el kézzel, "
-                            "és próbáld újra.", "later")
+                            "és próbáld újra." + (f" A szerver utolsó üzenete: {why}" if why else ""), "later")
+
+    def why_not_started(self) -> str:
+        return ""
 
 
 class Ollama(LocalServer):
@@ -226,7 +230,17 @@ class Ollama(LocalServer):
         return SMALL_CONTEXT
 
     def _start(self, program: str) -> None:
-        _detached([program, "serve"], {"OLLAMA_CONTEXT_LENGTH": str(START_CONTEXT[0])})
+        """Windows: the Ollama app (it starts the server, as when the user opens it); elsewhere `ollama serve`.
+        The server's own output goes to ollama-serve.log, so a failed start can say why."""
+        env = {"OLLAMA_CONTEXT_LENGTH": str(START_CONTEXT[0])}
+        app = Path(program).with_name("ollama app.exe")
+        if sys.platform == "win32" and app.exists():
+            _detached([str(app)], env)
+        else:
+            _detached([program, "serve"], env, log_file=start_log())
+
+    def why_not_started(self) -> str:
+        return _tail(start_log())
 
 
 class LmStudio(LocalServer):
@@ -327,9 +341,29 @@ def _no_window() -> dict:
 START_CONTEXT = [32768]  # local_llm_context, for an Ollama the runner starts (before_llm_job sets it)
 
 
-def _detached(cmd: list[str], env: dict[str, str] | None = None) -> None:
+def start_log() -> Path:
+    from .config import data_home
+    return data_home() / "ollama-serve.log"
+
+
+def _tail(path: Path, lines: int = 3) -> str:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+    except OSError:
+        return ""
+    return " / ".join(line.strip() for line in text[-lines:])[:400]
+
+
+def _detached(cmd: list[str], env: dict[str, str] | None = None, log_file: Path | None = None) -> None:
     """Start a server that outlives this call (and the runner)."""
-    kwargs: dict = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    out = subprocess.DEVNULL
+    if log_file is not None:
+        try:
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+            out = open(log_file, "w", encoding="utf-8")  # noqa: SIM115 - handed to the child process
+        except OSError:
+            out = subprocess.DEVNULL
+    kwargs: dict = {"stdin": subprocess.DEVNULL, "stdout": out, "stderr": out}
     if env:
         kwargs["env"] = {**os.environ, **env}
     if sys.platform == "win32":
@@ -341,6 +375,9 @@ def _detached(cmd: list[str], env: dict[str, str] | None = None) -> None:
         subprocess.Popen(cmd, **kwargs)  # noqa: S603 - a fixed program found on this machine
     except OSError as exc:
         raise LocalLlmError(f"Nem sikerült elindítani: {cmd[0]} ({exc}).", "later") from exc
+    finally:
+        if out is not subprocess.DEVNULL:
+            out.close()  # the child has its own handle
 
 
 def _detail(r: httpx.Response) -> str:

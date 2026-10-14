@@ -329,3 +329,16 @@ def test_an_ollama_the_runner_starts_gets_the_context_setting(monkeypatch, ollam
     localllm.before_llm_job(cfg)  # sets what a start would use
     localllm.Ollama(ollama.url)._start("/opt/ollama/ollama")
     assert seen["cmd"] == ["/opt/ollama/ollama", "serve"] and seen["env"]["OLLAMA_CONTEXT_LENGTH"] == "16384"
+
+
+def test_a_failed_start_says_what_the_server_said(monkeypatch, ollama):
+    s = localllm.Ollama(ollama.url)
+    ollama.up = False
+    monkeypatch.setattr(localllm.Ollama, "program", lambda self: "/opt/ollama/ollama")
+
+    def popen(cmd, **kw):
+        kw["stdout"].write("Error: listen tcp 127.0.0.1:11434: bind: address already in use\n")
+    monkeypatch.setattr(localllm.subprocess, "Popen", popen)
+    with pytest.raises(localllm.LocalLlmError, match="address already in use"):
+        s.ensure_running(wait_s=1)
+    ollama.up = True

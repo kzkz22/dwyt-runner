@@ -297,6 +297,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
                              pull=wizard.pull_view(runtime.pull), checks=wizard.load().get("checks", {}),
                              cloud_model=wizard.cloud_model_default(cfg), servers=servers, kind=kind,
                              server_models=server_models, error=hiba,
+                             starting=runtime.starting,
                              suggested=wizard.suggested_local_model(m.vram_gb if m else 0, kind,
                                                                     (m.ram_gb or 0) if m else 0, server_models))
         if n == 5:
@@ -317,6 +318,8 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         with runtime.lock:
             pairing = {k: runtime.pairing.get(k) for k in ("state", "code")}
         return JSONResponse({"prepare": wizard.prepare_view(runtime.prepare), "pull": wizard.pull_view(runtime.pull),
+                             "starting": {"running": runtime.starting["running"],
+                                          "text": f"{int(time.time() - runtime.starting['since'])} mp"},
                              "trial": runtime.trial, "pairing": pairing})
 
     @api.post("/telepites/kihagyas")
@@ -386,22 +389,10 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
             name = str(form.get("name", "")).strip()
             if kind in ("ollama", "lmstudio") and name:
                 runtime.start_pull(kind, name)
-        elif action == "start":
+        elif action == "start":  # in the background: the page shows that it is starting and follows it
             kind = str(form.get("server", ""))
             if kind in ("ollama", "lmstudio"):
-                from starlette.concurrency import run_in_threadpool
-
-                from .. import localllm
-
-                def start() -> None:
-                    try:
-                        localllm.server(replace(cfg, local_llm=kind)).ensure_running()
-                    finally:
-                        runtime.rescan_and_wait()
-                try:
-                    await run_in_threadpool(start)
-                except Exception as exc:  # noqa: BLE001 - shown on the page
-                    return RedirectResponse("/telepites/4?" + urlencode({"hiba": str(exc)}), status_code=303)
+                runtime.start_server(kind)
         elif action == "rescan":
             from starlette.concurrency import run_in_threadpool
             await run_in_threadpool(runtime.rescan_and_wait)

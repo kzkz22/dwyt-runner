@@ -63,16 +63,19 @@
   {% if not running and not installed %}
   <p>Nincs a gépen helyi modellszerver. Telepítsd az <strong>Ollamát</strong> (ingyenes, rendszergazdai jog nélkül is
     települ), majd kattints az Újravizsgálatra.</p>
-  <form method="post" action="/telepites/4" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}">
+  <form method="post" action="/telepites/4" class="inline" data-busy="Vizsgálom …"><input type="hidden" name="csrf" value="{{ csrf }}">
     <a class="button" href="https://ollama.com/download" target="_blank" rel="noopener">Az Ollama letöltése</a>
     <button name="action" value="rescan">Újravizsgálat</button></form>
   {% else %}
   {% for s in servers if s.installed or s.running %}
-  <div class="row server"><span class="dot {{ 'green' if s.running else 'yellow' }}"></span>{{ s.title }}
-    <span class="muted">{{ 'fut' if s.running else 'telepítve, nem fut' }}{% if s.running %} · {{ s.models|length }} modell{% endif %}</span>
-    {% if not s.running %}<form method="post" action="/telepites/4" class="right inline"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <input type="hidden" name="server" value="{{ s.kind }}"><button name="action" value="start">Indítás</button></form>{% endif %}
+  {% set now_starting = starting.running and starting.kind == s.kind %}
+  <div class="row server"{% if now_starting %} data-watch="starting" data-running{% endif %}>
+    {% if now_starting %}<span class="spinner"></span>{% else %}<span class="dot {{ 'green' if s.running else 'yellow' }}"></span>{% endif %}{{ s.title }}
+    <span class="muted">{% if now_starting %}indul … <span data-text></span> (legfeljebb 1 perc){% elif s.running %}fut · {{ s.models|length }} modell{% else %}telepítve, nem fut{% endif %}</span>
+    {% if not s.running and not now_starting %}<form method="post" action="/telepites/4" class="right inline" data-busy="Indítás …"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="server" value="{{ s.kind }}"><button name="action" value="start"{% if starting.running %} disabled{% endif %}>Indítás</button></form>{% endif %}
   </div>
+  {% if starting.error and starting.kind == s.kind and not s.running and not now_starting %}<div class="note warn">{{ starting.error }}</div>{% endif %}
   {% endfor %}
   {% for s in running %}
   {% if s.models %}
@@ -108,8 +111,9 @@
 </section>
 {% endfor %}
 <div class="actions">
+  {% if not go_on %}<p class="muted right-note">A Tovább gomb akkor lesz aktív, ha a „kell” jelű részek megvannak.</p>{% endif %}
   <a class="button" href="/telepites/3">Vissza</a>
   {% if go_on %}<a class="button primary" href="/telepites/5">Tovább</a>
-  {% else %}<span class="muted">Előbb add meg, ami ehhez a módhoz kell.</span><button class="primary" disabled>Tovább</button>{% endif %}
+  {% else %}<button class="primary" disabled>Tovább</button>{% endif %}
 </div>
 {% endblock %}

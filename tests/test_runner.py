@@ -520,3 +520,51 @@ def test_model_info_never_blocks_the_runner(cfg, central, llm, monkeypatch):
     monkeypatch.setattr(modelinfo.httpx, "get", refuse)
     info, server = modelinfo.fetch(cfg)
     assert server == "OpenRouter" and info["osszefoglalo"]["where"] == "cloud"
+
+
+def test_openrouter_thinking_is_shown_and_can_be_switched(monkeypatch):
+    from dwyt_runner import modelinfo
+    from dwyt_runner.config import Config
+
+    class Resp:
+        status_code = 404
+
+        def json(self):
+            return {}
+    monkeypatch.setattr(modelinfo.httpx, "get", lambda *a, **k: Resp())  # no LiteLLM /model/info there
+    rows = {"qwen/qwen3.8-flash": {"id": "qwen/qwen3.8-flash", "context_length": 262144,
+                                   "reasoning": {"default_enabled": True, "mandatory": False}},
+            "deep/always": {"id": "deep/always", "reasoning": {"mandatory": True, "default_enabled": True}},
+            "plain/model": {"id": "plain/model", "supported_parameters": ["temperature"]}}
+    monkeypatch.setattr(modelinfo, "openrouter_models", lambda cfg, timeout=5.0: rows)
+    cfg = Config(llm_url="https://openrouter.ai/api/v1", llm_key="k", llm_public_model="qwen/qwen3.8-flash",
+                 llm_models=["deep/always", "plain/model"])
+    info, server = modelinfo.fetch(cfg)
+    assert server == "OpenRouter"
+    assert info["qwen/qwen3.8-flash"]["thinking"] is True and info["qwen/qwen3.8-flash"]["context"] == 262144
+    assert info["plain/model"]["thinking"] is False and info["deep/always"]["thinking"] is True
+    cfg.llm_reasoning = "off"
+    info, _ = modelinfo.fetch(cfg)
+    assert info["qwen/qwen3.8-flash"]["thinking"] is False and info["deep/always"]["thinking"] is True  # cannot
+    monkeypatch.setattr(modelinfo, "openrouter_models_cached", lambda cfg: rows)
+    assert modelinfo.request_extra(cfg, "qwen/qwen3.8-flash") == {"reasoning": {"enabled": False}}
+    assert modelinfo.request_extra(cfg, "deep/always") == {}  # would be refused
+    cfg.llm_reasoning = "on"
+    assert modelinfo.request_extra(cfg, "qwen/qwen3.8-flash") == {"reasoning": {"enabled": True}}
+    cfg.llm_reasoning = "auto"
+    assert modelinfo.request_extra(cfg, "qwen/qwen3.8-flash") == {}
+    cfg.llm_reasoning, cfg.llm_url = "on", "http://litellm:4000"
+    assert modelinfo.request_extra(cfg, "osszefoglalo") == {}  # LiteLLM: the airouter decides
+
+
+def test_the_reasoning_field_goes_with_the_request(cfg, llm, monkeypatch):
+    from dwyt_runner.llm import Llm
+    seen = {}
+    real_post = __import__("httpx").post
+
+    def post(url, json=None, **kw):
+        seen.update(json)
+        return real_post(url, json=json, **kw)
+    monkeypatch.setattr("dwyt_runner.llm.httpx.post", post)
+    Llm(cfg.llm_url, cfg.llm_key, extra={"reasoning": {"enabled": False}}).chat("osszefoglalo", "s", "u")
+    assert seen["reasoning"] == {"enabled": False}

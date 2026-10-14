@@ -99,6 +99,8 @@ A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en 
 
 A letöltött modellek (whisper.cpp, Whisper-modell, beszélőmodellek, együtt kb. 3,5 GB) külön helyen vannak: Windowson `%LOCALAPPDATA%\dwyt-runner\models` (nem a vándorló profilban), Linuxon `~/.local/share/dwyt-runner/models`, macOS-en a beállítások mellett. A 0.9.3 előtt a beállítások mellett voltak; a futtató az első indításkor egyszer átteszi őket (`DWYT_RUNNER_DATA` felülírja a helyet).
 
+**Gondolkodás felhős modellnél:** OpenRouter-modelleknél a `llm_reasoning` beállítás (Működés → Részletes beállítások): *a modell alapértelmezése*, *be* vagy *ki*. A futtató az OpenRouter modellistájából azt is kiolvassa, hogy az adott modell alapból gondolkodik-e, és mekkora a kontextusa; ezt a dwyt Futtatók oldala mutatja. Ahol a modell mindig gondolkodik, ott a „ki” nem hat.
+
 **Helyi modell kontextusa:** az LM Studio első használatkor gyakran csak 4096 tokennyi kontextussal tölti be a modellt, ebbe egy hosszabb átirat nem fér bele. A futtató ezért maga tölti be a modellt `local_llm_context` (alapból 32 768) tokennel; ha a videókártya memóriája nem bírja, kevesebbel (legfeljebb 8192-ig lefelé). Az Ollamánál a futtató kiolvassa, mekkora kontextussal fut a modell (ha a futtató indítja az Ollamát, ezzel a beállítással indítja). A hosszabb átiratot ehhez mérten bontja részekre, a kérdések hátterét pedig ehhez vágja.
 
 **Alaphelyzet** (mintha most telepítenéd először): a Működés lap alján, vagy `dwyt-runner reset [--models]`. Kikapcsolja a bejelentkezéskori indulást, törli a kulcsokat és a beállításokat, a modelleket csak külön kérésre; utána a telepítő lépései jönnek. A dwyt-ben a régi futtatót a Futtatók oldalon vond vissza.

@@ -95,9 +95,18 @@ def fetch(cfg: Config, timeout: float = 5.0) -> tuple[dict[str, dict[str, Any]],
             from . import localllm
             if localllm.uses_local(cfg):
                 server = localllm.server(cfg).title
-    if server == "OpenRouter":  # everything there runs in the cloud
+    if server == "OpenRouter":  # everything there runs in the cloud; its model list tells context and thinking
+        catalogue = openrouter_models(cfg, timeout)
         for name in wanted:
-            info.setdefault(name, {"where": "cloud", "target_label": name, "provider": "OpenRouter"})
+            block = info.setdefault(name, {"where": "cloud", "target_label": name, "provider": "OpenRouter"})
+            row = catalogue.get(name)
+            if row is None:
+                continue
+            if isinstance(row.get("context_length"), int) and row["context_length"] > 0:
+                block["context"] = row["context_length"]
+            thinking = thinking_of(row, cfg.llm_reasoning)
+            if thinking is not None:
+                block["thinking"] = thinking
     if server in ("Ollama", "LM Studio"):  # a model server on the runner's own machine
         for name in wanted:
             info.setdefault(name, {"where": "local", "target_label": name, "provider": server})
@@ -107,9 +116,56 @@ def fetch(cfg: Config, timeout: float = 5.0) -> tuple[dict[str, dict[str, Any]],
     return info, server
 
 
+def openrouter_models(cfg: Config, timeout: float = 5.0) -> dict[str, dict[str, Any]]:
+    """OpenRouter's public model list (id -> row), for context length and reasoning; {} when unreachable."""
+    try:
+        resp = httpx.get(cfg.llm_url.rstrip("/") + "/models", timeout=timeout,
+                         headers={"Authorization": f"Bearer {cfg.llm_key}"} if cfg.llm_key else {})
+        rows = resp.json().get("data") if resp.status_code == 200 else []
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return {}
+    return {r["id"]: r for r in rows or [] if isinstance(r, dict) and isinstance(r.get("id"), str)}
+
+
+def thinking_of(row: dict[str, Any], setting: str) -> bool | None:
+    """Will the model think with this setting? None: unknown (the model's own default, not told)."""
+    reasoning = row.get("reasoning")
+    if not isinstance(reasoning, dict):
+        params = row.get("supported_parameters")
+        if isinstance(params, list) and "reasoning" not in params:
+            return False  # not a thinking model
+        return None if setting == "auto" else setting == "on"
+    if reasoning.get("mandatory") is True:
+        return True
+    if setting in ("on", "off"):
+        return setting == "on"
+    return reasoning.get("default_enabled") if isinstance(reasoning.get("default_enabled"), bool) else None
+
+
+def request_extra(cfg: Config, model: str) -> dict[str, Any]:
+    """The request field for llm_reasoning (OpenRouter only; 'auto' sends nothing). A model that always thinks
+    is never asked not to: it would refuse the request."""
+    if cfg.llm_reasoning not in ("on", "off") or "openrouter.ai" not in (cfg.llm_url or ""):
+        return {}
+    row = openrouter_models_cached(cfg).get(model) or {}
+    reasoning = row.get("reasoning") if isinstance(row.get("reasoning"), dict) else {}
+    if cfg.llm_reasoning == "off" and reasoning.get("mandatory") is True:
+        return {}
+    return {"reasoning": {"enabled": cfg.llm_reasoning == "on"}}
+
+
+_models_cache: dict[str, Any] = {"at": 0.0, "url": "", "value": {}}
+
+
+def openrouter_models_cached(cfg: Config) -> dict[str, dict[str, Any]]:
+    if _models_cache["url"] != cfg.llm_url or time.monotonic() - _models_cache["at"] >= REFRESH_S:
+        _models_cache.update(at=time.monotonic(), url=cfg.llm_url, value=openrouter_models(cfg))
+    return _models_cache["value"]
+
+
 def cached(cfg: Config) -> tuple[dict[str, dict[str, Any]], str]:
     """fetch(), at most once an hour (or when the model settings change)."""
-    key = (cfg.llm_url, tuple(names(cfg)), tuple(sorted((cfg.llm_model_notes or {}).items())))
+    key = (cfg.llm_url, tuple(names(cfg)), tuple(sorted((cfg.llm_model_notes or {}).items())), cfg.llm_reasoning)
     if _cache["key"] != key or time.monotonic() - _cache["at"] >= REFRESH_S:
         _cache.update(at=time.monotonic(), key=key, value=fetch(cfg))
     return _cache["value"]
@@ -117,3 +173,4 @@ def cached(cfg: Config) -> tuple[dict[str, dict[str, Any]], str]:
 
 def reset() -> None:
     _cache.update(at=0.0, key=None, value=({}, ""))
+    _models_cache.update(at=0.0, url="", value={})

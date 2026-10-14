@@ -96,6 +96,10 @@ SETTINGS: tuple[Setting, ...] = (
     S("llm_url", "url", "llm", "Felhős vagy saját LLM-szerver címe", "Például https://openrouter.ai/api/v1, vagy a "
       "saját LiteLLM-ed. Ha meg van adva, ez az elsődleges a helyi modellszerverrel szemben."),
     S("llm_key", "secret", "llm", "Az LLM-szerver kulcsa", "Javasolt egy külön kulcs keretkorláttal."),
+    S("llm_reasoning", "choice", "llm", "Gondolkodás (felhős modellnél)", "OpenRouter-modelleknél: a modell a "
+      "válasz előtt végiggondolja a feladatot. Alaposabb, de lassabb és drágább (a gondolkodás is fizetős token). "
+      "Ahol a modell mindig gondolkodik, ott nem kapcsolható ki.",
+      choices=(("auto", "a modell alapértelmezése"), ("on", "be"), ("off", "ki"))),
     S("llm_public_model", "text", "llm", "Modell a nyilvános videókhoz", "Ezzel készül a YouTube-videók "
       "összefoglalója."),
     S("llm_private_model", "text", "llm", "Modell a saját felvételekhez", "A saját felvételek szövege csak ehhez a "

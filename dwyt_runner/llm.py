@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import time
+from typing import Any
 from dataclasses import dataclass, field
 
 import httpx
@@ -64,10 +65,12 @@ def chat_url(base: str) -> str:
 
 
 class Llm:
-    def __init__(self, base_url: str, api_key: str, timeout: float = 2400) -> None:
+    def __init__(self, base_url: str, api_key: str, timeout: float = 2400,
+                 extra: dict[str, Any] | None = None) -> None:
         self.url = chat_url(base_url)
         self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self.timeout = timeout
+        self.extra = extra or {}  # server-specific request fields, e.g. OpenRouter's "reasoning"
 
     def chat(self, model: str, system: str, user: str, temperature: float = 0.3) -> Answer:
         return self.complete(model, [{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -76,7 +79,7 @@ class Llm:
     def complete(self, model: str, messages: list[dict], temperature: float | None = 0.3) -> Answer:
         """A whole conversation; temperature None leaves it to the server (the model's preset)."""
         started = time.monotonic()
-        body: dict = {"model": model, "messages": messages}
+        body: dict = {"model": model, "messages": messages, **self.extra}
         if temperature is not None:
             body["temperature"] = temperature
         try:

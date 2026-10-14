@@ -147,7 +147,8 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         context = localllm.before_llm_job(cfg, model)  # a local model: its context decides the text sizes
         if localllm.uses_local(cfg):
             localllm.mark_used(model)
-        llm = Llm(cfg.llm_url, cfg.llm_key)
+        extra = {} if localllm.uses_local(cfg) else modelinfo.request_extra(cfg, model)
+        llm = Llm(cfg.llm_url, cfg.llm_key, extra=extra)
         if kind == "summarize":
             return summarize.run(data, llm, model, stage, progress=progress, context_tokens=context)
         if kind == "ask":

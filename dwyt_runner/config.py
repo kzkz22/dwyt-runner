@@ -83,6 +83,7 @@ class Config:
     # what the model names are for, shown on the central's Runners page when the LLM server does not say it
     # (dwyt-airouter's LiteLLM does): "name=description; name2=description"
     llm_model_notes: dict[str, str] = field(default_factory=dict)
+    llm_reasoning: str = "auto"  # OpenRouter models: auto (the model's default) | on | off
     # which sites this runner downloads from ("*" = any)
     allowed_domains: list[str] = field(default_factory=lambda: list(DEFAULT_DOMAINS))
     cookies_file: str = ""

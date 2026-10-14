@@ -81,3 +81,14 @@ def test_machine_page_shows_the_version_and_looks_for_a_newer_one(monkeypatch):
     token = re.search(r'name="csrf" value="([^"]+)"', page).group(1)
     client.post("/gepem/ytdlp", data={"csrf": token})
     assert ran.wait(5)
+
+
+def test_uv_is_found_outside_a_short_service_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(ytdlp_update.shutil, "which", lambda name: None)  # systemd: no ~/.local/bin on PATH
+    monkeypatch.setattr(ytdlp_update.Path, "home", lambda: tmp_path)
+    assert ytdlp_update.find_uv() is None
+    uv = tmp_path / ".local" / "bin" / ("uv.exe" if sys.platform == "win32" else "uv")
+    uv.parent.mkdir(parents=True)
+    uv.write_text("")
+    assert ytdlp_update.find_uv() == str(uv)
+    assert ytdlp_update.install_command()[0] == str(uv)

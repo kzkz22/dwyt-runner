@@ -15,6 +15,7 @@ import sys
 import threading
 import time
 from importlib import metadata
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -54,9 +55,21 @@ def newer(candidate: str, current: str) -> bool:
     return bool(candidate) and (not current or _key(candidate) > _key(current))
 
 
+def find_uv() -> str | None:
+    """uv on PATH, or where its installer puts it: a systemd service has a short PATH without ~/.local/bin."""
+    found = shutil.which("uv")
+    if found:
+        return found
+    name = "uv.exe" if sys.platform == "win32" else "uv"
+    for folder in (Path.home() / ".local" / "bin", Path.home() / ".cargo" / "bin"):
+        if (folder / name).is_file():
+            return str(folder / name)
+    return None
+
+
 def install_command() -> list[str] | None:
     """uv when it is there (it installed the runner), else this Python's pip; None when neither."""
-    uv = shutil.which("uv")
+    uv = find_uv()
     if uv:
         return [uv, "pip", "install", "--python", sys.executable, "--upgrade", SPEC]
     try:

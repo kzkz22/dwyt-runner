@@ -49,6 +49,10 @@ SETTINGS: tuple[Setting, ...] = (
       "visszavonható.", remote=False, readonly=True),
     S("runner_id", "int", "connection", "Futtató azonosító", "A párosítás tölti ki.", remote=False, readonly=True),
     S("name", "text", "connection", "A futtató neve", "Így látszik a dwyt Futtatók oldalán, például „otthoni gép”."),
+    S("remote_settings", "choice", "connection", "A dwyt-ből is állítható", "A beállítások a dwyt Futtatók oldaláról, "
+      "a Beállítás gombbal is módosíthatók; a kulcsokat a böngésző a futtató saját kulcsával titkosítja. Minden "
+      "változás naplóba kerül. Automatikusan: szerveren be, az asztali alkalmazásban ki.",
+      choices=(("auto", "automatikus"), ("on", "be"), ("off", "ki")), remote=False),
     # -- cloud transcription --
     S("assemblyai_key", "secret", "cloud", "AssemblyAI-kulcs", "A saját AssemblyAI-fiókod kulcsa. Felhős átírás "
       "csak akkor készül, ha valaki kifejezetten azt kéri; a költség a te fiókodat terheli. Javasolt egy külön kulcs "

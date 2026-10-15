@@ -1,6 +1,8 @@
 """dwyt-runner <command>
 
   pair SERVER [--name NAME]  pair with a dwyt central service (prints a code to approve there)
+  adopt --server URL --runner-id N [--name NAME] --token-stdin
+                             store a pairing made by the one-line installer (the token comes on stdin)
   run                        ask for work and do it, until stopped (Ctrl+C)
   app [--browser] [--hidden] the same with its window (Állapot, Működés, Gépem, Kulcsok) and tray icon;
                              a second start shows the running one's window; extra [desktop]
@@ -72,6 +74,23 @@ def pair(server: str, name: str | None) -> int:
             return 0
     _out("A kód lejárt; indítsd újra a párosítást.")
     return 1
+
+
+def adopt(server: str, runner_id: int, name: str | None, token: str) -> int:
+    """The one-line installer redeemed its install code; keep the token (from stdin, never argv)."""
+    token = token.strip()
+    if not token or len(token) > 200:
+        _out("Hiba: nincs token a bemeneten.")
+        return 1
+    cfg = config.load()
+    if cfg.paired and (cfg.server.rstrip("/") != server.rstrip("/") or cfg.runner_id != runner_id):
+        _out(f"Ez a gép eddig a(z) {cfg.runner_id}. futtató volt itt: {cfg.server}; mostantól az új párosítás érvényes "
+             "(a régit a dwyt Futtatók oldalán vond vissza).")
+    cfg.server, cfg.token, cfg.runner_id = server.rstrip("/"), token, runner_id
+    cfg.name = name or cfg.name or socket.gethostname()
+    config.save(cfg)
+    _out(f"Párosítva: {cfg.name}. Beállítások: {config.path()}")
+    return 0
 
 
 def run() -> int:
@@ -344,6 +363,11 @@ def main() -> None:
     p = sub.add_parser("pair")
     p.add_argument("server")
     p.add_argument("--name")
+    adp = sub.add_parser("adopt")
+    adp.add_argument("--server", required=True)
+    adp.add_argument("--runner-id", type=int, required=True)
+    adp.add_argument("--name")
+    adp.add_argument("--token-stdin", action="store_true", required=True)
     sub.add_parser("run")
     ap = sub.add_parser("app")
     ap.add_argument("--browser", action="store_true", help="a böngészőben, saját ablak helyett")
@@ -384,6 +408,8 @@ def main() -> None:
         logging.getLogger("httpx").setLevel(logging.WARNING)
     if args.cmd == "pair":
         sys.exit(pair(args.server, args.name))
+    if args.cmd == "adopt":
+        sys.exit(adopt(args.server, args.runner_id, args.name, sys.stdin.readline()))
     if args.cmd == "run":
         sys.exit(run())
     if args.cmd == "app":

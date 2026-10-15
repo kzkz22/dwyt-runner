@@ -1,6 +1,6 @@
 [project]
 name = "dwyt-runner"
-version = "0.9.9"
+version = "0.10.0"
 description = "dwyt runner: downloads, captions, cloud transcription and summaries on your own machine"
 requires-python = ">=3.11,<3.15"  # new Pythons first lack ready-made wheels (brotli for yt-dlp): uv then fetches a fitting one
 license = "MIT"
@@ -10,6 +10,7 @@ dependencies = [
   "imageio-ffmpeg>=0.5",         # a static ffmpeg for Linux, Windows and macOS
   "deno>=2.0",                   # the JavaScript runtime yt-dlp needs for YouTube
   "keyring>=25",                 # secrets in the system key store (Windows Credential Manager, Keychain, Secret Service)
+  "cryptography>=42",            # remote settings: keys arrive encrypted with this runner's own RSA key (7d)
 ]
 
 [project.optional-dependencies]

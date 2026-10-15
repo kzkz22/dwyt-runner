@@ -16,6 +16,8 @@ A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouT
 
 ## Telepítés
 
+**Linux szerverre egy paranccsal (ajánlott):** a dwyt Futtatók oldalán az „Új futtató” → *Szerverre (Linux)* → „Telepítőparancs kérése”. A kapott parancs (`curl -fsSL https://dwyt.iodate.date/futtato.sh | sh -s -- KÓD`, 5 percig érvényes, egyszer használható) párosít, telepíti az uv-t és a futtatót, majd systemd-szolgáltatásként elindítja: rendszergazdaként külön `dwyt-runner` felhasználóval (`/var/lib/dwyt-runner`), különben a saját felhasználód szolgáltatásaként. Utána minden beállítás a dwyt-ben, a futtató **Beállítás** gombjával megy (lásd: Távoli beállítás). A kézi út:
+
 Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélkül; a Pythont, az ffmpeg-et és a YouTube-hoz kellő `deno`-t is hozza.
 
 1. Az `uv` telepítése (egyszer):
@@ -156,7 +158,7 @@ Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más
   systemctl enable --now dwyt-runner
   systemctl status dwyt-runner        # napló: journalctl -u dwyt-runner -f
   ```
-  A fájl rootként futtatja a programot (`/root/.local/bin/dwyt-runner`, beállítások: `/root/.config/dwyt-runner`). Ha másik felhasználóval telepítettél és párosítottál, a `User=`, `Environment=HOME=` és `ExecStart=` sort írd át az ő adataira.
+  (Az egysoros telepítő ezt magától megcsinálja, külön felhasználóval.) A fájl rootként futtatja a programot (`/root/.local/bin/dwyt-runner`, beállítások: `/root/.config/dwyt-runner`). Ha másik felhasználóval telepítettél és párosítottál, a `User=`, `Environment=HOME=` és `ExecStart=` sort írd át az ő adataira.
 - **Linux asztali gépen (felhasználói szolgáltatás, root nélkül):**
   ```bash
   mkdir -p ~/.config/systemd/user
@@ -170,6 +172,12 @@ Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más
   Itt minden parancsban kell a `--user`; a `--user` nélküli `systemctl` a rendszerszolgáltatást keresi, és „could not be found” hibát ad.
 - **Windows:** Feladatütemező → Alapfeladat létrehozása → „Bejelentkezéskor” → program: `dwyt-runner`, argumentum: `run`.
 - **macOS:** egyelőre egy terminálablakban: `dwyt-runner run`.
+
+## Távoli beállítás
+
+A futtató beállításai a dwyt Futtatók oldalán, a **Beállítás** gombbal is módosíthatók (`remote_settings`: `auto` | `on` | `off`; automatikusan a `dwyt-runner run` futtatónál be, az asztali alkalmazásban ki, ott a Működés lapon kapcsolható). A futtató elküldi a beállításai leírását, a nem titkos értékeket és egy saját RSA-kulcs nyilvános felét (`remote_key.pem` a beállítási mappában, csak a tulajdonosa olvassa). A kulcsokat (AssemblyAI, LLM) a böngésző ezzel titkosítja, így a dwyt nem látja őket. Minden értéket a futtató maga ellenőriz, és csak a dwyt-ből állíthatónak jelölt mezőket fogadja el; a gép saját útvonalai (whisper.cpp helye, sütifájl, munkamappa), a kulcsok helye és maga ez a kapcsoló csak helyben állítható. Minden változás, a gépen tett is, a dwyt-beli naplóba kerül.
+
+**Frissítés most:** ha a GitHubon újabb változat van, a dwyt-ben a szerveres futtató kártyáján megjelenik a gomb. A futtató két munka között ugyanazt a parancsot futtatja, mint a kézi frissítés, a meglévő kiegészítőkkel, majd újraindul (systemd alatt 75-ös kóddal kilép, és a szolgáltatás elindítja az újat). Aláírás-ellenőrzés még nincs; az a telepítőcsomaggal jön.
 
 ## Frissítés
 

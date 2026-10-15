@@ -99,6 +99,8 @@ class Config:
     work_dir: str = ""
     # where the secrets above live: auto = the system key store when there is one, else this file
     secret_store: str = "auto"         # auto | keyring | file
+    # settings from the dwyt Runners page (round 7d): auto = on for `run` (a server), off in the desktop app
+    remote_settings: str = "auto"      # auto | on | off
 
     @property
     def paired(self) -> bool:

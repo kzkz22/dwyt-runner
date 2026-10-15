@@ -37,6 +37,7 @@ class Central:
         if token:
             headers["Authorization"] = f"Bearer {token}"
         self.http = httpx.Client(base_url=self.server, headers=headers, timeout=timeout, transport=transport)
+        self.settings_pending = False  # the last claim said settings changes wait (Dwyt-Settings: pending)
 
     def close(self) -> None:
         self.http.close()
@@ -75,6 +76,7 @@ class Central:
     def claim(self, capabilities: dict[str, Any], tool_versions: dict[str, str]) -> dict[str, Any] | None:
         resp = self._call("POST", "/runner/v1/claim", timeout=90, json={
             "capabilities": capabilities, "runner_version": __version__, "tool_versions": tool_versions})
+        self.settings_pending = resp.headers.get("dwyt-settings") == "pending"
         if resp.status_code == 204:
             return None
         if resp.status_code != 200:
@@ -98,6 +100,34 @@ class Central:
         if resp.status_code != 200:
             raise CentralError(_message(resp))
 
+
+    # remote settings (round 7d)
+    def report_settings(self, body: dict[str, Any]) -> int:
+        """How many changes wait; 0 when the central does not know remote settings yet (older version)."""
+        resp = self._call("PUT", "/runner/v1/settings", json=body)
+        if resp.status_code in (404, 405):
+            return 0
+        if resp.status_code != 200:
+            raise CentralError(f"A beállítások jelentése: HTTP {resp.status_code}: {_message(resp)}")
+        return int(resp.json().get("pending") or 0)
+
+    def setting_changes(self) -> list[dict[str, Any]]:
+        resp = self._call("GET", "/runner/v1/settings/changes")
+        if resp.status_code != 200:
+            raise CentralError(f"A beállítás-változások lekérése: HTTP {resp.status_code}: {_message(resp)}")
+        return list(resp.json().get("changes") or [])
+
+    def setting_result(self, change_id: int, result: dict[str, Any]) -> None:
+        resp = self._call("POST", f"/runner/v1/settings/changes/{change_id}/result", json=result)
+        if resp.status_code not in (200, 404):
+            raise CentralError(f"A beállítás eredménye: HTTP {resp.status_code}: {_message(resp)}")
+
+    # pairing by install code (the one-line installer redeems it; this is for tests and other installers)
+    def redeem(self, code: str, name: str) -> dict[str, Any]:
+        resp = self._call("POST", "/runner/v1/pair/redeem", json={"code": code, "name": name})
+        if resp.status_code != 200:
+            raise CentralError(_message(resp))
+        return resp.json()
 
     # own recordings
     def download(self, path: str, dest: str, max_bytes: int, attempts: int = 4) -> int:

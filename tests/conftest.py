@@ -74,9 +74,36 @@ class FakeCentral:
                 return bad
             body = await request.json()
             fake.claims.append(body)
+            headers = {"Dwyt-Settings": "pending"} if fake.changes else {}
             if not fake.queue:
-                return Response(status_code=204)
-            return fake.queue.pop(0)
+                return Response(status_code=204, headers=headers)
+            return JSONResponse(fake.queue.pop(0), headers=headers)
+
+        @app.put("/runner/v1/settings")
+        async def settings_report(request: Request):
+            bad = check(request)
+            if bad:
+                return bad
+            if fake.no_settings:
+                return JSONResponse({"detail": "Not Found"}, status_code=404)
+            fake.reports.append(await request.json())
+            return {"pending": len(fake.changes)}
+
+        @app.get("/runner/v1/settings/changes")
+        async def settings_changes(request: Request):
+            bad = check(request)
+            if bad:
+                return bad
+            out, fake.changes = fake.changes, []
+            return {"changes": out}
+
+        @app.post("/runner/v1/settings/changes/{change_id}/result")
+        async def settings_result(change_id: int, request: Request):
+            bad = check(request)
+            if bad:
+                return bad
+            fake.change_results[change_id] = await request.json()
+            return {"ok": True}
 
         @app.post("/runner/v1/jobs/{job_id}/heartbeat")
         async def heartbeat(job_id: int, request: Request):
@@ -156,6 +183,7 @@ class FakeCentral:
         self.results, self.failures, self.known, self.cancel = {}, {}, set(), set()
         self.approved, self.result_failures = False, 0
         self.files, self.registered, self.cut_once = {}, [], False
+        self.reports, self.changes, self.change_results, self.no_settings = [], [], {}, False
 
     def add_job(self, job_id: int, kind: str, data: dict) -> None:
         self.known.add(job_id)
@@ -357,8 +385,18 @@ class MemoryKeyring:
 KEYRING = MemoryKeyring()
 
 
+@pytest.fixture(scope="session")
+def remote_key_pem() -> bytes:
+    """One RSA key for all tests (3072-bit generation is slow)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
+    return key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                             serialization.NoEncryption())
+
+
 @pytest.fixture(autouse=True)
-def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file):
+def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file, remote_key_pem):
     import keyring
 
     from dwyt_runner import keystore
@@ -366,6 +404,11 @@ def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file)
     keyring.set_keyring(KEYRING.backend)
     keystore.reset()
     monkeypatch.setenv("DWYT_RUNNER_HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir(exist_ok=True)
+    (tmp_path / "home" / "remote_key.pem").write_bytes(remote_key_pem)
+    from dwyt_runner import remote
+    remote.APP = False
+    remote._latest.update(version="", at=time.time())  # no GitHub in tests
     central.reset()
     whisper.reset()
     assembly.reset()

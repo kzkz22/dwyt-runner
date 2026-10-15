@@ -46,6 +46,15 @@
   <noscript><div class="actions"><button>Mentés</button></div></noscript>
 </form>
 
+<form method="post" action="/mukodes/tavoli" class="card login-start">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label class="check"><input type="checkbox" name="on"{% if remote_on %} checked{% endif %} data-autosubmit>
+    <span><strong>A dwyt-ből is állítható:</strong> a beállítások a dwyt Futtatók oldalán, a Beállítás gombbal is
+      módosíthatók{% if paired %} ({{ server }}/futtatok){% endif %}. A kulcsokat a böngésző ennek a gépnek a saját
+      kulcsával titkosítja, a dwyt nem látja őket; minden változás naplóba kerül, és értesítés megy róla.</span></label>
+  <noscript><div class="actions"><button>Mentés</button></div></noscript>
+</form>
+
 <details class="card details"{% if mode == "egyeni" %} open{% endif %}>
   <summary>Részletes beállítások</summary>
   <form method="post" action="/mukodes/reszletek" data-show-if>
@@ -53,7 +62,7 @@
     <label class="check small"><input type="checkbox" data-toggle-advanced> Haladó beállítások is</label>
     {% for g in groups %}
     <fieldset><legend>{{ g.title }}</legend>
-      {% for s in g.settings if not s.readonly and s.kind != "secret" %}
+      {% for s in g.settings if not s.readonly and s.kind != "secret" and s.key != "remote_settings" %}
       <div class="field{% if s.advanced %} advanced{% endif %}" data-key="{{ s.key }}"{% if s.show_if %} data-when='{{ s.show_if|tojson }}'{% endif %}>
         {% set v = values[s.key] %}
         {% if s.kind == "bool" %}

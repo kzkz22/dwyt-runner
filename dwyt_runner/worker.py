@@ -121,6 +121,23 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
         activity.finish(outcome, error)
 
 
+def sync_settings(cfg: Config, central: Central, take: bool = False) -> Config:
+    """Report the settings (round 7d) and, when changes wait, apply them. Never stops the work: a failure is
+    logged and tried again at the next report; a finished update leaves the loop (remote.RestartNow)."""
+    from . import remote
+    try:
+        if remote.report(cfg, central) or take:
+            if remote.enabled(cfg):
+                return remote.handle(cfg, central)
+    except remote.RestartNow:
+        raise
+    except CentralError as exc:
+        log.warning("settings report: %s", exc)
+    except Exception:  # noqa: BLE001 - e.g. the key file cannot be written
+        log.exception("settings report failed")
+    return cfg
+
+
 def loop(cfg: Config, stop: threading.Event, central: Central | None = None, once: bool = False) -> None:
     """Ask for work until stopped. Unauthorized/Outdated propagate: the user must act."""
     central = central or Central(cfg.server, cfg.token)
@@ -131,6 +148,9 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
     wait = 2
     last_scan = 0.0
     last_caps = time.monotonic()
+    from . import remote
+    cfg = sync_settings(cfg, central)
+    last_report = time.monotonic()
     while not stop.is_set():
         if RELOAD.is_set():
             RELOAD.clear()
@@ -139,6 +159,11 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
             caps = work.capabilities(cfg)
             last_caps = time.monotonic()
             log.info("settings reloaded; capabilities: %s", caps)
+            cfg = sync_settings(cfg, central)  # a change made in the window: dwyt shows it (and logs it)
+            last_report = time.monotonic()
+        if time.monotonic() - last_report >= remote.REPORT_EVERY_S:
+            last_report = time.monotonic()
+            cfg = sync_settings(cfg, central)
         if time.monotonic() - last_caps >= modelinfo.REFRESH_S:  # what the model names mean may change
             last_caps = time.monotonic()
             caps = work.capabilities(cfg)
@@ -166,6 +191,10 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
             except CentralError as exc:
                 log.warning("job %s not handed back: %s", job.get("job_id"), exc)
             return
+        if job is None and getattr(central, "settings_pending", False):  # the owner changed something on the dwyt page
+            cfg = sync_settings(cfg, central, take=True)
+            caps = work.capabilities(cfg)
+            last_report = last_caps = time.monotonic()
         if job is not None:
             run_job(central, cfg, job, stop)
             if once:

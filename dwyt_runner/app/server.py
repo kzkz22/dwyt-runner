@@ -22,7 +22,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .. import __version__, autostart, config, keystore, machine, modes, settings, trial, whispercpp
+from .. import __version__, autostart, config, keystore, machine, modes, remote, settings, trial, whispercpp
 from . import wizard
 from .runtime import Runtime
 
@@ -72,6 +72,7 @@ class App:
 
 
 def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
+    remote.APP = True  # the desktop app: remote settings only when switched on here (decision 18.11)
     state = App(runtime, host)
     api = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     api.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -150,6 +151,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
                             flows=modes.preview(cfg), missing=[m for m in hiany.split("|") if m],
                             groups=settings.describe()["groups"], values=config.masked(cfg),
                             login_start=autostart.enabled(), models_gb=models_gb,
+                            remote_on=remote.enabled(cfg), paired=cfg.paired, server=cfg.server,
                             models_dir=str(machine.models_dir()))
 
     @api.post("/mukodes")
@@ -172,6 +174,16 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
             autostart.set_enabled(form.get("on") == "on")
         except OSError as exc:
             return RedirectResponse("/mukodes?hiany=" + f"Az indítást nem sikerült beállítani: {exc}", status_code=303)
+        return RedirectResponse("/mukodes", status_code=303)
+
+    @api.post("/mukodes/tavoli")
+    async def remote_save(request: Request):
+        """A dwyt-ből is állítható (round 7d): on/off here; the change reaches dwyt with the next report."""
+        form = await state.form(request)
+        cfg = config.load()
+        cfg.remote_settings = "on" if form.get("on") == "on" else "off"
+        config.save(cfg)
+        runtime.settings_changed()
         return RedirectResponse("/mukodes", status_code=303)
 
     @api.post("/alaphelyzet")

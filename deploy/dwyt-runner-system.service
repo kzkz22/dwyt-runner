@@ -12,7 +12,10 @@ User=root
 Environment=HOME=/root
 ExecStart=/root/.local/bin/dwyt-runner run
 Restart=on-failure
-RestartSec=30
+RestartSec=10
+# 75: "Frissítés most" installed a new version (start it); 2: token revoked, 3: the dwyt service wants a
+# newer runner (restarting would not help)
+RestartPreventExitStatus=2 3
 
 [Install]
 WantedBy=multi-user.target

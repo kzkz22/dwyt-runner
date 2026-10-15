@@ -135,3 +135,16 @@ def test_window_fits_the_screen():
     Screen.width, Screen.height = 2560, 1440
     assert main.window_size(Module) == (1040, 800)
     assert main.window_size(object()) == (1040, 800)
+
+
+def test_main_guards_come_last():
+    """`python -m module` runs the guard where it stands: everything after it does not exist yet (0.12.0 did not
+    start on Windows because window_size came after the guard)."""
+    import ast
+    from pathlib import Path
+
+    import dwyt_runner
+    for path in Path(dwyt_runner.__file__).parent.rglob("*.py"):
+        body = ast.parse(path.read_text(encoding="utf-8")).body
+        guards = [i for i, node in enumerate(body) if isinstance(node, ast.If) and "__main__" in ast.unparse(node.test)]
+        assert all(i == len(body) - 1 for i in guards), f"{path}: the __main__ guard is not the last statement"

@@ -70,6 +70,9 @@ jobs:
           Write-Output "version: $out"
           $out = & "$app\python\python.exe" -c "import webview, pystray, sherpa_onnx, dwyt_runner.updater as u; k = u.kind(); print(k); assert k == 'inno', k" 2>&1
           if ($LASTEXITCODE -ne 0) { Fail "imports: $out" }
+          $out = & "$app\python\python.exe" -m dwyt_runner.app.main --self-test 2>&1
+          if ($LASTEXITCODE -ne 0) { Fail "the window app would not start: $out" }
+          Write-Output "app: $out"
           if (-not (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "dwyt*.lnk")) { Fail "no Start menu shortcut" }
           Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
           Start-Sleep -Seconds 5

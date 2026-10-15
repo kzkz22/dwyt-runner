@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import socket
+import sys
 import threading
 import time
 import urllib.request
@@ -241,7 +242,10 @@ def entry() -> None:
     ap.add_argument("--browser", action="store_true")
     ap.add_argument("--hidden", action="store_true")
     ap.add_argument("--after", type=int, default=0, help=argparse.SUPPRESS)
+    ap.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args()
+    if args.self_test:
+        sys.exit(self_test())
     if sys.stdout is None:  # pythonw: no console; some libraries (uvicorn) ask sys.stdout.isatty()
         sys.stdout = sys.stderr = open(os.devnull, "w", encoding="utf-8")  # noqa: SIM115
     home = config.home()
@@ -250,11 +254,37 @@ def entry() -> None:
                                                    encoding="utf-8")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[handler])
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    sys.exit(run(args.browser, args.hidden, args.after))
+    try:
+        code = run(args.browser, args.hidden, args.after)
+    except Exception as exc:  # noqa: BLE001 - without a console nobody would see it
+        logging.getLogger("dwyt").exception("the app could not start")
+        tell_failure(f"A dwyt futtató nem indult el: {exc}\n\nRészletek: {home / 'app.log'}")
+        code = 1
+    sys.exit(code)
 
 
-if __name__ == "__main__":
-    entry()
+def tell_failure(text: str) -> None:
+    """A start failure in a message box (Windows; the console-less app has nowhere else to say it)."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(None, text, "dwyt futtató", 0x10)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def self_test() -> int:
+    """`python -m dwyt_runner.app.main --self-test` (the release workflow): everything the window start needs is
+    importable and callable, without opening a window or serving."""
+    import webview  # noqa: F401 - the desktop extra is there
+
+    from .runtime import Runtime
+    from .server import create
+    create(Runtime(start_worker=False), "127.0.0.1:1")
+    width, height = window_size(webview)
+    print(f"ok {width}x{height}")
+    return 0
 
 
 WINDOW = (1040, 800)  # the wanted size; never more than the screen allows (a laptop at 150 % is ~1280 x 680)
@@ -270,3 +300,7 @@ def window_size(webview_module) -> tuple[int, int]:
     if sw <= 0 or sh <= 0:
         return WINDOW
     return min(WINDOW[0], int(sw * 0.92)), min(WINDOW[1], int(sh * 0.86))
+
+
+if __name__ == "__main__":
+    entry()

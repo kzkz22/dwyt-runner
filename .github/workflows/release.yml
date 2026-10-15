@@ -2,11 +2,14 @@
 # A tag vX.Y.Z (equal to pyproject's version) builds the wheel, the Windows installer and the Linux AppImage,
 # tries each, writes latest.json (version, file names, sizes, SHA-256) and signs it with the project's minisign
 # key (Actions secret MINISIGN_SECRET_KEY: the whole minisign.key file, made with `minisign -G -W`). Without the
-# secret the release is published unsigned, and runners do not install it. Run by hand: packages only, no release.
+# secret the release is published unsigned, and runners do not install it. A push touching packaging/ (or a run by
+# hand) only builds and tries the packages.
 name: release
 on:
   push:
     tags: ["v*"]
+    branches: [main]
+    paths: ["packaging/**", ".github/workflows/release.yml"]  # a change to the packaging: build and try, no release
   workflow_dispatch:
 permissions:
   contents: write

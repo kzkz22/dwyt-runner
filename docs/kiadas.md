@@ -1,6 +1,6 @@
 # Kiadás és aláírás
 
-A futtató csak a projekt kulcsával aláírt kiadást telepíti magától (terv 18.20). A kiadást a `release` munkafolyamat készíti egy `vX.Y.Z` címkére: wheel, Windows-telepítő, Linux AppImage, `latest.json` (változat, fájlnevek, méretek, SHA-256) és annak minisign-aláírása.
+A futtató csak a projekt kulcsával aláírt kiadást telepíti magától (terv 18.20). A kiadást a `release` munkafolyamat készíti, amikor a `main` ágra új változatszám kerül: wheel, Windows-telepítő, Linux AppImage, `latest.json` (változat, fájlnevek, méretek, SHA-256) és annak minisign-aláírása.
 
 ## Az aláíró kulcs (egyszer)
 
@@ -18,10 +18,10 @@ A kulcspárt a tulajdonos hozza létre a saját gépén; a titkos fele soha nem 
 ## Egy kiadás
 
 1. `pyproject.toml` és `dwyt_runner/__init__.py`: az új változatszám.
-2. Commit, majd címke: `git tag v0.11.0 && git push origin v0.11.0`.
-3. A `release` munkafolyamat felépíti és kipróbálja a csomagokat (a Windows-telepítőt csendben telepíti és eltávolítja), aláírja a `latest.json`-t, és közzéteszi a kiadást. A Futtatók oldal letöltőgombjai a változatszám nélküli másolatokra mutatnak (`dwyt-runner-setup.exe`, `dwyt-runner-x86_64.AppImage`).
+2. Commit és push a `main` ágra. Ha ehhez a változathoz még nincs kiadás, a `release` munkafolyamat kiadja (a `v0.11.0` címkét is ő hozza létre); címkét kézzel nem kell tenni.
+3. A munkafolyamat felépíti és kipróbálja a csomagokat (a Windows-telepítőt csendben telepíti és eltávolítja), aláírja a `latest.json`-t, és közzéteszi a kiadást. A Futtatók oldal letöltőgombjai a változatszám nélküli másolatokra mutatnak (`dwyt-runner-setup.exe`, `dwyt-runner-x86_64.AppImage`).
 
-Ha a `packaging/` mappa változik, a munkafolyamat címke nélkül is lefut (építés és próba, közzététel nélkül).
+Ha a `packaging/` mappa változik, de a változatszám nem, a munkafolyamat csak épít és kipróbál.
 
 ## Kulcscsere
 

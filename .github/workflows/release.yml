@@ -1,5 +1,5 @@
 # Desktop packages and a signed release (round 7c; plan 15b, decision 18.20).
-# A tag vX.Y.Z (equal to pyproject's version) builds the wheel, the Windows installer and the Linux AppImage,
+# A new version in pyproject.toml pushed to main (or a tag vX.Y.Z equal to it) builds the wheel, the Windows installer and the Linux AppImage,
 # tries each, writes latest.json (version, file names, sizes, SHA-256) and signs it with the project's minisign
 # key (Actions secret MINISIGN_SECRET_KEY: the whole minisign.key file, made with `minisign -G -W`). Without the
 # secret the release is published unsigned, and runners do not install it. A push touching packaging/ (or a run by
@@ -9,13 +9,17 @@ on:
   push:
     tags: ["v*"]
     branches: [main]
-    paths: ["packaging/**", ".github/workflows/release.yml"]  # a change to the packaging: build and try, no release
+    # a new version in pyproject.toml on main is released (no tag needed); a packaging change only builds and tries
+    paths: ["packaging/**", ".github/workflows/release.yml", "pyproject.toml"]
   workflow_dispatch:
 permissions:
   contents: write
 jobs:
   wheel:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      release: ${{ steps.v.outputs.release }}
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
@@ -24,6 +28,18 @@ jobs:
         run: |
           v=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
           test "v$v" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} but pyproject says $v"; exit 1; }
+      - id: v
+        name: a new version? (no release of it yet)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || gh release view "v$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=yes" >> "$GITHUB_OUTPUT"
+          fi
       - run: uv build --wheel --out-dir dist
       - uses: actions/upload-artifact@v4
         with: {name: wheel, path: dist/*.whl}
@@ -80,7 +96,7 @@ jobs:
         with: {name: appimage, path: dist/dwyt-runner-*-x86_64.AppImage}
 
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: needs.wheel.outputs.release == 'yes'
     needs: [wheel, windows, appimage]
     runs-on: ubuntu-latest
     steps:
@@ -88,7 +104,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: {path: out, merge-multiple: true}
       - name: latest.json
-        run: python3 packaging/latest_json.py "${GITHUB_REF_NAME#v}" out > latest.json && mv latest.json out/ && cat out/latest.json
+        run: python3 packaging/latest_json.py "${{ needs.wheel.outputs.version }}" out > latest.json && mv latest.json out/ && cat out/latest.json
       - name: sign
         env:
           MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
@@ -97,7 +113,7 @@ jobs:
           sudo apt-get install -y minisign >/dev/null
           umask 077
           printf '%s\n' "$MINISIGN_SECRET_KEY" > "$RUNNER_TEMP/minisign.key"
-          minisign -S -s "$RUNNER_TEMP/minisign.key" -m out/latest.json -t "dwyt-runner ${GITHUB_REF_NAME#v}"
+          minisign -S -s "$RUNNER_TEMP/minisign.key" -m out/latest.json -t "dwyt-runner ${{ needs.wheel.outputs.version }}"
           rm -f "$RUNNER_TEMP/minisign.key"
           minisign -V -p packaging/minisign.pub -m out/latest.json
       - name: release
@@ -105,8 +121,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # fixed names too, for the download links (releases/latest/download/...) on the dwyt Runners page
-          v="${GITHUB_REF_NAME#v}"
+          v="${{ needs.wheel.outputs.version }}"
           cp "out/dwyt-runner-setup-$v.exe" out/dwyt-runner-setup.exe
           cp "out/dwyt-runner-$v-x86_64.AppImage" out/dwyt-runner-x86_64.AppImage
-          gh release create "$GITHUB_REF_NAME" out/* --title "dwyt futtató ${GITHUB_REF_NAME#v}" \
-            --notes "Windows: dwyt-runner-setup-${GITHUB_REF_NAME#v}.exe (rendszergazdai jog nélkül). Linux: dwyt-runner-${GITHUB_REF_NAME#v}-x86_64.AppImage. Szerverre: a dwyt Futtatók oldalán az egysoros telepítő. A futtató csak a projekt kulcsával aláírt kiadást telepíti magától."
+          gh release create "v$v" out/* --target "$GITHUB_SHA" --title "dwyt futtató $v" \
+            --notes "Windows: dwyt-runner-setup-$v.exe (rendszergazdai jog nélkül). Linux: dwyt-runner-$v-x86_64.AppImage. Szerverre: a dwyt Futtatók oldalán az egysoros telepítő. A futtató csak a projekt kulcsával aláírt kiadást telepíti magától."

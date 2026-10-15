@@ -16,6 +16,8 @@ A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouT
 
 ## Telepítés
 
+**Windowsra és Linux asztali gépre:** a dwyt Futtatók oldalán „Új futtató” → *Asztali gépre*: Windows-telepítő (rendszergazdai jog nélkül, kb. 70 MB) vagy Linux AppImage (kb. 300 MB). Mindkettő hozza a saját Pythonját; a whisper.cpp-t első használatkor tölti le. Útmutató: [Windows](https://github.com/kzkz22/dwyt-docs/blob/main/docs/utmutato/windows.md), [Linux asztal](https://github.com/kzkz22/dwyt-docs/blob/main/docs/utmutato/linux-asztal.md).
+
 **Linux szerverre egy paranccsal (ajánlott):** a dwyt Futtatók oldalán az „Új futtató” → *Szerverre (Linux)* → „Telepítőparancs kérése”. A kapott parancs (`curl -fsSL https://dwyt.iodate.date/futtato.sh | sh -s -- KÓD`, 5 percig érvényes, egyszer használható) párosít, telepíti az uv-t és a futtatót, majd systemd-szolgáltatásként elindítja: rendszergazdaként külön `dwyt-runner` felhasználóval (`/var/lib/dwyt-runner`), különben a saját felhasználód szolgáltatásaként. Utána minden beállítás a dwyt-ben, a futtató **Beállítás** gombjával megy (lásd: Távoli beállítás). A kézi út:
 
 Az [`uv`](https://docs.astral.sh/uv/) csomagkezelővel, rendszergazdai jog nélkül; a Pythont, az ffmpeg-et és a YouTube-hoz kellő `deno`-t is hozza.
@@ -176,6 +178,8 @@ Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más
 ## Távoli beállítás
 
 A futtató beállításai a dwyt Futtatók oldalán, a **Beállítás** gombbal is módosíthatók (`remote_settings`: `auto` | `on` | `off`; automatikusan a `dwyt-runner run` futtatónál be, az asztali alkalmazásban ki, ott a Működés lapon kapcsolható). A futtató elküldi a beállításai leírását, a nem titkos értékeket és egy saját RSA-kulcs nyilvános felét (`remote_key.pem` a beállítási mappában, csak a tulajdonosa olvassa). A kulcsokat (AssemblyAI, LLM) a böngésző ezzel titkosítja, így a dwyt nem látja őket. Minden értéket a futtató maga ellenőriz, és csak a dwyt-ből állíthatónak jelölt mezőket fogadja el; a gép saját útvonalai (whisper.cpp helye, sütifájl, munkamappa), a kulcsok helye és maga ez a kapcsoló csak helyben állítható. Minden változás, a gépen tett is, a dwyt-beli naplóba kerül.
+
+**Aláírt frissítés:** a futtató csak a projekt minisign-kulcsával aláírt kiadást telepíti (`latest.json` + aláírás a GitHub-kiadásban; a fájlokat a listában lévő SHA-256 védi). Az asztali alkalmazás magától frissül két munka között (Gépem lap: változat, „Frissítés most”, „Vissza az előzőre”), a szerver csak szól (`auto_update`: auto | on | off). Parancssorból: `dwyt-runner update [--check | --back]`. Kiadás és a kulcs: [docs/kiadas.md](docs/kiadas.md).
 
 **Frissítés most:** ha a GitHubon újabb változat van, a dwyt-ben a szerveres futtató kártyáján megjelenik a gomb. A futtató két munka között ugyanazt a parancsot futtatja, mint a kézi frissítés, a meglévő kiegészítőkkel, majd újraindul (systemd alatt 75-ös kóddal kilép, és a szolgáltatás elindítja az újat). Aláírás-ellenőrzés még nincs; az a telepítőcsomaggal jön.
 

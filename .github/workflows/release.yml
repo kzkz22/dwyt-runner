@@ -104,5 +104,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # fixed names too, for the download links (releases/latest/download/...) on the dwyt Runners page
+          v="${GITHUB_REF_NAME#v}"
+          cp "out/dwyt-runner-setup-$v.exe" out/dwyt-runner-setup.exe
+          cp "out/dwyt-runner-$v-x86_64.AppImage" out/dwyt-runner-x86_64.AppImage
           gh release create "$GITHUB_REF_NAME" out/* --title "dwyt futtató ${GITHUB_REF_NAME#v}" \
             --notes "Windows: dwyt-runner-setup-${GITHUB_REF_NAME#v}.exe (rendszergazdai jog nélkül). Linux: dwyt-runner-${GITHUB_REF_NAME#v}-x86_64.AppImage. Szerverre: a dwyt Futtatók oldalán az egysoros telepítő. A futtató csak a projekt kulcsával aláírt kiadást telepíti magától."

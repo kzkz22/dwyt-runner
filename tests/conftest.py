@@ -259,6 +259,12 @@ class FakeLlm:
             fake.calls.append(body)
             if fake.status != 200:
                 return JSONResponse({"error": {"message": fake.message}}, status_code=fake.status)
+            result = answer_for(body)
+            if not (body.get("stream") and fake.stream):
+                return result
+            return StreamingResponse(sse(result), media_type="text/event-stream")
+
+        def answer_for(body):
             system = body["messages"][0]["content"]
             if system.startswith("Fordító vagy"):
                 import re as _re
@@ -278,11 +284,33 @@ class FakeLlm:
             return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                     "usage": {"prompt_tokens": 50, "completion_tokens": 5}}
 
+        async def sse(result):
+            """The answer as an OpenAI-style stream, a few characters per piece."""
+            import asyncio
+            import json as _json
+            yield ": OPENROUTER PROCESSING\n\n"
+            if fake.stall_s:
+                await asyncio.sleep(fake.stall_s)
+            text = result["choices"][0]["message"]["content"]
+            pieces = [text[i:i + 7] for i in range(0, len(text), 7)]
+            for n, piece in enumerate(pieces):
+                if fake.cut and n == len(pieces) // 2:
+                    return  # the connection ends in the middle: no finish_reason, no [DONE]
+                chunk = {"model": result["model"], "choices": [{"index": 0, "delta": {"content": piece}}]}
+                yield f"data: {_json.dumps(chunk, ensure_ascii=False)}\n\n"
+                if fake.piece_delay:
+                    await asyncio.sleep(fake.piece_delay)
+            done = {"model": result["model"], "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}
+            yield f"data: {_json.dumps(done)}\n\n"
+            yield f"data: {_json.dumps({'model': result['model'], 'choices': [], 'usage': result['usage']})}\n\n"
+            yield "data: [DONE]\n\n"
+
         self.server = Server(app)
         self.url = self.server.url
 
     def reset(self) -> None:
         self.calls, self.status, self.message, self.drop_once = [], 200, "down", False
+        self.stream, self.stall_s, self.cut, self.piece_delay = True, 0.0, False, 0.0
         self.info, self.info_calls = None, 0  # /model/info rows (LiteLLM); None = not a LiteLLM
 
 

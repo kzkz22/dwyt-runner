@@ -75,7 +75,8 @@ class Central:
     # jobs
     def claim(self, capabilities: dict[str, Any], tool_versions: dict[str, str]) -> dict[str, Any] | None:
         resp = self._call("POST", "/runner/v1/claim", timeout=90, json={
-            "capabilities": capabilities, "runner_version": __version__, "tool_versions": tool_versions})
+            "capabilities": capabilities, "runner_version": __version__, "tool_versions": tool_versions,
+            "holding": []})  # one job at a time: asking for work = no job in hand (a restart left none)
         self.settings_pending = resp.headers.get("dwyt-settings") == "pending"
         if resp.status_code == 204:
             return None

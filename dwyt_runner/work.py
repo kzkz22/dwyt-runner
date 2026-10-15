@@ -148,7 +148,9 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         if localllm.uses_local(cfg):
             localllm.mark_used(model)
         extra = {} if localllm.uses_local(cfg) else modelinfo.request_extra(cfg, model)
-        llm = Llm(cfg.llm_url, cfg.llm_key, extra=extra)
+        from .llm import LOCAL_STALL_S, STALL_S
+        llm = Llm(cfg.llm_url, cfg.llm_key, extra=extra,
+                  stall_s=LOCAL_STALL_S if localllm.uses_local(cfg) else STALL_S)
         if kind == "summarize":
             return summarize.run(data, llm, model, stage, progress=progress, context_tokens=context)
         if kind == "ask":

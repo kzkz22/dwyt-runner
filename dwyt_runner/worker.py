@@ -16,7 +16,7 @@ from .errors import WorkError
 from .protocol import Central, CentralError, JobGone
 
 log = logging.getLogger("dwyt-runner")
-HEARTBEAT_S = 60
+HEARTBEAT_S = 30  # the lease, and how soon a cancel on the dwyt page is noticed
 DELIVERY_DELAYS = (2, 5, 15, 30, 60, 120, 300, 600)
 WATCH_INTERVAL_S = 60
 RELOAD = threading.Event()  # the window saved new settings: read them before the next claim (never mid-job)
@@ -93,6 +93,8 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
     outcome, error = "crashed", ""
     beats = threading.Thread(target=job.heartbeats, daemon=True)
     beats.start()
+    from . import llm
+    llm.watch_cancel(job.cancel.is_set)  # a streamed LLM answer stops when the job is cancelled
     try:
         result = work.run(job_data, cfg, job.stage, job.cancel.is_set, central, progress=job.progress)
         if job.gone.is_set():
@@ -117,6 +119,7 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
                     stop=stop)
         return "failed"
     finally:
+        llm.watch_cancel(None)
         job.done.set()
         activity.finish(outcome, error)
 

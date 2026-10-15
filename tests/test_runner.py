@@ -557,14 +557,50 @@ def test_openrouter_thinking_is_shown_and_can_be_switched(monkeypatch):
     assert modelinfo.request_extra(cfg, "osszefoglalo") == {}  # LiteLLM: the airouter decides
 
 
-def test_the_reasoning_field_goes_with_the_request(cfg, llm, monkeypatch):
+def test_the_reasoning_field_goes_with_the_request(cfg, llm):
     from dwyt_runner.llm import Llm
-    seen = {}
-    real_post = __import__("httpx").post
-
-    def post(url, json=None, **kw):
-        seen.update(json)
-        return real_post(url, json=json, **kw)
-    monkeypatch.setattr("dwyt_runner.llm.httpx.post", post)
     Llm(cfg.llm_url, cfg.llm_key, extra={"reasoning": {"enabled": False}}).chat("osszefoglalo", "s", "u")
+    seen = llm.calls[-1]
     assert seen["reasoning"] == {"enabled": False}
+
+
+def test_answers_come_as_a_stream_and_a_dead_connection_is_noticed(cfg, llm):
+    from dwyt_runner.errors import WorkError
+    from dwyt_runner.llm import Llm
+    client = Llm(cfg.llm_url, "llm-key")
+    answer = client.chat("osszefoglalo", "s", "u")
+    assert answer.text == "## Összefoglaló\nKert." and answer.prompt_tokens == 50 and answer.completion_tokens == 5
+    assert llm.calls[-1]["stream"] is True and llm.calls[-1]["stream_options"] == {"include_usage": True}
+    llm.stream = False  # a server that answers in one piece anyway
+    assert client.chat("osszefoglalo", "s", "u").text == "## Összefoglaló\nKert."
+    llm.stream, llm.cut = True, True  # the connection ends in the middle of the answer
+    with pytest.raises(WorkError) as info:
+        client.chat("osszefoglalo", "s", "u")
+    assert info.value.retry == "later" and "félbeszakadt" in str(info.value)
+    llm.cut, llm.stall_s = False, 1.5  # nothing arrives: not 40 minutes of waiting
+    with pytest.raises(WorkError) as info:
+        Llm(cfg.llm_url, "llm-key", stall_s=0.5).chat("osszefoglalo", "s", "u")
+    assert info.value.retry == "later" and "nem küldött semmit" in str(info.value)
+
+
+def test_a_cancelled_job_stops_its_streamed_answer(cfg, llm):
+    import threading as th
+
+    from dwyt_runner import llm as llm_mod
+    from dwyt_runner.errors import WorkError
+    llm.piece_delay = 0.2
+    cancel = th.Event()
+    llm_mod.watch_cancel(cancel.is_set)
+    th.Timer(0.5, cancel.set).start()
+    try:
+        with pytest.raises(WorkError) as info:
+            llm_mod.Llm(cfg.llm_url, "llm-key").chat("osszefoglalo", "s", "u")
+    finally:
+        llm_mod.watch_cancel(None)
+    assert str(info.value) == "megszakítva" and info.value.retry == "never"
+
+
+def test_asking_for_work_says_no_job_is_in_hand(cfg, central):
+    from dwyt_runner.protocol import Central
+    Central(central.url, "tok-1").claim({"kinds": []}, {})
+    assert central.claims[-1]["holding"] == []

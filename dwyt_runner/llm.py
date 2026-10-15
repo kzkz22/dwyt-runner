@@ -1,9 +1,11 @@
 """Chat completions on any OpenAI-compatible server (LiteLLM, OpenRouter, llama-server, Ollama)."""
 from __future__ import annotations
 
+import json
 import re
+import threading
 import time
-from typing import Any
+from typing import Any, Callable
 from dataclasses import dataclass, field
 
 import httpx
@@ -11,6 +13,20 @@ import httpx
 from .errors import WorkError
 
 _THINK = re.compile(r"<think>.*?</think>", re.S)
+STALL_S = 180  # the answer comes as a stream: this long without a byte means the connection is dead
+LOCAL_STALL_S = 600  # a local server may still be loading a big model before the first token
+_job = threading.local()
+
+
+def watch_cancel(check: Callable[[], bool] | None) -> None:
+    """The running job's "was it cancelled?" (set by the worker for its thread): a streamed answer stops
+    at the next piece when the job is cancelled on the dwyt page."""
+    _job.cancelled = check
+
+
+def _cancelled() -> bool:
+    check = getattr(_job, "cancelled", None)
+    return bool(check and check())
 
 
 @dataclass
@@ -66,10 +82,11 @@ def chat_url(base: str) -> str:
 
 class Llm:
     def __init__(self, base_url: str, api_key: str, timeout: float = 2400,
-                 extra: dict[str, Any] | None = None) -> None:
+                 extra: dict[str, Any] | None = None, stall_s: float = STALL_S) -> None:
         self.url = chat_url(base_url)
         self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
-        self.timeout = timeout
+        self.timeout = timeout  # the whole answer at most
+        self.stall_s = stall_s  # without any byte at most
         self.extra = extra or {}  # server-specific request fields, e.g. OpenRouter's "reasoning"
 
     def chat(self, model: str, system: str, user: str, temperature: float = 0.3) -> Answer:
@@ -77,42 +94,98 @@ class Llm:
                              temperature)
 
     def complete(self, model: str, messages: list[dict], temperature: float | None = 0.3) -> Answer:
-        """A whole conversation; temperature None leaves it to the server (the model's preset)."""
+        """A whole conversation; temperature None leaves it to the server (the model's preset).
+
+        The answer is asked for as a stream (every OpenAI-compatible server can): a dead connection shows up
+        as silence (stall_s), and a job cancelled on the dwyt page stops at the next piece. A server that
+        answers in one piece anyway is read the same way as before."""
         started = time.monotonic()
-        body: dict = {"model": model, "messages": messages, **self.extra}
+        body: dict = {"model": model, "messages": messages, "stream": True,
+                      "stream_options": {"include_usage": True}, **self.extra}
         if temperature is not None:
             body["temperature"] = temperature
         try:
-            resp = httpx.post(self.url, json=body, headers=self.headers,
-                              timeout=httpx.Timeout(self.timeout, connect=10))
+            with httpx.stream("POST", self.url, json=body, headers=self.headers,
+                              timeout=httpx.Timeout(self.stall_s, connect=10)) as resp:
+                if resp.status_code >= 400:
+                    resp.read()
+                    self._refused(resp, model)
+                if "text/event-stream" not in resp.headers.get("content-type", ""):
+                    resp.read()
+                    return self._whole(resp, model, started)
+                return self._streamed(resp, model, started)
         except httpx.TimeoutException as exc:
-            raise WorkError(f"A(z) {model} modell nem végzett időben; később újrapróbálom.", "later") from exc
+            raise WorkError(f"A(z) {model} modell {int(self.stall_s // 60) or 1} perce nem küldött semmit; a "
+                            "kapcsolat valószínűleg megszakadt. Később újrapróbálom.", "later") from exc
         except httpx.HTTPError as exc:
-            raise WorkError(f"Az LLM-szerver nem érhető el ({exc}); később újrapróbálom.", "later") from exc
+            raise WorkError(f"Az LLM-szerver kapcsolata megszakadt ({exc}); később újrapróbálom.", "later") from exc
+
+    def _refused(self, resp: httpx.Response, model: str) -> None:
         if resp.status_code in (408, 429) or resp.status_code >= 500:
             raise WorkError(f"A(z) {model} modell most nem érhető el (HTTP {resp.status_code}).", "later")
-        if resp.status_code >= 400:
-            detail = _error(resp)
-            if resp.status_code in (401, 403) or "No connected db" in detail:
-                # LiteLLM answers "No connected db" when the key is not its master key (it would look
-                # the key up in a database it does not have).
-                raise WorkError(f"Az LLM-szerver nem fogadta el a kulcsot (HTTP {resp.status_code}: {detail[:200]}). "
-                                "Ellenőrizd: dwyt-runner config set llm_key ... "
-                                "(LiteLLM-nél a LITELLM_MASTER_KEY értéke), majd indítsd újra a futtatót.")
-            raise WorkError(f"Az LLM-szerver elutasította a kérést (HTTP {resp.status_code}): {detail}")
+        detail = _error(resp)
+        if resp.status_code in (401, 403) or "No connected db" in detail:
+            # LiteLLM answers "No connected db" when the key is not its master key (it would look
+            # the key up in a database it does not have).
+            raise WorkError(f"Az LLM-szerver nem fogadta el a kulcsot (HTTP {resp.status_code}: {detail[:200]}). "
+                            "Ellenőrizd: dwyt-runner config set llm_key ... "
+                            "(LiteLLM-nél a LITELLM_MASTER_KEY értéke), majd indítsd újra a futtatót.")
+        raise WorkError(f"Az LLM-szerver elutasította a kérést (HTTP {resp.status_code}): {detail}")
+
+    def _whole(self, resp: httpx.Response, model: str, started: float) -> Answer:
         try:
             data = resp.json()
             text = data["choices"][0]["message"].get("content") or ""
         except (ValueError, KeyError, IndexError) as exc:
             raise WorkError("Az LLM-szerver válasza nem értelmezhető.", "later") from exc
-        text = _THINK.sub("", text).strip()
-        if not text:
-            raise WorkError("A modell üres választ adott.", "later")
-        usage = data.get("usage") or {}
-        details = usage.get("completion_tokens_details") or {}
-        return Answer(text=text, model=data.get("model"), prompt_tokens=usage.get("prompt_tokens"),
-                      completion_tokens=usage.get("completion_tokens"), seconds=time.monotonic() - started,
-                      reasoning_tokens=details.get("reasoning_tokens"))
+        return _answer(text, data.get("model"), data.get("usage") or {}, started)
+
+    def _streamed(self, resp: httpx.Response, model: str, started: float) -> Answer:
+        parts: list[str] = []
+        usage: dict = {}
+        used = None
+        finished = False  # [DONE] or a finish_reason: otherwise the stream broke off in the middle
+        for line in resp.iter_lines():
+            if _cancelled():
+                raise WorkError("megszakítva", "never")
+            if time.monotonic() - started > self.timeout:
+                raise WorkError(f"A(z) {model} modell {int(self.timeout // 60)} perc alatt sem végzett; később "
+                                "újrapróbálom.", "later")
+            if not line.startswith("data:"):
+                continue  # SSE comments (": OPENROUTER PROCESSING"), event names, empty lines
+            payload = line[5:].strip()
+            if payload == "[DONE]":
+                finished = True
+                break
+            try:
+                chunk = json.loads(payload)
+            except ValueError:
+                continue
+            if chunk.get("error"):
+                err = chunk["error"]
+                text = err.get("message") if isinstance(err, dict) else err
+                raise WorkError(f"A(z) {model} modell válasza félbeszakadt: {str(text)[:200]}", "later")
+            used = chunk.get("model") or used
+            usage = chunk.get("usage") or usage
+            for choice in chunk.get("choices") or []:
+                piece = (choice.get("delta") or {}).get("content")
+                if piece:
+                    parts.append(piece)
+                finished = finished or bool(choice.get("finish_reason"))
+        if not finished:
+            raise WorkError(f"A(z) {model} modell válasza félbeszakadt (a kapcsolat megszakadt); később "
+                            "újrapróbálom.", "later")
+        return _answer("".join(parts), used, usage, started)
+
+
+def _answer(text: str, model: str | None, usage: dict, started: float) -> Answer:
+    text = _THINK.sub("", text).strip()
+    if not text:
+        raise WorkError("A modell üres választ adott.", "later")
+    details = usage.get("completion_tokens_details") or {}
+    return Answer(text=text, model=model, prompt_tokens=usage.get("prompt_tokens"),
+                  completion_tokens=usage.get("completion_tokens"), seconds=time.monotonic() - started,
+                  reasoning_tokens=details.get("reasoning_tokens"))
 
 
 def _error(resp: httpx.Response) -> str:

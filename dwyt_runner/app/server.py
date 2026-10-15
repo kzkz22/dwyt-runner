@@ -22,8 +22,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .. import (__version__, autostart, config, keystore, machine, modes, release, remote, settings, trial, updater,
-               whispercpp)
+from .. import (__version__, autostart, config, gateway, keystore, localllm, machine, modes, release, remote,
+               settings, trial, updater, whispercpp)
 from . import wizard
 from .runtime import Runtime
 
@@ -163,7 +163,24 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
                             groups=settings.describe()["groups"], values=config.masked(cfg),
                             login_start=autostart.enabled(), models_gb=models_gb,
                             remote_on=remote.enabled(cfg), paired=cfg.paired, server=cfg.server,
-                            models_dir=str(machine.models_dir()))
+                            models_dir=str(machine.models_dir()),
+                            trial_llm=gateway.is_trial(cfg.llm_url, cfg.llm_public_model)
+                            and not localllm.uses_local(cfg))
+
+    @api.post("/mukodes/osszefoglalo")
+    async def summary_provider(request: Request):
+        """Who writes the summaries: AssemblyAI's trial model or OpenRouter (19.9). Keys stay as they are."""
+        form = await state.form(request)
+        cfg = config.load()
+        if form.get("provider") == "openrouter":
+            cfg.llm_url = wizard.CLOUD_LLM_URL
+            cfg.llm_public_model = wizard.cloud_model_default(cfg)
+        elif form.get("provider") == "gateway":
+            gateway.use(cfg)
+        config.save(cfg)
+        runtime.settings_changed()
+        missing = modes.apply(config.load(), modes.current(cfg)) if modes.current(cfg) != "egyeni" else []
+        return RedirectResponse("/mukodes" + ("?hiany=" + "|".join(missing) if missing else ""), status_code=303)
 
     @api.post("/mukodes")
     async def mode_save(request: Request):
@@ -369,6 +386,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
                              go_on=wizard.can_go_on(items), prepare=wizard.prepare_view(runtime.prepare),
                              pull=wizard.pull_view(runtime.pull), checks=wizard.load().get("checks", {}),
                              cloud_model=wizard.cloud_model_default(cfg), servers=servers, kind=kind,
+                             provider=wizard.provider(cfg), trial_model=gateway.TRIAL_MODEL,
                              server_models=server_models, error=hiba,
                              starting=runtime.starting,
                              suggested=wizard.suggested_local_model(m.vram_gb if m else 0, kind,
@@ -422,7 +440,9 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         cfg = config.load()
         if mode != "egyeni":
             modes.apply(cfg, mode)
-            if mode in ("felho", "vegyes") and not cfg.llm_url:
+            if mode == "felho" and not cfg.llm_url and not cfg.llm_key:
+                gateway.use(cfg)  # a new user: one AssemblyAI registration is enough to try (19.9)
+            elif mode in ("felho", "vegyes") and not cfg.llm_url:
                 cfg.llm_url = wizard.CLOUD_LLM_URL
             config.save(cfg)
             runtime.settings_changed()
@@ -437,11 +457,12 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         action = str(form.get("action", ""))
         cfg = config.load()
         checks = wizard.load().get("checks", {})
-        if action == "llm":
+        if action == "llm":  # the OpenRouter form
             key = str(form.get("key", "")).strip()
             if key:
                 cfg.llm_key = key
-            cfg.llm_url = cfg.llm_url or wizard.CLOUD_LLM_URL
+            if not cfg.llm_url or gateway.is_gateway(cfg.llm_url):
+                cfg.llm_url = wizard.CLOUD_LLM_URL
             cfg.llm_public_model = str(form.get("model", "")).strip() or wizard.CLOUD_MODEL
             config.save(cfg)
             checks["llm"] = keystore.check_llm(config.load())
@@ -451,6 +472,19 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
                 cfg.assemblyai_key = key
                 config.save(cfg)
             checks["assemblyai"] = keystore.check_assemblyai(config.load())
+            if gateway.is_gateway(cfg.llm_url):  # the same key writes the summaries: try that too
+                checks["llm"] = keystore.check_llm(config.load())
+        elif action == "provider":
+            chosen = str(form.get("provider", ""))
+            if chosen == "gateway":
+                gateway.use(cfg)
+            elif chosen == "openrouter":
+                cfg.llm_url = wizard.CLOUD_LLM_URL
+                cfg.llm_public_model = wizard.cloud_model_default(cfg)
+            config.save(cfg)
+            checks.pop("llm", None)
+            if chosen == "gateway" and cfg.assemblyai_key:
+                checks["llm"] = keystore.check_llm(config.load())
         elif action == "local":
             kind = str(form.get("server", ""))
             name = str(form.get("model", "")).strip()

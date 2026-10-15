@@ -48,13 +48,54 @@
   {% if it.key == "assemblyai" and it.need != "nem kell" %}
   <form method="post" action="/telepites/4" class="form">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label>Kulcs<input type="password" name="key" autocomplete="off" required
+    <label>Kulcs<input type="password" name="key" autocomplete="off"{% if not cfg.assemblyai_key %} required{% endif %}
       placeholder="{{ 'beállítva – új kulcshoz írd be' if cfg.assemblyai_key else '' }}"></label>
-    <p class="muted">Felhős átírás csak akkor készül, ha a dwyt-ben kéred. <a href="https://www.assemblyai.com/dashboard"
-      target="_blank" rel="noopener">Kulcsot itt kérhetsz</a>.</p>
-    {% if checks.assemblyai %}<p class="{{ 'good' if checks.assemblyai[0] else 'bad' }}">Kipróbáltuk: {{ checks.assemblyai[1] }}.</p>{% endif %}
+    <p class="muted">Regisztrációkor <strong>50 $ induló kreditet</strong> kapsz, bankkártya nélkül: ez nagyjából 300 óra
+      átírásra elég. Felhős átírás csak akkor készül, ha a dwyt-ben kéred. A kulcsot a gép saját, védett
+      kulcstárolójában őrizzük, a dwyt sosem látja. <a href="https://www.assemblyai.com/dashboard"
+      target="_blank" rel="noopener">Regisztráció és kulcs</a></p>
+    {% if checks.assemblyai %}<p class="{{ 'good' if checks.assemblyai[0] else 'bad' }}">Kipróbáltuk az átírást: {{ checks.assemblyai[1] }}.</p>{% endif %}
+    {% if provider == "gateway" and checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">Kipróbáltuk a próba-összefoglalót: {{ checks.llm[1] }}.</p>{% endif %}
     <button name="action" value="assemblyai">Mentés és próba</button>
   </form>
+  {% endif %}
+
+  {% if it.key == "provider" %}
+  <form method="post" action="/telepites/4" class="choice2" role="radiogroup" aria-label="Ki írja az összefoglalót">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="provider">
+    <button class="modecard{% if provider == 'gateway' %} chosen{% endif %}" name="provider" value="gateway"
+      role="radio" aria-checked="{{ 'true' if provider == 'gateway' else 'false' }}">
+      <span class="name">Az AssemblyAI-kulccsal <span class="badge">próba</span></span>
+      <span class="muted">Nem kell újabb regisztráció. Kis, gyors próba-modell (Qwen3.5 4B), szinte ingyenes.</span>
+      <small>a magyar szöveg gyengébb lehet</small></button>
+    <button class="modecard{% if provider == 'openrouter' %} chosen{% endif %}" name="provider" value="openrouter"
+      role="radio" aria-checked="{{ 'true' if provider == 'openrouter' else 'false' }}">
+      <span class="name">OpenRouter-kulccsal <span class="badge">jobb minőség</span></span>
+      <span class="muted">Bármelyik modell választható, a jobbak magyarul is jól írnak. Külön regisztráció kell.</span>
+      <small>centes tétel videónként</small></button>
+  </form>
+  {% if provider == "gateway" %}
+  <div class="note warn"><strong>Mire számíts a próba-modellel?</strong>
+    <p>Kis modell: az összefoglaló használható, de lehetnek benne nyelvi botlások, és ritkán elferdít egy számot vagy
+      egy nevet – a fontos adatokat ellenőrizd az átiratban. Ingyenes fiókkal csak ez a modell érhető el, és
+      percenként kevés kérést enged, ezért a hosszú videók összefoglalója és a fordítás lassabban készül.</p>
+    <p>Okosabb modellhez töltsd fel az AssemblyAI-egyenleged (ugyanezzel a kulccsal, a Működés lap részletes
+      beállításaiban választható nagyobb modell), vagy válaszd az OpenRoutert. Bármikor átállhatsz.</p></div>
+  {% if cfg.assemblyai_key %}<p class="good">Kész: ugyanazt a kulcsot használom, a próba-modell: {{ trial_model }}.</p>
+  {% else %}<p class="muted">Előbb add meg fent az AssemblyAI-kulcsot.</p>{% endif %}
+  {% else %}
+  <form method="post" action="/telepites/4" class="form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>OpenRouter-kulcs<input type="password" name="key" autocomplete="off"
+      placeholder="{{ 'beállítva – új kulcshoz írd be' if cfg.llm_key else 'sk-or-…' }}"{% if not cfg.llm_key %} required{% endif %}></label>
+    <label>Modell<input name="model" value="{{ cloud_model }}" required></label>
+    <p class="muted">A kulcsot a gép saját, védett kulcstárolójában őrizzük. A dwyt sosem látja.
+      <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Kulcsot itt kérhetsz</a> · Tipp: hozz
+      létre külön kulcsot a dwyt-nek havi keretkorláttal.</p>
+    {% if checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">Kipróbáltuk: {{ checks.llm[1] }}.</p>{% endif %}
+    <button name="action" value="llm">Mentés és próba</button>
+  </form>
+  {% endif %}
   {% endif %}
 
   {% if it.key == "local" and it.need != "nem kell" %}

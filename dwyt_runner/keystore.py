@@ -117,6 +117,9 @@ def check_llm(cfg) -> tuple[bool, str]:
         return False, "nincs megadva LLM-cím"
     base = eff.llm_url.rstrip("/")
     headers = {"Authorization": f"Bearer {eff.llm_key}"} if eff.llm_key else {}
+    from . import gateway
+    if gateway.is_gateway(base):
+        return check_gateway(eff)
     if "openrouter.ai" in base:
         # OpenRouter lists its models to anyone: only the key endpoint says whether the key is good
         for path in ("/key", "/auth/key"):
@@ -137,4 +140,37 @@ def check_llm(cfg) -> tuple[bool, str]:
         return True, "rendben"
     if r.status_code in (401, 403):
         return False, "a kulcsot nem fogadja el"
+    return False, f"HTTP {r.status_code}"
+
+
+def check_gateway(cfg) -> tuple[bool, str]:
+    """AssemblyAI's LLM Gateway has no model list: a one-word streamed answer from the model shows that the key
+    reaches it (it costs a fraction of a cent)."""
+    import httpx
+
+    from . import gateway
+    if not cfg.llm_key:
+        return False, "nincs megadva AssemblyAI-kulcs"
+    model = cfg.llm_public_model or gateway.TRIAL_MODEL
+    body = {"model": model, "stream": True, "max_tokens": 5, "temperature": gateway.TRIAL_TEMPERATURE,
+            "messages": [{"role": "user", "content": "Válaszolj egy szóval: kész?"}]}
+    url = cfg.llm_url.rstrip("/") + "/chat/completions"
+    try:
+        with httpx.stream("POST", url, json=body, headers={"Authorization": f"Bearer {cfg.llm_key}"},
+                          timeout=30) as r:
+            r.read()
+    except httpx.HTTPError as exc:
+        return False, f"nem érhető el ({exc})"
+    if r.status_code == 200:
+        return True, "rendben"
+    if r.status_code == 429:
+        return True, "rendben (most épp sok a kérés, a munkák várnak egy kicsit)"
+    if r.status_code in (401, 403):
+        return False, "a kulcsot nem fogadja el"
+    text = r.text[:400]
+    if "does not have access" in text:
+        return False, (f"a fiókod nem éri el a(z) {model} modellt (ingyenes fiókkal csak a {gateway.TRIAL_MODEL}; "
+                       "nagyobb modellhez töltsd fel az egyenleged)")
+    if "not supported" in text:
+        return False, f"nincs ilyen modell az AssemblyAI-nál: {model}"
     return False, f"HTTP {r.status_code}"

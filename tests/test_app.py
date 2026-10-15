@@ -1,6 +1,7 @@
 """The desktop window (round 7c): its local page, modes, activity, pairing."""
 import re
 import time
+from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -85,6 +86,8 @@ def test_modes_are_presets_read_back_from_the_settings(window):
     client, state, _ = enter(*window[:2]) and window
     cfg = config.Config(llm_url="https://openrouter.ai/api/v1", llm_public_model="osszefoglalo")
     assert modes.current(cfg) == "felho"
+    assert modes.apply(replace(cfg), "vegyes") == ["Add meg az OpenRouter-kulcsot a Kulcsok lapon."]
+    cfg.llm_key = "sk-or-1"
     assert modes.apply(cfg, "vegyes") == [] and modes.current(cfg) == "vegyes" and cfg.whisper_builtin
     assert modes.apply(cfg, "sajat") == ["Válaszd ki a helyi modellszervert (Ollama vagy LM Studio)."]
     assert "helyi modell írja" in modes.apply(config.Config(local_llm="ollama"), "sajat")[0]

@@ -98,14 +98,17 @@ SETTINGS: tuple[Setting, ...] = (
       "dolgozik, ha felhős cím is meg van adva (a Saját gép mód ezt állítja).", advanced=True,
       show_if=(("local_llm", "ollama"), ("local_llm", "lmstudio"))),
     S("llm_url", "url", "llm", "Felhős vagy saját LLM-szerver címe", "Például https://openrouter.ai/api/v1, vagy a "
-      "saját LiteLLM-ed. Ha meg van adva, ez az elsődleges a helyi modellszerverrel szemben."),
-    S("llm_key", "secret", "llm", "Az LLM-szerver kulcsa", "Javasolt egy külön kulcs keretkorláttal."),
+      "saját LiteLLM-ed. Az AssemblyAI-kulccsal: https://llm-gateway.assemblyai.com/v1 (ingyenes fiókkal csak a "
+      "qwen3.5-4b-32k-fast próba-modell). Ha meg van adva, ez az elsődleges a helyi modellszerverrel szemben."),
+    S("llm_key", "secret", "llm", "Az LLM-szerver kulcsa", "Javasolt egy külön kulcs keretkorláttal. Az AssemblyAI "
+      "LLM Gateway-nél nem kell: ott az AssemblyAI-kulcs írja az összefoglalót is."),
     S("llm_reasoning", "choice", "llm", "Gondolkodás (felhős modellnél)", "OpenRouter-modelleknél: a modell a "
       "válasz előtt végiggondolja a feladatot. Alaposabb, de lassabb és drágább (a gondolkodás is fizetős token). "
       "Ahol a modell mindig gondolkodik, ott nem kapcsolható ki.",
       choices=(("auto", "a modell alapértelmezése"), ("on", "be"), ("off", "ki"))),
     S("llm_public_model", "text", "llm", "Modell a nyilvános videókhoz", "Ezzel készül a YouTube-videók "
-      "összefoglalója."),
+      "összefoglalója. Az AssemblyAI-nál feltöltött egyenleggel nagyobb modell is választható (a nevek az AssemblyAI "
+      "LLM Gateway modell-listáján)."),
     S("llm_private_model", "text", "llm", "Modell a saját felvételekhez", "A saját felvételek szövege csak ehhez a "
       "modellhez kerül; helyi modell javasolt."),
     S("llm_translate_model", "text", "llm", "Modell a fordításhoz", "Üresen a nyilvános videók modellje.",

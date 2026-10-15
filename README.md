@@ -7,7 +7,7 @@ Amit végez:
 - **YouTube-felirat** letöltése (gyors, ingyenes, beszélők nélkül);
 - **felhős átírás** az AssemblyAI-jal, a **saját kulcsoddal** (a költség a tiéd);
 - **helyi átírás beszélőkkel** a saját GPU-don (Whisper; ehhez [dwyt-airouter](https://github.com/kzkz22/dwyt-airouter) és [dwyt-gpu](https://github.com/kzkz22/dwyt-gpu) kell);
-- **magyar összefoglaló és fordítás** bármely OpenAI-kompatibilis szerverrel: LiteLLM, OpenRouter, llama-server, Ollama.
+- **magyar összefoglaló és fordítás** bármely OpenAI-kompatibilis szerverrel: LiteLLM, OpenRouter, llama-server, Ollama, vagy próbaként az AssemblyAI LLM Gateway-jével, ugyanazzal a kulccsal, mint az átírás.
 
 A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouTube a te IP-címedről, a te sávszélességeddel töltődik.
 
@@ -104,6 +104,10 @@ A beállítások helye: Windowson `%APPDATA%\dwyt-runner\config.json`, macOS-en 
 A letöltött modellek (whisper.cpp, Whisper-modell, beszélőmodellek, együtt kb. 3,5 GB) külön helyen vannak: Windowson `%LOCALAPPDATA%\dwyt-runner\models` (nem a vándorló profilban), Linuxon `~/.local/share/dwyt-runner/models`, macOS-en a beállítások mellett. A 0.9.3 előtt a beállítások mellett voltak; a futtató az első indításkor egyszer átteszi őket (`DWYT_RUNNER_DATA` felülírja a helyet).
 
 **yt-dlp frissítése:** a YouTube gyakran változik, és egy régi yt-dlp egyes videóknál „HTTP 403” hibával akad el. A futtató induláskor, utána naponta és egy ilyen hiba után megnézi a PyPI-n, van-e újabb yt-dlp, és két munka között telepíti (`ytdlp_auto_update`, alapból be). A Gépem lapon látszik a telepített és a legújabb változat, és az „Újabb keresése” gombbal azonnal is kérhető. A futtató újratelepítése (`uv tool install --force --refresh …`) is a legújabbat hozza. Ablak nélküli (szerveres) futtatónál: `dwyt-runner config set ytdlp_auto_update nem` (vagy `igen`), utána a szolgáltatás újraindítása (`systemctl restart dwyt-runner`).
+
+**Próba egyetlen AssemblyAI-kulccsal (0.12):** Felhő módban a telepítő alapból azt ajánlja, hogy az összefoglalót is az AssemblyAI írja (LLM Gateway, `https://llm-gateway.assemblyai.com/v1`): így egy új felhasználónak elég egy AssemblyAI-regisztráció (50 $ induló kredit, bankkártya nélkül). Ingyenes fiókkal csak a kis `qwen3.5-4b-32k-fast` próba-modell érhető el; a futtató mindig alacsony hőmérséklettel (0,3) kéri, mert e nélkül kitalált szavak és idegen írásjelek kerülhetnek a magyar szövegbe, és a „túl sok kérés” (HTTP 429) válaszoknál vár, majd folytatja. A magyar összefoglaló gyengébb lehet; a telepítő, a Működés lap és a dwyt is jelzi. Átállás OpenRouterre a Működés lapon (vagy a telepítő Hozzávalók lépésében); a gateway-en az `llm_key`-ben tárolt OpenRouter-kulcs megmarad, ott mindig az AssemblyAI-kulcs megy.
+
+**Kisebb ablak (0.12):** a futtató ablaka a képernyőhöz igazodik (legfeljebb 1040 × 800, a képernyő 92 × 86 százaléka), a betűméret kisebb, és ha a tartalom hosszabb az ablaknál, görgetősáv látszik.
 
 **Gondolkodás felhős modellnél:** OpenRouter-modelleknél a `llm_reasoning` beállítás (Működés → Részletes beállítások): *a modell alapértelmezése*, *be* vagy *ki*. A futtató az OpenRouter modellistájából azt is kiolvassa, hogy az adott modell alapból gondolkodik-e, és mekkora a kontextusa; ezt a dwyt Futtatók oldala mutatja. Ahol a modell mindig gondolkodik, ott a „ki” nem hat.
 

@@ -191,7 +191,8 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
     updater.ON_RESTART = on_update
     try:
         if webview is not None:
-            window = webview.create_window("dwyt futtató", state.start_url, width=1120, height=860,
+            width, height = window_size(webview)
+            window = webview.create_window("dwyt futtató", state.start_url, width=width, height=height,
                                            min_size=(420, 520), hidden=hidden)
 
             def closing() -> bool:
@@ -254,3 +255,18 @@ def entry() -> None:
 
 if __name__ == "__main__":
     entry()
+
+
+WINDOW = (1040, 800)  # the wanted size; never more than the screen allows (a laptop at 150 % is ~1280 x 680)
+
+
+def window_size(webview_module) -> tuple[int, int]:
+    """The window fits the screen with room for the taskbar, so its bottom (and the Tovább button) is visible."""
+    try:
+        screen = webview_module.screens[0]
+        sw, sh = int(screen.width), int(screen.height)
+    except Exception:  # noqa: BLE001 - not every backend tells the screen before start
+        return WINDOW
+    if sw <= 0 or sh <= 0:
+        return WINDOW
+    return min(WINDOW[0], int(sw * 0.92)), min(WINDOW[1], int(sh * 0.86))

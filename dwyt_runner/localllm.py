@@ -404,10 +404,12 @@ def server(cfg: Config) -> LocalServer | None:
 
 
 def effective(cfg: Config) -> Config:
-    """The settings with the local server as the LLM URL when no other URL is given."""
+    """The settings with the local server as the LLM URL when no other URL is given (and with the AssemblyAI key
+    as the LLM key on AssemblyAI's gateway)."""
     s = server(cfg)
     if s is None or (cfg.llm_url and not cfg.llm_prefer_local):
-        return cfg
+        from . import gateway
+        return gateway.with_key(cfg)  # AssemblyAI's gateway takes the AssemblyAI key
     return replace(cfg, llm_url=s.openai_url, llm_key=cfg.lmstudio_token if cfg.local_llm == "lmstudio" else "")
 
 

@@ -6,7 +6,7 @@ import re
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import ask, captions, cloud, local, localllm, media, modelinfo, summarize, translate, watch
+from . import ask, captions, cloud, gateway, local, localllm, media, modelinfo, summarize, translate, watch
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
@@ -145,12 +145,14 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
                                 "llm_private_models).")
             model = str(wanted)
         context = localllm.before_llm_job(cfg, model)  # a local model: its context decides the text sizes
+        context = context or gateway.context(cfg.llm_url, model)  # AssemblyAI's trial model: 32K
         if localllm.uses_local(cfg):
             localllm.mark_used(model)
         extra = {} if localllm.uses_local(cfg) else modelinfo.request_extra(cfg, model)
         from .llm import LOCAL_STALL_S, STALL_S
         llm = Llm(cfg.llm_url, cfg.llm_key, extra=extra,
-                  stall_s=LOCAL_STALL_S if localllm.uses_local(cfg) else STALL_S)
+                  stall_s=LOCAL_STALL_S if localllm.uses_local(cfg) else STALL_S,
+                  fixed_temperature=gateway.TRIAL_TEMPERATURE if gateway.is_trial(cfg.llm_url, model) else None)
         if kind == "summarize":
             return summarize.run(data, llm, model, stage, progress=progress, context_tokens=context)
         if kind == "ask":

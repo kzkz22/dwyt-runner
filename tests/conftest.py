@@ -257,6 +257,15 @@ class FakeLlm:
         async def chat(request: Request):
             body = await request.json()
             fake.calls.append(body)
+            fake.auths.append(request.headers.get("authorization"))
+            if fake.limited:  # "too many requests" this many more times
+                fake.limited -= 1
+                return JSONResponse({"message": "too many requests for this action", "code": 429}, status_code=429,
+                                    headers={"Retry-After": "1"})
+            if fake.access_denied:
+                return JSONResponse({"metadata": {"errors": ["Your account does not have access to this LLM Gateway "
+                                                             "model"]}, "message": "invalid request body"},
+                                    status_code=400)
             if fake.status != 200:
                 return JSONResponse({"error": {"message": fake.message}}, status_code=fake.status)
             result = answer_for(body)
@@ -310,6 +319,7 @@ class FakeLlm:
 
     def reset(self) -> None:
         self.calls, self.status, self.message, self.drop_once = [], 200, "down", False
+        self.auths, self.limited, self.access_denied = [], 0, False
         self.stream, self.stall_s, self.cut, self.piece_delay = True, 0.0, False, 0.0
         self.info, self.info_calls = None, 0  # /model/info rows (LiteLLM); None = not a LiteLLM
 
@@ -460,3 +470,33 @@ def cfg(central, assembly, llm):
                   assemblyai_key="aai-key", assemblyai_url=assembly.url,
                   llm_url=llm.url + "/v1", llm_key="k", llm_public_model="osszefoglalo",
                   llm_private_model="osszefoglalo-helyi")
+
+
+# ---- the desktop window (used by test_setup and test_gateway) -------------------------------------------------------
+
+@pytest.fixture
+def opened(monkeypatch):
+    import webbrowser
+    urls = []
+    monkeypatch.setattr(webbrowser, "open", lambda url, *a, **k: urls.append(url) or True)
+    return urls
+
+
+@pytest.fixture
+def setup_window(opened):
+    import time
+
+    from fastapi.testclient import TestClient
+
+    from dwyt_runner.app.runtime import Runtime
+    from dwyt_runner.app.server import COOKIE, create
+    runtime = Runtime(start_worker=False)
+    api, state = create(runtime, "testserver")
+    client = TestClient(api)
+    r = client.get(f"/belepes?t={state.launch_code}", follow_redirects=False)
+    assert COOKIE in r.cookies
+    for _ in range(100):  # the first machine check
+        if not runtime.machine["scanning"]:
+            break
+        time.sleep(0.05)
+    return client, runtime, r.headers["location"]

@@ -33,7 +33,7 @@ def _clean(block: dict[str, Any]) -> dict[str, Any]:
     for key in ("context", "thinking_budget"):
         if isinstance(block.get(key), int) and not isinstance(block.get(key), bool) and block[key] > 0:
             out[key] = block[key]
-    for key in ("vision", "thinking"):
+    for key in ("vision", "thinking", "trial"):
         if isinstance(block.get(key), bool):
             out[key] = block[key]
     return out
@@ -69,7 +69,16 @@ def fetch(cfg: Config, timeout: float = 5.0) -> tuple[dict[str, dict[str, Any]],
     wanted = names(cfg)
     info: dict[str, dict[str, Any]] = {}
     server = ""
-    if cfg.llm_url and wanted:
+    from . import gateway
+    if cfg.llm_url and wanted and gateway.is_gateway(cfg.llm_url):  # no model list there: the runner knows its one
+        for name in wanted:
+            block = {"where": "cloud", "target_label": name, "provider": "AssemblyAI"}
+            if name == gateway.TRIAL_MODEL:
+                block.update(context=gateway.TRIAL_CONTEXT, trial=True, thinking=False,
+                             description=gateway.TRIAL_NOTE[:200])
+            info[name] = block
+        server = "AssemblyAI LLM Gateway"
+    elif cfg.llm_url and wanted:
         headers = {"Authorization": f"Bearer {cfg.llm_key}"} if cfg.llm_key else {}
         for path in ("/v1/model/info", "/model/info"):
             try:

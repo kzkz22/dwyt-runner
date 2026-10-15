@@ -8,14 +8,15 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from .. import config, modes
+from .. import config, gateway, modes
 
 STEPS = ["Üdvözlés", "Gépvizsgálat", "Működési mód", "Hozzávalók", "Párosítás", "Kész"]
 CLOUD_LLM_URL = "https://openrouter.ai/api/v1"
 CLOUD_MODEL = "qwen/qwen3.8-flash"  # a good, cheap Hungarian summary on OpenRouter (the owner's choice)
 MODE_TEXT = {
     "felho": ("Minden a felhőben készül. Gyenge géphez, vagy ha a gép ritkán van bekapcsolva.",
-              "fizetős, a te kulcsaiddal"),
+              "fizetős, a te kulcsaiddal · egy AssemblyAI-regisztrációval kipróbálható (50 $ induló kredit, "
+              "bankkártya nélkül)"),
     "vegyes": ("Átírás ezen a gépen, összefoglaló a felhőben. Jó magyar összefoglaló kevés pénzért.",
                "az összefoglaló fizetős (centes tétel)"),
     "sajat": ("Minden ezen a gépen készül. Ingyenes és a legprivátabb; erős gép kell.",
@@ -60,6 +61,11 @@ def whisper_model(cfg: config.Config) -> str:
     return (cfg.whisper_models or ["large-v3"])[0]
 
 
+def provider(cfg: config.Config) -> str:
+    """Who writes the summaries in Felhő mode: AssemblyAI's gateway (the trial) or OpenRouter."""
+    return "gateway" if gateway.is_gateway(cfg.llm_url) else "openrouter"
+
+
 def cloud_model_default(cfg: config.Config) -> str:
     """The model field's value: the set one when it is a cloud name ('vendor/model'), else the suggestion."""
     return cfg.llm_public_model if "/" in cfg.llm_public_model else CLOUD_MODEL
@@ -89,14 +95,24 @@ def ingredients(cfg: config.Config, mode: str, prepare: dict[str, Any], whisper_
     else:
         out.append(Ingredient("whisper", "Beszédfelismerő (Whisper)", "nem kell", False,
                               "a GPU-gép végzi" if cfg.whisper_url else "ebben a módban nem kell"))
-    cloud_llm = mode in ("felho", "vegyes")
-    out.append(Ingredient("llm", "Felhős összefoglaló: OpenRouter-kulcs", "kell" if cloud_llm else "nem kell",
-                          bool(cfg.llm_url and cfg.llm_key and cfg.llm_public_model),
-                          "kötelező ehhez a módhoz" if cloud_llm else "ebben a módban nem kell"))
-    out.append(Ingredient("assemblyai", "Felhős átírás (AssemblyAI)", "ajánlott" if mode == "felho" else "nem kell",
-                          bool(cfg.assemblyai_key),
-                          "nélküle csak a YouTube-feliratok használhatók" if mode == "felho"
-                          else "ebben a módban nem kell"))
+    if mode == "felho":  # one AssemblyAI key may do both (19.9): the summary's writer is a choice
+        trial = gateway.is_gateway(cfg.llm_url)
+        out.append(Ingredient("assemblyai", "AssemblyAI-kulcs: átírás és próba-összefoglaló" if trial
+                              else "Felhős átírás (AssemblyAI)", "kell" if trial else "ajánlott",
+                              bool(cfg.assemblyai_key), "kötelező ehhez a módhoz" if trial
+                              else "nélküle csak a YouTube-feliratok használhatók"))
+        out.append(Ingredient("provider", "Ki írja az összefoglalót, a fordítást és a válaszokat?", "kell",
+                              bool(cfg.assemblyai_key) if trial
+                              else bool(cfg.llm_url and cfg.llm_key and cfg.llm_public_model),
+                              "később a Működés lapon átállítható"))
+    else:
+        cloud_llm = mode == "vegyes"
+        out.append(Ingredient("llm", "Felhős összefoglaló: OpenRouter-kulcs", "kell" if cloud_llm else "nem kell",
+                              bool(cfg.llm_url and cfg.llm_key and cfg.llm_public_model)
+                              or (cloud_llm and gateway.is_gateway(cfg.llm_url) and bool(cfg.assemblyai_key)),
+                              "kötelező ehhez a módhoz" if cloud_llm else "ebben a módban nem kell"))
+        out.append(Ingredient("assemblyai", "Felhős átírás (AssemblyAI)", "nem kell", bool(cfg.assemblyai_key),
+                              "ebben a módban nem kell"))
     local = mode == "sajat"
     out.append(Ingredient("local", "Helyi összefoglaló (Ollama vagy LM Studio)", "kell" if local else "nem kell",
                           bool(cfg.local_llm and cfg.llm_private_model),

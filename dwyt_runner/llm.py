@@ -62,6 +62,33 @@ class Usage:
                 "duration_s": round(self.seconds, 1)}
 
 
+RATE_TRIES = 4                  # "too many requests": wait and try again this many times within the job
+RATE_WAIT_S = (20, 40, 60, 60)  # without a Retry-After header
+
+
+class RateLimited(Exception):
+    def __init__(self, retry_after: float | None) -> None:
+        super().__init__("HTTP 429")
+        self.retry_after = retry_after
+
+
+def _retry_after(resp: httpx.Response) -> float | None:
+    try:
+        value = float(resp.headers.get("retry-after", ""))
+    except ValueError:
+        return None
+    return min(max(value, 1.0), 120.0)
+
+
+def _wait(seconds: float) -> None:
+    """Sleep, but stop at once when the job is cancelled (the next request then notices it)."""
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        if _cancelled():
+            raise WorkError("megszakítva", "never")
+        time.sleep(min(1.0, max(0.0, end - time.monotonic())))
+
+
 CHARS_PER_TOKEN = 2.5  # careful: Hungarian and timestamps take more tokens per character than English prose
 PROMPT_TOKENS = 1200   # the instructions around the text
 
@@ -82,12 +109,15 @@ def chat_url(base: str) -> str:
 
 class Llm:
     def __init__(self, base_url: str, api_key: str, timeout: float = 2400,
-                 extra: dict[str, Any] | None = None, stall_s: float = STALL_S) -> None:
+                 extra: dict[str, Any] | None = None, stall_s: float = STALL_S,
+                 fixed_temperature: float | None = None) -> None:
         self.url = chat_url(base_url)
         self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self.timeout = timeout  # the whole answer at most
         self.stall_s = stall_s  # without any byte at most
         self.extra = extra or {}  # server-specific request fields, e.g. OpenRouter's "reasoning"
+        # a model that only writes well with this temperature (AssemblyAI's small trial model): always sent
+        self.fixed_temperature = fixed_temperature
 
     def chat(self, model: str, system: str, user: str, temperature: float = 0.3) -> Answer:
         return self.complete(model, [{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -98,15 +128,32 @@ class Llm:
 
         The answer is asked for as a stream (every OpenAI-compatible server can): a dead connection shows up
         as silence (stall_s), and a job cancelled on the dwyt page stops at the next piece. A server that
-        answers in one piece anyway is read the same way as before."""
+        answers in one piece anyway is read the same way as before. "Too many requests" (HTTP 429, e.g. a free
+        AssemblyAI account) is waited out a few times before the job is handed back for later."""
+        for attempt in range(RATE_TRIES + 1):
+            try:
+                return self._complete(model, messages, temperature)
+            except RateLimited as exc:
+                if attempt == RATE_TRIES:
+                    raise WorkError(f"A(z) {model} modell percenkénti kerete elfogyott (HTTP 429); később "
+                                    "újrapróbálom.", "later") from exc
+                _wait(exc.retry_after or RATE_WAIT_S[min(attempt, len(RATE_WAIT_S) - 1)])
+        raise AssertionError("unreachable")
+
+    def _complete(self, model: str, messages: list[dict], temperature: float | None) -> Answer:
         started = time.monotonic()
         body: dict = {"model": model, "messages": messages, "stream": True,
                       "stream_options": {"include_usage": True}, **self.extra}
+        if self.fixed_temperature is not None:
+            temperature = self.fixed_temperature
         if temperature is not None:
             body["temperature"] = temperature
         try:
             with httpx.stream("POST", self.url, json=body, headers=self.headers,
                               timeout=httpx.Timeout(self.stall_s, connect=10)) as resp:
+                if resp.status_code == 429:
+                    resp.read()
+                    raise RateLimited(_retry_after(resp))
                 if resp.status_code >= 400:
                     resp.read()
                     self._refused(resp, model)

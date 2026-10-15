@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from . import localllm
+from . import gateway, localllm
 from .config import Config
 
 MODES = {"felho": "Felhő", "vegyes": "Vegyes", "sajat": "Saját gép", "egyeni": "Egyéni"}
@@ -51,6 +51,10 @@ def apply(cfg: Config, mode: str) -> list[str]:
     if mode in ("felho", "vegyes"):
         if not cfg.llm_url:
             missing.append("Add meg a felhős LLM címét és kulcsát (például OpenRouter) a Kulcsok lapon.")
+        elif gateway.is_gateway(cfg.llm_url) and not cfg.assemblyai_key:
+            missing.append("Az összefoglalóhoz add meg az AssemblyAI-kulcsot a Kulcsok lapon.")
+        elif not gateway.is_gateway(cfg.llm_url) and not cfg.llm_key and "openrouter.ai" in cfg.llm_url:
+            missing.append("Add meg az OpenRouter-kulcsot a Kulcsok lapon.")
         elif not cfg.llm_public_model:
             missing.append("Add meg, melyik felhős modell írja az összefoglalókat.")
     if mode == "felho" and not cfg.assemblyai_key:
@@ -74,6 +78,8 @@ def preview(cfg: Config) -> dict[str, list[Box]]:
 
 def _provider(url: str) -> str:
     host = urlsplit(url).hostname or url
+    if gateway.is_gateway(url):
+        return "AssemblyAI"
     return "OpenRouter" if "openrouter.ai" in host else host
 
 
@@ -84,7 +90,8 @@ def flow(cfg: Config) -> list[Box]:
     elif cfg.whisper_builtin:
         transcribe = Box("Átírás", "ezen a gépen (Whisper)", "ingyenes", True)
     elif cfg.assemblyai_key:
-        transcribe = Box("Átírás", "felhőben (AssemblyAI), ha kéred", "fizetős, a te kulcsoddal", False)
+        transcribe = Box("Átírás", "felhőben (AssemblyAI), ha kéred", "az AssemblyAI-kreditből"
+                         if gateway.is_gateway(cfg.llm_url) else "fizetős, a te kulcsoddal", False)
     else:
         transcribe = Box("Átírás", "YouTube-feliratból", "ingyenes", False)
     if cfg.llm_prefer_local and localllm.server(cfg) is None:
@@ -92,6 +99,9 @@ def flow(cfg: Config) -> list[Box]:
     elif localllm.uses_local(cfg):
         server = localllm.server(cfg)
         llm = Box("Összefoglaló, fordítás, kérdések", f"ezen a gépen ({server.title})", "ingyenes", True)
+    elif gateway.is_trial(cfg.llm_url, cfg.llm_public_model):
+        llm = Box("Összefoglaló, fordítás, kérdések", "felhőben (AssemblyAI, próba-modell)",
+                  "az AssemblyAI-kreditből", False)
     elif cfg.llm_url:
         llm = Box("Összefoglaló, fordítás, kérdések", f"felhőben ({_provider(cfg.llm_url)})",
                   "fizetős, a te kulcsoddal", False)

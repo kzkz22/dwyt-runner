@@ -1,40 +1,14 @@
 """The setup steps in the window (plan 15b, docs/minta-7 1–6)."""
 import re
 import time
-import webbrowser
 
-import pytest
-from fastapi.testclient import TestClient
 
 from dwyt_runner import autostart, config, keystore, machine, whispercpp
 from dwyt_runner.app import wizard
-from dwyt_runner.app.runtime import Runtime
-from dwyt_runner.app.server import COOKIE, create
 
 
 def csrf(page: str) -> str:
     return re.search(r'name="csrf" value="([^"]+)"', page).group(1)
-
-
-@pytest.fixture
-def opened(monkeypatch):
-    urls = []
-    monkeypatch.setattr(webbrowser, "open", lambda url, *a, **k: urls.append(url) or True)
-    return urls
-
-
-@pytest.fixture
-def setup_window(opened):
-    runtime = Runtime(start_worker=False)
-    api, state = create(runtime, "testserver")
-    client = TestClient(api)
-    r = client.get(f"/belepes?t={state.launch_code}", follow_redirects=False)
-    assert COOKIE in r.cookies
-    for _ in range(100):  # the first machine check
-        if not runtime.machine["scanning"]:
-            break
-        time.sleep(0.05)
-    return client, runtime, r.headers["location"]
 
 
 def fake_machine(runtime, servers=(), vram=12.0):
@@ -192,9 +166,12 @@ def test_last_step_sets_login_start_and_opens_dwyt(setup_window, opened, monkeyp
 def test_ingredient_rules():
     cfg = config.Config()
     items = {i.key: i for i in wizard.ingredients(cfg, "felho", {}, False)}
-    assert items["whisper"].need == "nem kell" and items["llm"].need == "kell"
+    assert items["whisper"].need == "nem kell" and items["provider"].need == "kell"  # OpenRouter (no gateway set)
     assert items["assemblyai"].need == "ajánlott" and items["assemblyai"].lamp == "yellow"
     assert not wizard.can_go_on(list(items.values()))
+    trial = {i.key: i for i in wizard.ingredients(config.Config(llm_url="https://llm-gateway.assemblyai.com/v1"),
+                                                  "felho", {}, False)}
+    assert trial["assemblyai"].need == "kell" and not trial["provider"].ok  # one key does both
     cfg.llm_url, cfg.llm_key, cfg.llm_public_model = wizard.CLOUD_LLM_URL, "k", "m/x"
     assert wizard.can_go_on(wizard.ingredients(cfg, "felho", {}, False))  # AssemblyAI is only recommended
     assert not wizard.can_go_on(wizard.ingredients(cfg, "vegyes", {}, False))  # Whisper not here yet

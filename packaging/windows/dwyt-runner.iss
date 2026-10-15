@@ -59,6 +59,11 @@ Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; Wor
 ; after a silent update (from the app itself) the app comes back in the tray; /NOLAUNCH for tests
 Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main --hidden"; WorkingDir: "{app}"; Flags: nowait; Check: StartAfterSilentInstall
 
+[UninstallDelete]
+; Python writes __pycache__ while running: files the installer did not put there
+Type: filesandordirs; Name: "{app}\python"
+Type: filesandordirs; Name: "{app}\bin"
+
 [UninstallRun]
 ; the login start always goes; a running app is closed by the uninstaller
 Filename: "{app}\python\python.exe"; Parameters: "-m dwyt_runner.cli autostart off"; Flags: runhidden; RunOnceId: "AutostartOff"

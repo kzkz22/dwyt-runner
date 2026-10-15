@@ -44,17 +44,20 @@ jobs:
       - name: try it (silent install, the command line, uninstall)
         shell: pwsh
         run: |
+          function Fail($what) { Write-Output "::error title=Windows package::$what"; exit 1 }
           $setup = Get-ChildItem dist\dwyt-runner-setup-*.exe | Select-Object -First 1
-          Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/NOLAUNCH=1" -Wait
+          Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/NOLAUNCH=1","/LOG=$env:RUNNER_TEMP\setup.log" -Wait
           $app = "$env:LOCALAPPDATA\Programs\dwyt-runner"
-          & "$app\bin\dwyt-runner.cmd" --version
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          & "$app\python\python.exe" -c "import webview, pystray, sherpa_onnx, dwyt_runner.updater as u; k = u.kind(); print(k); assert k == 'inno'"
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          if (-not (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "dwyt*.lnk")) { Write-Error "no shortcut"; exit 1 }
+          if (-not (Test-Path "$app\python\python.exe")) { Fail ("not installed: " + ((Get-Content "$env:RUNNER_TEMP\setup.log" -Tail 15) -join " | ")) }
+          $out = & "$app\bin\dwyt-runner.cmd" --version 2>&1
+          if ($LASTEXITCODE -ne 0) { Fail "dwyt-runner.cmd --version: $out" }
+          Write-Output "version: $out"
+          $out = & "$app\python\python.exe" -c "import webview, pystray, sherpa_onnx, dwyt_runner.updater as u; k = u.kind(); print(k); assert k == 'inno', k" 2>&1
+          if ($LASTEXITCODE -ne 0) { Fail "imports: $out" }
+          if (-not (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "dwyt*.lnk")) { Fail "no Start menu shortcut" }
           Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
           Start-Sleep -Seconds 5
-          if (Test-Path "$app\python") { Write-Error "uninstall left the program"; exit 1 }
+          if (Test-Path "$app\python") { Fail ("uninstall left: " + ((Get-ChildItem $app | Select-Object -ExpandProperty Name) -join ", ")) }
       - uses: actions/upload-artifact@v4
         with: {name: windows, path: dist/dwyt-runner-setup-*.exe}
 

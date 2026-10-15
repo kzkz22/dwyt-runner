@@ -409,7 +409,7 @@ def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file,
     from dwyt_runner import remote, updater
     remote.APP = False
     updater.APP, updater.ON_RESTART = False, None
-    updater.STATE.update(latest="", checked=0.0, running=False, error="", message="")
+    updater.STATE.update(latest="", checked=time.time(), running=False, error="", message="")  # no GitHub
     remote._latest.update(version="", at=time.time())  # no GitHub in tests
     central.reset()
     whisper.reset()

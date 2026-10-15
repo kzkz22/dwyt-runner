@@ -23,9 +23,9 @@ from . import __version__
 
 REPO = "kzkz22/dwyt-runner"
 BASE = f"https://github.com/{REPO}/releases"
-# The project's minisign public key (the second line of minisign.pub). Empty until the owner made the key:
-# then there is no signed update, and nothing is installed from a release.
-PUBLIC_KEY = ""
+# The project's minisign public key (the second line of packaging/minisign.pub; the secret half is only in the
+# owner's keeping and the repository's Actions secrets). Empty = no signed update, nothing installed from a release.
+PUBLIC_KEY = "RWSJJKmZLO/Kb8gAHvTfs0HnQBRXrR+iBz1WnfLmVVe7WGTZVr4yA9oU"  # key id 6FCAEF2C99A92489
 
 
 class BadSignature(Exception):

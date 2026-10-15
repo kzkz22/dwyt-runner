@@ -64,7 +64,13 @@ def signed(github, monkeypatch):
     return github
 
 
-def test_without_the_projects_key_nothing_is_installed():
+def test_the_projects_key_is_the_one_in_packaging():
+    pub = (Path(__file__).parent.parent / "packaging" / "minisign.pub").read_text().splitlines()[1].strip()
+    assert release.PUBLIC_KEY == pub
+
+
+def test_without_the_projects_key_nothing_is_installed(monkeypatch):
+    monkeypatch.setattr(release, "PUBLIC_KEY", "")
     assert not updater.signed() and updater.check() is None
     ok, message, action = updater.update_now()
     assert not ok and "még nincs aláírt frissítés" in message and action == ""
@@ -98,6 +104,7 @@ def test_the_idle_worker_updates_only_with_auto_update(signed, monkeypatch, cfg)
     monkeypatch.setattr(updater, "update_now", lambda target=None: calls.append(1) or (True, "", "restart"))
     finished = []
     monkeypatch.setattr(updater, "finish", lambda action: finished.append(action))
+    updater.STATE["checked"] = 0
     updater.run_if_due(cfg)  # a command-line runner: auto = off, only the check
     assert updater.STATE["latest"] == "9.9.9" and calls == []
     updater.STATE["checked"] = 0

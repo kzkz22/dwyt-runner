@@ -95,6 +95,8 @@ def test_an_older_central_without_remote_settings(cfg, central):
 
 
 def test_update_now(cfg, central, monkeypatch):
+    from dwyt_runner import release
+    monkeypatch.setattr(release, "PUBLIC_KEY", "")  # the unsigned way before the project's key (decision 18.16)
     config.save(cfg)
     ran, restarted = [], []
     monkeypatch.setattr(remote, "update_command", lambda: ["uv", "tool", "install", "--force", "--refresh", "x"])

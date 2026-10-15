@@ -72,5 +72,33 @@
   <p class="muted">A YouTube gyakran változik; ha egy videó letöltése „HTTP 403” hibával akad el, többnyire egy újabb
     yt-dlp segít. A futtató ezt naponta magától megnézi, és egy ilyen hiba után is.</p>
 </div>
+<div class="card">
+  <div class="trial-head"><div><h2>A futtató változata</h2></div>
+    {% if upd.signed %}<form method="post" action="/gepem/frissites" class="inline" data-busy="Keresem …">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button name="action" value="keres"{% if upd.running %} disabled{% endif %}>Újabb keresése</button></form>{% endif %}</div>
+  <div{% if upd.running %} data-watch="update" data-running{% endif %}>
+  <p class="lampline"><span class="dot {{ 'yellow' if upd.newer else 'green' if upd.latest else 'grey' }}"></span><span>
+    <strong>Telepítve: {{ upd.version }}</strong>
+    {% if not upd.signed %}<small>Ebben a változatban még nincs aláírt frissítés; az újabbat kézzel kell telepíteni.</small>
+    {% elif upd.running %}<small><span class="spinner"></span> letöltöm és ellenőrzöm …</small>
+    {% elif upd.newer %}<small>Újabb van: {{ upd.latest }}. {% if upd.auto %}A futtató a következő két munka között telepíti.{% else %}A magától frissítés ki van kapcsolva (Működés lap, részletes beállítások).{% endif %}</small>
+    {% elif upd.latest %}<small>Ez a legújabb ({{ upd.checked_text }}).</small>
+    {% else %}<small>Még nem néztem meg, van-e újabb.</small>{% endif %}
+    {% if upd.message %}<small>{{ upd.message }}</small>{% endif %}
+    {% if upd.error %}<small class="bad">{{ upd.error }}</small>{% endif %}
+  </span></p>
+  </div>
+  {% if upd.signed and (upd.newer or upd.can_go_back) and not upd.running %}
+  <div class="actions">
+    {% if upd.newer %}<form method="post" action="/gepem/frissites" class="inline" data-busy="Frissítés …"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="primary" name="action" value="most">Frissítés most</button></form>{% endif %}
+    {% if upd.can_go_back %}<form method="post" action="/gepem/frissites" class="inline" data-busy="Visszaállítás …"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button name="action" value="vissza">Vissza az előzőre ({{ upd.previous }})</button></form>{% endif %}
+  </div>
+  {% endif %}
+  <p class="muted">Csak a dwyt projekt kulcsával aláírt kiadást telepít, és csak akkor, amikor nincs munka. Utána a
+    futtató újraindul; a beállítások, kulcsok és modellek megmaradnak.</p>
+</div>
 <p class="muted foot">A program minden indításkor csendben megnézi, változott-e a hardver, és szól, ha igen. Csak ajánl: a működési módot mindig te választod.</p>
 {% endblock %}

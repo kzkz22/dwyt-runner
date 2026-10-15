@@ -406,8 +406,10 @@ def isolated(tmp_path, monkeypatch, central, assembly, llm, whisper, audio_file,
     monkeypatch.setenv("DWYT_RUNNER_HOME", str(tmp_path / "home"))
     (tmp_path / "home").mkdir(exist_ok=True)
     (tmp_path / "home" / "remote_key.pem").write_bytes(remote_key_pem)
-    from dwyt_runner import remote
+    from dwyt_runner import remote, updater
     remote.APP = False
+    updater.APP, updater.ON_RESTART = False, None
+    updater.STATE.update(latest="", checked=0.0, running=False, error="", message="")
     remote._latest.update(version="", at=time.time())  # no GitHub in tests
     central.reset()
     whisper.reset()

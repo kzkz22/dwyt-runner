@@ -130,7 +130,13 @@ def mode_presets(cfg: Config) -> list[dict[str, Any]]:
 
 
 def latest_version(timeout: float = 10) -> str:
-    """The version on the source's main branch (what an update installs), checked once a day; '' if unknown."""
+    """The newest version an update would install, checked once a day; '' if unknown. With the project's key:
+    the newest signed release; before that the source's main branch."""
+    from . import updater
+    if updater.signed():
+        if updater.due(None):
+            updater.check()
+        return updater.STATE["latest"]
     if time.time() - _latest["at"] < LATEST_EVERY_S:
         return _latest["version"]
     _latest["at"] = time.time()
@@ -224,9 +230,14 @@ def update_command() -> list[str] | None:
 
 
 def update() -> dict[str, Any]:
-    """Frissítés most (decision 18.16): the same command as a manual update, unsigned until 7c."""
+    """Frissítés most: the newest signed release (decision 18.20); before the project's key exists, the same
+    command as a manual update (decision 18.16)."""
     if APP:
         return {"ok": False, "message": "Az asztali alkalmazás a saját gépén frissül."}
+    from . import updater
+    if updater.signed():
+        ok, message, action = updater.update_now()
+        return {"ok": ok and bool(action), "message": message, "action": action}
     cmd = update_command()
     if cmd is None:
         return {"ok": False, "message": "Nincs uv ezen a gépen, amivel frissíthetnék."}
@@ -253,16 +264,18 @@ def restart() -> None:
 
 def handle(cfg: Config, central) -> Config:
     """Take the waiting changes, apply them one by one, answer each, report again. May restart (update)."""
-    restart_after = False
+    restart_after, action = False, ""
     for change in central.setting_changes():
         if change.get("action") == "update":
             result = update()
             restart_after = restart_after or result["ok"]
+            action = result.pop("action", "restart")
         else:
             result = apply(cfg, change)
         central.setting_result(change["id"], result)
     cfg = config.load()
     report(cfg, central)
     if restart_after:
-        restart()
+        from . import updater
+        updater.finish(action or "restart")
     return cfg

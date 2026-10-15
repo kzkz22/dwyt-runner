@@ -22,7 +22,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .. import __version__, autostart, config, keystore, machine, modes, remote, settings, trial, whispercpp
+from .. import (__version__, autostart, config, keystore, machine, modes, release, remote, settings, trial, updater,
+               whispercpp)
 from . import wizard
 from .runtime import Runtime
 
@@ -73,6 +74,7 @@ class App:
 
 def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     remote.APP = True  # the desktop app: remote settings only when switched on here (decision 18.11)
+    updater.APP = True  # and it updates itself (auto_update auto = on)
     state = App(runtime, host)
     api = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     api.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -82,7 +84,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         if request.headers.get("host") != state.host:
             return Response("Ismeretlen cím.", status_code=403)
         path = request.url.path
-        if not (path in ("/belepes", "/ablak") or path.startswith("/static/")):
+        if not (path in ("/belepes", "/ablak", "/ablak/kilepes") or path.startswith("/static/")):
             sid = request.cookies.get(COOKIE, "")
             if sid not in state.sessions:
                 return Response("Ezt az oldalt a dwyt futtató ablaka nyitja meg.", status_code=403)
@@ -109,6 +111,15 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         if not secrets.compare_digest(given, state.instance_secret):
             return Response(status_code=403)
         state.on_show()
+        return Response(status_code=204)
+
+    @api.post("/ablak/kilepes")
+    def quit_from_outside(request: Request):
+        """The uninstaller (or `dwyt-runner app-quit`) closes the running app: same secret as /ablak."""
+        given = request.headers.get("x-dwyt-instance", "")
+        if not secrets.compare_digest(given, state.instance_secret):
+            return Response(status_code=403)
+        threading.Timer(0.2, state.on_quit).start()
         return Response(status_code=204)
 
     @api.get("/")
@@ -241,7 +252,15 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         return state.render(request, "gepem.html", m=m, a=machine.assess(m), said=view["said"], last=last,
                             last_when=last_when, same_card=last is not None and last.gpu == card,
                             trial_state=runtime.trial, local_models=view["local_models"], scanned=scanned,
-                            scanning=view["scanning"], ytdlp=_ytdlp_view())
+                            scanning=view["scanning"], ytdlp=_ytdlp_view(), upd=_update_view(config.load()))
+
+    def _update_view(cfg) -> dict[str, Any]:
+        st = dict(updater.STATE)
+        st.update(version=__version__, signed=updater.signed(), kind=updater.kind(), auto=updater.auto(cfg),
+                  newer=release.newer(st["latest"]), previous=updater.history().get("previous") or "",
+                  checked_text=time.strftime("%Y-%m-%d %H:%M", time.localtime(st["checked"])) if st["checked"] else "")
+        st["can_go_back"] = bool(st["previous"]) and st["previous"] != __version__
+        return st
 
     def _ytdlp_view() -> dict[str, Any]:
         from .. import ytdlp_update
@@ -262,6 +281,27 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         threading.Thread(target=ytdlp_update.check, kwargs={"update": not busy}, daemon=True,
                          name="ytdlp").start()
         time.sleep(0.1)  # the page then already shows the search
+        return RedirectResponse("/gepem", status_code=303)
+
+    @api.post("/gepem/frissites")
+    async def update_self(request: Request):
+        """Look for a signed newer version and install it (or go back to the previous one); only when idle."""
+        from .. import activity
+        form = await state.form(request)
+        target = updater.history().get("previous") if form.get("action") == "vissza" else None
+        if activity.current():
+            updater.STATE["error"] = "Most munka fut; a frissítés utána indítható (vagy magától megtörténik)."
+            return RedirectResponse("/gepem", status_code=303)
+
+        def work() -> None:
+            if form.get("action") == "keres":
+                updater.check()
+                return
+            ok, _, action = updater.update_now(target=target)
+            if ok and action:
+                updater.finish(action)
+        threading.Thread(target=work, daemon=True, name="update").start()
+        time.sleep(0.1)
         return RedirectResponse("/gepem", status_code=303)
 
     @api.post("/gepem/ujra")
@@ -353,6 +393,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         from .. import ytdlp_update
         return JSONResponse({"prepare": wizard.prepare_view(runtime.prepare), "pull": wizard.pull_view(runtime.pull),
                              "ytdlp": {"running": ytdlp_update.STATE["running"], "text": ""},
+                             "update": {"running": updater.STATE["running"], "text": ""},
                              "starting": {"running": runtime.starting["running"],
                                           "text": f"{int(time.time() - runtime.starting['since'])} mp"},
                              "trial": runtime.trial, "pairing": pairing})

@@ -1,0 +1,102 @@
+# Desktop packages and a signed release (round 7c; plan 15b, decision 18.20).
+# A tag vX.Y.Z (equal to pyproject's version) builds the wheel, the Windows installer and the Linux AppImage,
+# tries each, writes latest.json (version, file names, sizes, SHA-256) and signs it with the project's minisign
+# key (Actions secret MINISIGN_SECRET_KEY: the whole minisign.key file, made with `minisign -G -W`). Without the
+# secret the release is published unsigned, and runners do not install it. Run by hand: packages only, no release.
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: the tag matches the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          v=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
+          test "v$v" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} but pyproject says $v"; exit 1; }
+      - run: uv build --wheel --out-dir dist
+      - uses: actions/upload-artifact@v4
+        with: {name: wheel, path: dist/*.whl}
+
+  windows:
+    needs: wheel
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/download-artifact@v4
+        with: {name: wheel, path: dist}
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+      - run: python packaging/build.py windows
+      - name: try it (silent install, the command line, uninstall)
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist\dwyt-runner-setup-*.exe | Select-Object -First 1
+          Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/NOLAUNCH=1" -Wait
+          $app = "$env:LOCALAPPDATA\Programs\dwyt-runner"
+          & "$app\bin\dwyt-runner.cmd" --version
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & "$app\python\python.exe" -c "import webview, pystray, sherpa_onnx, dwyt_runner.updater as u; k = u.kind(); print(k); assert k == 'inno'"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if (-not (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "dwyt*.lnk")) { Write-Error "no shortcut"; exit 1 }
+          Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
+          Start-Sleep -Seconds 5
+          if (Test-Path "$app\python") { Write-Error "uninstall left the program"; exit 1 }
+      - uses: actions/upload-artifact@v4
+        with: {name: windows, path: dist/dwyt-runner-setup-*.exe}
+
+  appimage:
+    needs: wheel
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/download-artifact@v4
+        with: {name: wheel, path: dist}
+      - run: sudo apt-get update && sudo apt-get install -y libxcb-cursor0 libfuse2
+      - run: python3 packaging/build.py appimage
+      - name: try it
+        run: |
+          img=$(ls dist/dwyt-runner-*-x86_64.AppImage)
+          "$img" --version
+          "$img" config describe | head -3
+      - uses: actions/upload-artifact@v4
+        with: {name: appimage, path: dist/dwyt-runner-*-x86_64.AppImage}
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [wheel, windows, appimage]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: {path: out, merge-multiple: true}
+      - name: latest.json
+        run: python3 packaging/latest_json.py "${GITHUB_REF_NAME#v}" out > latest.json && mv latest.json out/ && cat out/latest.json
+      - name: sign
+        env:
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+        run: |
+          if [ -z "$MINISIGN_SECRET_KEY" ]; then echo "::warning::no MINISIGN_SECRET_KEY: the release is not signed"; exit 0; fi
+          sudo apt-get install -y minisign >/dev/null
+          umask 077
+          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$RUNNER_TEMP/minisign.key"
+          minisign -S -s "$RUNNER_TEMP/minisign.key" -m out/latest.json -t "dwyt-runner ${GITHUB_REF_NAME#v}"
+          rm -f "$RUNNER_TEMP/minisign.key"
+          minisign -V -p packaging/minisign.pub -m out/latest.json
+      - name: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/* --title "dwyt futtató ${GITHUB_REF_NAME#v}" \
+            --notes "Windows: dwyt-runner-setup-${GITHUB_REF_NAME#v}.exe (rendszergazdai jog nélkül). Linux: dwyt-runner-${GITHUB_REF_NAME#v}-x86_64.AppImage. Szerverre: a dwyt Futtatók oldalán az egysoros telepítő. A futtató csak a projekt kulcsával aláírt kiadást telepíti magától."

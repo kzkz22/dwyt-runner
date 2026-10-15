@@ -15,6 +15,7 @@
                              * = any),
                              watch_dirs (comma-separated folders), watch_mode, watch_language
   check                      tools, settings and the connection to the central service
+  update [--check | --back]  install the newest signed release (or only look, or go back to the previous one)
   machine [--json]           what this machine can do: video card, memory, free space, local model server
   keys                       where the keys are kept, and whether they work (one test request each)
   trial [--model M] [--llm NAME]  test run: a 33 s sample transcribed and a short summary, timed; recommends a mode
@@ -91,6 +92,31 @@ def adopt(server: str, runner_id: int, name: str | None, token: str) -> int:
     config.save(cfg)
     _out(f"Párosítva: {cfg.name}. Beállítások: {config.path()}")
     return 0
+
+
+def update_cmd(only_check: bool, back: bool) -> int:
+    from . import release, updater
+    if not updater.signed():
+        _out("Ebben a változatban még nincs aláírt frissítés. Kézi frissítés: uv tool install --force --refresh "
+             "--python 3.13 https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip")
+        return 1
+    if only_check:
+        rel = updater.check()
+        if rel is None:
+            _out(updater.STATE["error"])
+            return 1
+        _out(f"Telepítve: {__version__}; legújabb: {rel.version}" + (" (újabb)" if release.newer(rel.version) else ""))
+        return 0
+    target = updater.history().get("previous") if back else None
+    if back and not target:
+        _out("Nincs előző változat, amire visszaállhatnék.")
+        return 1
+    ok, message, action = updater.update_now(target=target)
+    _out(message)
+    if ok and action:
+        _out("Ha szolgáltatásként fut, indítsd újra (systemctl restart dwyt-runner); az ablakos futtatót zárd be és "
+             "nyisd meg újra.")
+    return 0 if ok else 1
 
 
 def run() -> int:
@@ -372,7 +398,12 @@ def main() -> None:
     ap = sub.add_parser("app")
     ap.add_argument("--browser", action="store_true", help="a böngészőben, saját ablak helyett")
     ap.add_argument("--hidden", action="store_true", help="csak a tálcaikon indul, az ablak nem nyílik meg")
+    ap.add_argument("--after", type=int, default=0, help=argparse.SUPPRESS)  # restart after an update
     sub.add_parser("check")
+    sub.add_parser("app-quit", help=argparse.SUPPRESS)  # the uninstaller closes the running app
+    up = sub.add_parser("update")
+    up.add_argument("--check", action="store_true", help="csak megnézi, van-e újabb")
+    up.add_argument("--back", action="store_true", help="vissza az előző változatra")
     rp = sub.add_parser("reset")
     rp.add_argument("--models", action="store_true", help="a letöltött modelleket is")
     rp.add_argument("--yes", action="store_true", help="kérdés nélkül")
@@ -420,7 +451,7 @@ def main() -> None:
                  "uv tool install --force --python 3.13 \"dwyt-runner[desktop,local] @ "
                  "https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip\"")
             sys.exit(1)
-        sys.exit(app_main.run(args.browser, args.hidden))
+        sys.exit(app_main.run(args.browser, args.hidden, args.after))
     if args.cmd == "reset":
         sys.exit(reset_cmd(args.models, args.yes))
     if args.cmd == "autostart":
@@ -433,6 +464,12 @@ def main() -> None:
         sys.exit(0)
     if args.cmd == "check":
         sys.exit(check())
+    if args.cmd == "app-quit":
+        from .app.main import quit_running
+        _out("A futtató ablakát bezártam." if quit_running() else "Nem futott a futtató ablaka.")
+        sys.exit(0)
+    if args.cmd == "update":
+        sys.exit(update_cmd(args.check, args.back))
     if args.cmd == "machine":
         sys.exit(show_machine(args.json))
     if args.cmd == "keys":

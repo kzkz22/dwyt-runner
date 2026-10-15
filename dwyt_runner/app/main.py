@@ -36,16 +36,33 @@ def instance_file() -> Path:
 
 def wake_running() -> bool:
     """True when another app of this user is running and was asked to show its window."""
+    return ask_running("/ablak")
+
+
+def ask_running(path: str) -> bool:
+    """POST to the running app's instance endpoint (/ablak, /ablak/kilepes); True when it answered 204."""
     try:
         info = json.loads(instance_file().read_text(encoding="utf-8"))
-        req = urllib.request.Request(f"http://127.0.0.1:{int(info['port'])}/ablak", method="POST", data=b"",
+        req = urllib.request.Request(f"http://127.0.0.1:{int(info['port'])}{path}", method="POST", data=b"",
                                      headers={INSTANCE_HEADER: str(info["secret"]),
                                               "Host": f"127.0.0.1:{int(info['port'])}"})
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # never via a system proxy
         with opener.open(req, timeout=3) as r:
             return r.status == 204
-    except Exception:  # noqa: BLE001 - no file, stale file, nobody listening: we are the first
+    except Exception:  # noqa: BLE001 - no file, stale file, nobody listening
         return False
+
+
+def quit_running(wait_s: float = 20) -> bool:
+    """Close the running app of this user (uninstall); True when one was running and is gone."""
+    try:
+        pid = int(json.loads(instance_file().read_text(encoding="utf-8")).get("pid") or 0)
+    except (OSError, ValueError):
+        pid = 0
+    if not ask_running("/ablak/kilepes"):
+        return False
+    wait_for(pid, wait_s)
+    return True
 
 
 def write_instance(port: int, secret: str) -> None:
@@ -87,7 +104,46 @@ def serve(start_worker: bool = True, port: int = 0):
     return server, state, runtime
 
 
-def run(browser: bool = False, hidden: bool = False) -> int:
+def alive(pid: int) -> bool:
+    if pid <= 0 or pid == os.getpid():
+        return False
+    if os.name == "nt":
+        import ctypes
+        handle = ctypes.windll.kernel32.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
+        if not handle:
+            return False
+        try:
+            return ctypes.windll.kernel32.WaitForSingleObject(handle, 0) == 0x102  # WAIT_TIMEOUT: still running
+        finally:
+            ctypes.windll.kernel32.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def wait_for(pid: int, seconds: float = 60) -> None:
+    """After an update: the old app must be gone before this one takes its place."""
+    deadline = time.monotonic() + seconds
+    while alive(pid) and time.monotonic() < deadline:
+        time.sleep(0.3)
+
+
+def relaunch() -> None:
+    """Start this app again (the new version after an update), hidden, once this process has ended."""
+    import subprocess
+
+    from .. import autostart, tools
+    cmd = autostart.command() + ["--after", str(os.getpid())]
+    subprocess.Popen(cmd, close_fds=True, start_new_session=os.name != "nt", **tools.no_window())
+
+
+def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
+    if after:
+        wait_for(after)
     if wake_running():
         print("A futtató már fut; előhoztam az ablakát.")
         return 0
@@ -126,6 +182,13 @@ def run(browser: bool = False, hidden: bool = False) -> int:
     tray = Tray(runtime.status, show, quit_app)
     state.on_show = show
     state.on_quit = quit_app
+
+    def on_update(action: str) -> None:  # called by updater.finish (worker or window thread)
+        if action == "restart":
+            relaunch()
+        quit_app()
+    from .. import updater
+    updater.ON_RESTART = on_update
     try:
         if webview is not None:
             window = webview.create_window("dwyt futtató", state.start_url, width=1120, height=860,
@@ -176,6 +239,7 @@ def entry() -> None:
     ap = argparse.ArgumentParser(prog="dwyt-runner-app")
     ap.add_argument("--browser", action="store_true")
     ap.add_argument("--hidden", action="store_true")
+    ap.add_argument("--after", type=int, default=0, help=argparse.SUPPRESS)
     args = ap.parse_args()
     if sys.stdout is None:  # pythonw: no console; some libraries (uvicorn) ask sys.stdout.isatty()
         sys.stdout = sys.stderr = open(os.devnull, "w", encoding="utf-8")  # noqa: SIM115
@@ -185,7 +249,7 @@ def entry() -> None:
                                                    encoding="utf-8")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[handler])
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    sys.exit(run(args.browser, args.hidden))
+    sys.exit(run(args.browser, args.hidden, args.after))
 
 
 if __name__ == "__main__":

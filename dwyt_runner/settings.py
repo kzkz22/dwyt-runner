@@ -120,6 +120,10 @@ SETTINGS: tuple[Setting, ...] = (
       "mögött: név=leírás.", advanced=True),
     # -- sources --
     S("allowed_domains", "list", "sources", "Engedélyezett oldalak", "Honnan tölthet le a futtató (* = bárhonnan)."),
+    S("auto_update", "choice", "sources", "A futtató frissítése magától", "Naponta megnézi, van-e aláírt újabb "
+      "változat, és két munka között telepíti. Automatikusan: az asztali alkalmazásban be; szerveren ki, ott a dwyt "
+      "Futtatók oldala szól, és a Frissítés most gombbal telepíthető.",
+      choices=(("auto", "automatikus"), ("on", "be"), ("off", "ki"))),
     S("ytdlp_auto_update", "bool", "sources", "A yt-dlp frissítése magától", "A YouTube gyakran változik; a "
       "futtató naponta (és egy elutasított letöltés után) megnézi, van-e újabb yt-dlp, és két munka között "
       "telepíti."),

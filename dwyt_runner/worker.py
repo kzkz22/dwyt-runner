@@ -177,6 +177,9 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
         if ytdlp_update.due(cfg.ytdlp_auto_update):  # idle here: a newer yt-dlp is installed between jobs
             ytdlp_update.run_if_due(cfg.ytdlp_auto_update)
             versions = tools.versions()
+        from . import updater
+        if updater.due(cfg):  # the runner itself: signed releases only (7c)
+            updater.run_if_due(cfg)
         try:
             job = central.claim(caps, versions)
             wait = 2

@@ -1,0 +1,90 @@
+﻿; dwyt runner – Windows installer (round 7c; plan 15b, decisions 18.15, 18.20). Built by packaging/build.py:
+;   iscc /DAppVersion=0.11.0 /DSrc=<folder with python\, bin\, dwyt-runner.ico> dwyt-runner.iss
+; Per-user, no admin rights: %LOCALAPPDATA%\Programs\dwyt-runner. Settings (%APPDATA%\dwyt-runner), keys (Credential
+; Manager) and models (%LOCALAPPDATA%\dwyt-runner\models) are the runner's own and stay on uninstall unless asked.
+
+#ifndef AppVersion
+  #define AppVersion "0.0.0"
+#endif
+#ifndef Src
+  #define Src "..\..\build\package\windows"
+#endif
+
+[Setup]
+AppId={{6E0C3D6A-3B7F-4C1E-9A55-2D8B1F0E7C41}
+AppName=dwyt futtató
+AppVersion={#AppVersion}
+AppVerName=dwyt futtató {#AppVersion}
+AppPublisher=dwyt
+AppPublisherURL=https://github.com/kzkz22/dwyt-runner
+DefaultDirName={localappdata}\Programs\dwyt-runner
+DisableDirPage=yes
+DisableProgramGroupPage=yes
+DisableReadyPage=yes
+PrivilegesRequired=lowest
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+MinVersion=10.0
+OutputBaseFilename=dwyt-runner-setup-{#AppVersion}
+SetupIconFile={#Src}\dwyt-runner.ico
+UninstallDisplayIcon={app}\dwyt-runner.ico
+UninstallDisplayName=dwyt futtató
+Compression=lzma2/max
+SolidCompression=yes
+WizardStyle=modern
+ShowLanguageDialog=no
+; an update runs this silently while the app is open: close it, the [Run] entry below starts it again
+CloseApplications=force
+RestartApplications=no
+
+[Languages]
+Name: "hu"; MessagesFile: "compiler:Languages\Hungarian.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "Ikon az asztalon"; Flags: unchecked
+
+[InstallDelete]
+; a new version brings its whole Python: no packages left over from the previous one
+Type: filesandordirs; Name: "{app}\python"
+
+[Files]
+Source: "{#Src}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+
+[Icons]
+Name: "{userprograms}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-runner.ico"
+Name: "{userdesktop}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-runner.ico"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; Description: "A dwyt futtató indítása"; Flags: nowait postinstall skipifsilent
+; after a silent update (from the app itself) the app comes back in the tray; /NOLAUNCH for tests
+Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main --hidden"; WorkingDir: "{app}"; Flags: nowait; Check: StartAfterSilentInstall
+
+[UninstallRun]
+; the login start always goes; a running app is closed by the uninstaller
+Filename: "{app}\python\python.exe"; Parameters: "-m dwyt_runner.cli autostart off"; Flags: runhidden; RunOnceId: "AutostartOff"
+
+[Code]
+function StartAfterSilentInstall: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:NOLAUNCH|0}') = '0');
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Code: Integer;
+begin
+  if CurUninstallStep = usUninstall then
+    { the running app (tray) holds its files: ask it to quit first }
+    Exec(ExpandConstant('{app}\python\python.exe'), '-m dwyt_runner.cli app-quit', '', SW_HIDE,
+         ewWaitUntilTerminated, Code);
+  if (CurUninstallStep = usUninstall) and not UninstallSilent then
+  begin
+    { unticked by default: a reinstall should find everything where it was (decision 18.15) }
+    if MsgBox('Töröljem a futtató beállításait, a kulcsait és a letöltött modelleket is?' + #13#10#13#10 +
+              'Ha később újratelepíted, nélkülük újra be kell állítani, és a modelleket újra le kell tölteni. ' +
+              'A dwyt-ben a futtatót a Futtatók oldalon vond vissza.',
+              mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+      Exec(ExpandConstant('{app}\python\python.exe'), '-m dwyt_runner.cli reset --models --yes', '',
+           SW_HIDE, ewWaitUntilTerminated, Code);
+  end;
+end;

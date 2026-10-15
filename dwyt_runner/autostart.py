@@ -20,6 +20,9 @@ LABEL = "hu.dwyt.runner"
 
 def command(platform: str = sys.platform) -> list[str]:
     """The command line the login starts."""
+    image = os.environ.get("APPIMAGE")
+    if image and Path(image).is_file():  # the AppImage itself: its AppRun starts the app
+        return [image, "--hidden"]
     here = Path(sys.argv[0]).resolve().parent if sys.argv and sys.argv[0] else Path()
     if platform == "win32":
         for d in (here, Path(sys.executable).parent, Path(sys.executable).parent / "Scripts"):

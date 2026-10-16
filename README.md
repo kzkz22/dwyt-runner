@@ -152,7 +152,9 @@ Mindkét esetben a felvétel „saját”: más felhasználó nem kaphatja meg a
 
 ## Mely oldalakról tölthet le
 
-Alapból csak a YouTube-ról (`youtube.com`, `youtu.be`). Ha a központtól más oldalra szóló munka jönne, a futtató visszautasítja. Bővítés: `dwyt-runner config set allowed_domains youtube.com,youtu.be,vimeo.com` (`*` = bármi).
+Alapból a YouTube-ról és néhány videós, podcastos oldalról: `youtube.com`, `youtu.be`, `telex.hu`, `444.hu`, `hvg.hu`, `index.hu`, `indavideo.hu`, `videa.hu`, `mediaklikk.hu`, `megaphone.fm`, `podcasts.apple.com`, `facebook.com`, `fb.watch`, `vimeo.com`, `ted.com`, `soundcloud.com` (a 0.13 előtti, csak YouTube-os alaplista magától erre cserélődik; a kézzel szerkesztett lista marad). Ha a központtól más oldalra szóló munka jönne, a futtató visszautasítja. Módosítás: `dwyt-runner config set allowed_domains youtube.com,youtu.be,vimeo.com` (`*` = bármi).
+
+**Oldal mint forrás (0.13):** ha a yt-dlp nem ismeri a beküldött oldalt (például egy Telex-, 444- vagy Index-cikket, ahol a lejátszót JavaScript rakja be), a futtató letölti az oldalt, és maga keresi meg benne a felvételt: elsőként YouTube-videót (annak a felirata is használható), utána a yt-dlp által ismert beágyazott lejátszót (Indavideo, Megaphone), a cikk napjáról való hangfájlt, Apple Podcasts-epizódot, végül egyéb hang- vagy videófájlt. A Spotify védett, azt nem használja. Az oldal szövege háttérként az összefoglalóhoz kerül; a dwyt elemoldalán látszik, melyik felvételt választotta, és a többiből is kérhető átirat. YouTube-on kívüli fájlt csak az engedélyezett oldalakról vagy az oldal aldomainjéről tölt le.
 
 ## Futás a háttérben
 

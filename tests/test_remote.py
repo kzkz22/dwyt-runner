@@ -36,7 +36,8 @@ def test_the_report_carries_no_secret(cfg, central):
     body = remote.build_report(cfg)
     assert body["remote"] is True and body["install"] == "service"
     assert body["public_key"].startswith("-----BEGIN PUBLIC KEY-----")
-    assert body["values"]["allowed_domains"] == "youtube.com, youtu.be" and body["values"]["polite_mode"] == "igen"
+    assert body["values"]["allowed_domains"].startswith("youtube.com, youtu.be, telex.hu")
+    assert body["values"]["polite_mode"] == "igen"
     assert body["secrets_set"] == ["assemblyai_key", "llm_key"]
     text = json.dumps(body)
     assert "aai-key" not in text and "tok-1" not in text and '"k"' not in text

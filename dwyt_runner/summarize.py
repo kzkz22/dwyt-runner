@@ -62,6 +62,9 @@ def _header(meta: dict, t: dict) -> str:
         lines.append(f"Csatorna: {meta['channel']}")
     if meta.get("duration_s"):
         lines.append(f"Hossz: {formatting.hms(meta['duration_s'])}")
+    if meta.get("page_text"):  # the page the recording was found on (19.10): background, not part of the recording
+        lines.append("Az oldal szövege, ahol a felvétel megjelent (csak háttér, nem a felvétel része):\n"
+                     + str(meta["page_text"])[:3000])
     lines.append(f"Az átirat nyelve: {t.get('language') or 'ismeretlen'}")
     lines.append(f"Az átirat forrása: {DESCRIBE.get(t.get('mode'), t.get('mode'))}")
     if t.get("mode") == "captions" and t.get("caption_kind") == "auto":

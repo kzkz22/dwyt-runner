@@ -15,6 +15,7 @@ STAGE_LABELS = {
     "upload": "feltöltés a felhőbe", "transcribe": "átírás", "diarize": "beszélők szétválasztása",
     "waiting-for-gpu": "vár a videókártyára", "download-model": "modell letöltése (első használat)",
     "summarize": "összefoglaló írása", "translate": "fordítás", "ask": "válasz írása", "write": "mentés",
+    "page": "felvétel keresése az oldalon",
 }
 HISTORY_MAX = 200
 _lock = threading.Lock()

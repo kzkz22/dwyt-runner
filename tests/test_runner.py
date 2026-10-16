@@ -130,7 +130,7 @@ def test_capabilities_follow_the_settings():
     from dwyt_runner.config import Config
     caps = work.capabilities(Config())
     assert caps["kinds"] == ["transcribe"] and caps["transcribe_modes"] == ["captions"]
-    assert caps["allowed_domains"] == ["youtube.com", "youtu.be"]
+    assert caps["allowed_domains"] == config.DEFAULT_DOMAINS and "telex.hu" in caps["allowed_domains"]
 
 
 def test_config_set_values():

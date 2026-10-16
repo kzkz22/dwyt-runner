@@ -6,7 +6,7 @@ import re
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import ask, captions, cloud, gateway, local, localllm, media, modelinfo, summarize, translate, watch
+from . import ask, captions, cloud, gateway, local, localllm, media, modelinfo, resolve, summarize, translate, watch
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
@@ -67,6 +67,15 @@ def offered_models(cfg: Config, role: str) -> list[str]:
     return out[:30]
 
 
+def _allowed_media(media_url: str, page_url: str, allowed: list[str]) -> bool:
+    """A recording found on a page: from an allowed site, or from the page's own site (audio-assets.telex.hu)."""
+    if domain_allowed(media_url, allowed):
+        return True
+    page_host = (urlsplit(page_url).hostname or "").lower().removeprefix("www.")
+    host = (urlsplit(media_url).hostname or "").lower()
+    return bool(page_host) and (host == page_host or host.endswith("." + page_host))
+
+
 def domain_allowed(url: str, allowed: list[str]) -> bool:
     host = (urlsplit(url).hostname or "").lower()
     return any(d == "*" or host == d.lower() or host.endswith("." + d.lower()) for d in allowed)
@@ -123,15 +132,32 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
             raise WorkError(f"A(z) {urlsplit(url).hostname} oldal nincs az engedélyezett tartományok között "
                             "(allowed_domains).")
         mode = options.get("mode")
+        if mode not in ("captions", "cloud", "local"):
+            raise WorkError(f"Ez a futtató nem tud ilyen módot: {mode}.")
+        page = None
+        if source.get("kind") == "url" and not resolve.is_file(url) and not resolve.known(url):
+            # a page yt-dlp does not know (a news site's video or podcast page): find the recording on it (19.10)
+            stage("page")
+            page = resolve.read(url)
+            chosen = resolve.choose(page, mode, str(options.get("pick") or "") or None)
+            if chosen.kind != "youtube" and not _allowed_media(chosen.url, url, cfg.allowed_domains):
+                raise WorkError(f"A felvétel a(z) {urlsplit(chosen.url).hostname} oldalon van, ami nincs az "
+                                "engedélyezett tartományok között (allowed_domains).")
+            url = chosen.url
+        elif mode == "captions" and source.get("kind") != "youtube":
+            raise WorkError("YouTube-feliratot csak YouTube-videóhoz lehet kérni.")
         if mode == "captions":
-            if source.get("kind") != "youtube":
-                raise WorkError("YouTube-feliratot csak YouTube-videóhoz lehet kérni.")
-            return captions.run(url, options, cfg, stage)
-        if mode == "cloud":
-            return cloud.run(url, options, cfg, stage, cancelled)
-        if mode == "local":
-            return local.run(url, options, cfg, stage, cancelled)
-        raise WorkError(f"Ez a futtató nem tud ilyen módot: {mode}.")
+            result = captions.run(url, options, cfg, stage)
+        elif mode == "cloud":
+            result = cloud.run(url, options, cfg, stage, cancelled)
+        else:
+            result = local.run(url, options, cfg, stage, cancelled)
+        if page is not None:
+            result["page"] = page.summary(chosen)
+            video = result.setdefault("video", {})
+            video["title"] = video.get("title") or page.title
+            video["channel"] = video.get("channel") or page.site
+        return result
     if kind in ("summarize", "translate", "ask"):
         cfg = localllm.effective(cfg)
         role = data.get("role")

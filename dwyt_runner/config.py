@@ -13,7 +13,13 @@ from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 SECRET_KEYS = {"token", "assemblyai_key", "llm_key", "lmstudio_token"}
-DEFAULT_DOMAINS = ["youtube.com", "youtu.be"]
+DEFAULT_DOMAINS = ["youtube.com", "youtu.be",
+                   # news sites' video and podcast pages (the page resolver, 19.10) and the players found on them
+                   "telex.hu", "444.hu", "hvg.hu", "index.hu", "indavideo.hu", "videa.hu", "mediaklikk.hu",
+                   "megaphone.fm", "podcasts.apple.com",
+                   # video sites yt-dlp knows
+                   "facebook.com", "fb.watch", "vimeo.com", "ted.com", "soundcloud.com"]
+OLD_DEFAULT_DOMAINS = ["youtube.com", "youtu.be"]  # before 0.13: such a list is replaced by the new default
 
 
 def home() -> Path:
@@ -127,6 +133,8 @@ def load() -> Config:
     data = json.loads(p.read_text(encoding="utf-8"))
     known = {f.name for f in fields(Config)}
     cfg = Config(**{k: v for k, v in data.items() if k in known})
+    if cfg.allowed_domains == OLD_DEFAULT_DOMAINS:  # never chosen by the user: saved as the old default
+        cfg.allowed_domains = list(DEFAULT_DOMAINS)
     if data.get("secrets") == "keyring":
         from . import keystore
         if keystore.usable():

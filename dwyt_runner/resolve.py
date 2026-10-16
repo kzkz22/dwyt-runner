@@ -151,7 +151,8 @@ def _clean(url: str, page_url: str) -> str:
     return url
 
 
-def candidates(html: str, page_url: str, is_known=known) -> list[Candidate]:
+def candidates(html: str, page_url: str, is_known=None) -> list[Candidate]:
+    is_known = is_known or known
     flat = html.replace("\\/", "/").replace("\\u0026", "&")
     found: dict[str, Candidate] = {}
 
@@ -204,7 +205,7 @@ def candidates(html: str, page_url: str, is_known=known) -> list[Candidate]:
     return sorted(found.values(), key=lambda c: (PRIORITY[c.kind], c.at))
 
 
-def read(page_url: str, is_known=known, html: str | None = None) -> Page:
+def read(page_url: str, is_known=None, html: str | None = None) -> Page:
     html = fetch(page_url) if html is None else html
     title = _meta(html, "og:title")
     if not title:

@@ -28,7 +28,7 @@ def probe(url: str, cfg: Config) -> dict[str, Any]:
         with yt_dlp.YoutubeDL(tools.ytdlp_options(cfg.cookies_file)) as ydl:
             info = ydl.extract_info(url, download=False)
     except Exception as exc:  # yt-dlp raises many types
-        raise from_ytdlp(exc, "beolvasni a videót") from exc
+        raise from_ytdlp(exc, "beolvasni a videót", url) from exc
     check(info, cfg)
     return info
 
@@ -50,7 +50,7 @@ def download_audio(url: str, cfg: Config, outdir: str) -> str:
         with yt_dlp.YoutubeDL(tools.ytdlp_options(cfg.cookies_file, outdir)) as ydl:
             ydl.extract_info(url, download=True)
     except Exception as exc:
-        raise from_ytdlp(exc, "letölteni a hangot") from exc
+        raise from_ytdlp(exc, "letölteni a hangot", url) from exc
     files = [f for f in glob.glob(os.path.join(outdir, "audio.*")) if not f.endswith(".part")]
     if not files:
         raise WorkError("A yt-dlp nem hozott létre hangfájlt.")

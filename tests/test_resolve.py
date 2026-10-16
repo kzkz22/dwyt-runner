@@ -102,6 +102,29 @@ def test_a_page_job_uses_the_youtube_captions_and_sends_the_page_back(cfg, centr
     site.stop()
 
 
+def test_a_failed_page_job_says_what_it_found_and_where_the_403_came_from(cfg, central, monkeypatch):
+    app = FastAPI()
+
+    @app.get("/video/oldal")
+    def page():
+        return HTMLResponse('<html><head><meta property="og:title" content="Ürmissziók"></head><body>'
+                            '<iframe src="https://embed.indavideo.hu/player/video/abc123"></iframe></body></html>')
+    site = Server(app)
+    monkeypatch.setattr(resolve, "known", lambda url: "embed.indavideo.hu" in url)
+    cfg.allowed_domains = ["indavideo.hu", "127.0.0.1"]
+    cfg.whisper_url = "http://127.0.0.1:9"  # never reached: the download fails first
+    embed = "https://embed.indavideo.hu/player/video/abc123"
+    yt_dlp.REGISTRY["errors"][embed] = "ERROR: unable to download video data: HTTP Error 403: Forbidden"
+    central.add_job(41, "transcribe", {"source": {"kind": "url", "url": site.url + "/video/oldal"},
+                                       "options": {"mode": "local", "model": "large-v3", "language": None}})
+    _run_once(cfg, central)
+    failure = central.failures[41]
+    assert failure["error"].startswith(f"Az oldalon ezt találtam: Beágyazott lejátszó (embed.indavideo.hu), {embed}.")
+    assert "A(z) embed.indavideo.hu oldal megtagadta" in failure["error"] and "YouTube" not in failure["error"]
+    assert failure["retry"] == "later"
+    site.stop()
+
+
 def test_a_direct_file_is_not_read_as_a_page():
     assert resolve.is_file("https://example.com/podcast/ep1.MP3?x=1")
     assert not resolve.is_file("https://telex.hu/video/2026/09/27/interju")

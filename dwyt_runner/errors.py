@@ -21,7 +21,16 @@ LIVE = ("Live streams are not supported", "live event will begin", "Premieres in
         "live stream recording is not available", "is_live")
 
 
-def from_ytdlp(exc: Exception, what: str) -> WorkError:
+def _site(url: str | None) -> str:
+    """The site a download went to, for messages: YouTube, or the host name."""
+    from urllib.parse import urlsplit
+    host = (urlsplit(url).hostname or "") if url else ""
+    if not host or host == "youtu.be" or host.endswith("youtube.com"):
+        return "A YouTube"
+    return f"A(z) {host.removeprefix('www.')} oldal"
+
+
+def from_ytdlp(exc: Exception, what: str, url: str | None = None) -> WorkError:
     text = str(exc)
     if any(x in text for x in YOUTUBE_REFUSED):
         return WorkError(f"A YouTube most elutasította a kérést ({what}); később újrapróbálom: {text[:300]}", "later")
@@ -30,7 +39,7 @@ def from_ytdlp(exc: Exception, what: str) -> WorkError:
         # passing block. The runner checks for a newer yt-dlp before the next try.
         from . import ytdlp_update
         ytdlp_update.want_soon()
-        return WorkError(f"A YouTube megtagadta a letöltést (HTTP 403, {what}). Ezt többnyire egy újabb yt-dlp "
+        return WorkError(f"{_site(url)} megtagadta a letöltést (HTTP 403, {what}). Ezt többnyire egy újabb yt-dlp "
                          "megoldja; a futtató megnézi, van-e, és később újrapróbálja.", "later")
     if any(x in text for x in LIVE):
         return WorkError("Élő adás vagy premier; a vége után dolgozható fel.", "later")

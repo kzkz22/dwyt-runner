@@ -105,7 +105,7 @@ def run(url: str, options: dict[str, Any], cfg: Config, stage: Callable[[str], N
     except WorkError:
         raise
     except Exception as exc:  # noqa: BLE001
-        raise from_ytdlp(exc, "letölteni a feliratot") from exc
+        raise from_ytdlp(exc, "letölteni a feliratot", url) from exc
     try:
         data = json.loads(raw.decode("utf-8") if isinstance(raw, bytes) else raw)
     except ValueError as exc:

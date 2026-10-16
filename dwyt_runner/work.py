@@ -146,12 +146,18 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
             url = chosen.url
         elif mode == "captions" and source.get("kind") != "youtube":
             raise WorkError("YouTube-feliratot csak YouTube-videóhoz lehet kérni.")
-        if mode == "captions":
-            result = captions.run(url, options, cfg, stage)
-        elif mode == "cloud":
-            result = cloud.run(url, options, cfg, stage, cancelled)
-        else:
-            result = local.run(url, options, cfg, stage, cancelled)
+        try:
+            if mode == "captions":
+                result = captions.run(url, options, cfg, stage)
+            elif mode == "cloud":
+                result = cloud.run(url, options, cfg, stage, cancelled)
+            else:
+                result = local.run(url, options, cfg, stage, cancelled)
+        except WorkError as exc:
+            if page is None:
+                raise
+            # say what was found on the page, so a failure shows that the resolver did its part
+            raise WorkError(f"Az oldalon ezt találtam: {chosen.label}, {chosen.url}. {exc}", exc.retry) from exc
         if page is not None:
             result["page"] = page.summary(chosen)
             video = result.setdefault("video", {})

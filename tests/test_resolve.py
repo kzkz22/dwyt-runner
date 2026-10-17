@@ -4,10 +4,11 @@ import json
 import pytest
 import yt_dlp
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import Request
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from conftest import Server
-from dwyt_runner import config, resolve, work
+from dwyt_runner import config, indavideo, resolve, work
 from dwyt_runner.errors import WorkError
 from test_runner import CAPTIONS, VIDEO, _run_once, _video
 
@@ -113,6 +114,7 @@ def test_a_failed_page_job_says_what_it_found_and_where_the_403_came_from(cfg, c
     monkeypatch.setattr(resolve, "known", lambda url: "embed.indavideo.hu" in url)
     cfg.allowed_domains = ["indavideo.hu", "127.0.0.1"]
     cfg.whisper_url = "http://127.0.0.1:9"  # never reached: the download fails first
+    monkeypatch.setattr(indavideo, "direct", lambda url: None)  # yt-dlp's own way, as before 0.13.2
     embed = "https://embed.indavideo.hu/player/video/abc123"
     yt_dlp.REGISTRY["errors"][embed] = "ERROR: unable to download video data: HTTP Error 403: Forbidden"
     central.add_job(41, "transcribe", {"source": {"kind": "url", "url": site.url + "/video/oldal"},
@@ -154,3 +156,54 @@ def test_the_page_text_goes_into_the_summary_as_background(cfg, central, llm):
     _run_once(cfg, central)
     prompt = llm.calls[-1]["messages"][1]["content"]
     assert "csak háttér, nem a felvétel része" in prompt and "Az oldal felvezetője." in prompt
+
+
+def _indavideo_api():
+    """A fake of Indavideo's video data: good tokens only for the JSONP form the player uses."""
+    app, asked = FastAPI(), []
+
+    @app.get("/data/{video}/12////")
+    def data(video: str, request: Request):
+        asked.append(dict(request.query_params) | {"referer": request.headers.get("referer")})
+        jsonp = "callback" in request.query_params and request.headers.get("referer") == indavideo.ORIGIN
+        base = "https://magex1-hu.indavideo.hu/indavideo/003/608/338/Ur.2022.04.01"
+        body = json.dumps({"success": "1", "data": {
+            "video_files": [f"{base}.720.mp4??&channel=main&zone=hu", f"{base}.360.mp4??&channel=main&zone=hu"],
+            "filesh": {"360": "good360" if jsonp else "bad360", "720": "good720" if jsonp else "bad720"}}})
+        cb = request.query_params.get("callback")
+        return PlainTextResponse(f"{cb}({body})" if cb else body)
+    return Server(app), asked
+
+
+def test_indavideo_is_asked_like_its_player_and_the_smallest_file_is_taken():
+    api, asked = _indavideo_api()
+    url = indavideo.direct("https://embed.indavideo.hu/player/video/3bd2eb26b3/?autostart=1", api.url + "/data")
+    assert url == ("https://magex1-hu.indavideo.hu/indavideo/003/608/338/Ur.2022.04.01.360.mp4??&channel=main&zone=hu"
+                   "&token=good360")
+    assert asked[0]["callback"].startswith("jQuery") and asked[0]["referer"] == "https://embed.indavideo.hu/"
+    assert indavideo.direct("https://www.youtube.com/watch?v=dQw4w9WgXcQ") is None
+    api.stop()
+
+
+def test_an_indavideo_page_job_downloads_the_players_file(cfg, central, monkeypatch):
+    api, _ = _indavideo_api()
+    app = FastAPI()
+
+    @app.get("/video/oldal")
+    def page():
+        return HTMLResponse('<iframe src="https://embed.indavideo.hu/player/video/3bd2eb26b3"></iframe>')
+    site = Server(app)
+    monkeypatch.setattr(resolve, "known", lambda url: "embed.indavideo.hu" in url)
+    monkeypatch.setattr(indavideo, "DATA", api.url + "/data")
+    cfg.allowed_domains = ["indavideo.hu", "127.0.0.1"]
+    cfg.whisper_url = "http://127.0.0.1:9"
+    direct = ("https://magex1-hu.indavideo.hu/indavideo/003/608/338/Ur.2022.04.01.360.mp4??&channel=main&zone=hu"
+              "&token=good360")
+    yt_dlp.REGISTRY["errors"][direct] = "ERROR: stop here"  # what matters is which address yt-dlp got
+    central.add_job(42, "transcribe", {"source": {"kind": "url", "url": site.url + "/video/oldal"},
+                                       "options": {"mode": "local", "model": "large-v3", "language": None}})
+    _run_once(cfg, central)
+    assert any(call[0] == direct for call in yt_dlp.REGISTRY["calls"])
+    assert "Beágyazott lejátszó (embed.indavideo.hu)" in central.failures[42]["error"]
+    site.stop()
+    api.stop()

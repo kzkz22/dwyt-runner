@@ -6,7 +6,8 @@ import re
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import ask, captions, cloud, gateway, local, localllm, media, modelinfo, resolve, summarize, translate, watch
+from . import (ask, captions, cloud, gateway, indavideo, local, localllm, media, modelinfo, resolve, summarize,
+               translate, watch)
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
@@ -147,6 +148,9 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         elif mode == "captions" and source.get("kind") != "youtube":
             raise WorkError("YouTube-feliratot csak YouTube-videóhoz lehet kérni.")
         try:
+            if mode != "captions":
+                # Indavideo: yt-dlp's tokens are refused; ask the way the player does (indavideo.py)
+                url = indavideo.direct(url) or url
             if mode == "captions":
                 result = captions.run(url, options, cfg, stage)
             elif mode == "cloud":

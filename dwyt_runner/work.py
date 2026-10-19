@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
+import tempfile
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
 from . import (ask, captions, cloud, gateway, indavideo, local, localllm, media, modelinfo, resolve, summarize,
-               translate, watch)
+               tracks, translate, watch)
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
@@ -32,7 +34,8 @@ def capabilities(cfg: Config) -> dict[str, Any]:
             "llm_defaults": {k: v for k, v in defaults.items() if v} if roles else {},
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
             "whisper_models": whisper_models(cfg),
-            "source_kinds": ["upload"] + (["local"] if cfg.watch_dirs else [])}
+            "source_kinds": ["upload"] + (["local"] if cfg.watch_dirs else []),
+            "embedded_subtitles": True}  # captions mode on an own file: its embedded subtitles (19.12)
 
 
 def whisper_models(cfg: Config) -> list[str]:
@@ -108,13 +111,40 @@ def _own_file(job: dict[str, Any], data: dict[str, Any], cfg: Config, stage: Cal
             if path is None:
                 raise WorkError("A fájl már nincs meg a figyelt mappában (áthelyezték vagy törölték).")
             return path
-    fetch = media.from_file(name, sha, obtain)
+    fetch = media.from_file(name, sha, obtain, options)
     mode = options.get("mode")
     if mode == "local":
-        return local.run(fetch, options, cfg, stage, cancelled)
-    if mode == "cloud":
-        return cloud.run(fetch, options, cfg, stage, cancelled)
-    raise WorkError(f"Saját felvételhez ez a mód nem kérhető: {mode}.")
+        result = local.run(fetch, options, cfg, stage, cancelled)
+    elif mode == "cloud":
+        result = cloud.run(fetch, options, cfg, stage, cancelled)
+    elif mode == "captions":  # the subtitles embedded in the file (decision 19.12)
+        result = _embedded_subtitles(fetch, options, cfg, stage)
+    else:
+        raise WorkError(f"Saját felvételhez ez a mód nem kérhető: {mode}.")
+    report = fetch.report()
+    if report is not None:
+        result["tracks"] = report
+    return result
+
+
+def _embedded_subtitles(fetch: media.from_file, options: dict[str, Any], cfg: Config,
+                        stage: Callable[[str], None]) -> dict[str, Any]:
+    stage("download")
+    workdir = tempfile.mkdtemp(prefix="dwyt_", dir=cfg.work_dir or None)
+    try:
+        path = fetch.verified(workdir)
+        fetch.audio_used = tracks.choose_audio(fetch.tracks, options)
+        try:
+            sub = tracks.choose_subtitle(fetch.tracks, options, fetch.audio_used)
+        except WorkError as exc:  # say what the file has, so the user can choose
+            raise WorkError(f"{exc} {tracks.describe(fetch.tracks)}", exc.retry) from exc
+        fetch.subtitle_used = sub.index
+        stage("captions")
+        transcript = tracks.transcript(path, fetch.tracks, sub, fetch.audio_used)
+        info = fetch.info()
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+    return {"video": media.video_meta(info), "transcript": transcript}
 
 
 def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],

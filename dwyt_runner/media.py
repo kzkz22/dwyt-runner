@@ -101,19 +101,41 @@ class from_file(Fetch):  # noqa: N801
     """An own recording: obtain(workdir) returns its path (downloaded from the central service,
     or the file in the watched folder); its SHA-256 must match what the central service named."""
 
-    def __init__(self, name: str, sha256: str, obtain: Callable[[str], str]) -> None:
+    def __init__(self, name: str, sha256: str, obtain: Callable[[str], str],
+                 options: dict[str, Any] | None = None) -> None:
         self.name, self.sha256, self.obtain = name, sha256, obtain
+        self.options = options or {}
         self.path: str | None = None
+        self.tracks = None  # tracks.Tracks, read by get()
+        self.audio_used: int | None = None
+        self.subtitle_used: int | None = None
 
     def info(self) -> dict[str, Any]:
         return {"title": self.name, "duration": duration(self.path) if self.path else None}
 
-    def get(self, workdir: str) -> str:
+    def verified(self, workdir: str) -> str:
+        """The file itself (checked), with its tracks read; no audio track chosen yet."""
+        from . import tracks
         path = self.obtain(workdir)
         if file_sha256(path) != self.sha256:
             raise WorkError("A fájl tartalma nem egyezik a beküldöttel (megváltozott vagy sérült).")
         self.path = path
+        self.tracks = tracks.read(path)
         return path
+
+    def get(self, workdir: str) -> str:
+        """The audio to transcribe: the file, or its chosen audio track alone when it has several (decision 19.12)."""
+        from . import tracks
+        path = self.verified(workdir)
+        self.audio_used = tracks.choose_audio(self.tracks, self.options)
+        if self.audio_used is not None and len(self.tracks.audio) > 1:
+            return tracks.audio_only(path, self.audio_used, workdir)
+        return path
+
+    def report(self) -> dict[str, Any] | None:
+        if self.tracks is None:
+            return None
+        return self.tracks.report(self.audio_used, self.subtitle_used)
 
 
 def file_sha256(path: str) -> str:

@@ -289,6 +289,13 @@ class FakeLlm:
                 return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                         "usage": {"prompt_tokens": 70, "completion_tokens": 9,
                                   "completion_tokens_details": {"reasoning_tokens": 30}}}
+            if system.startswith("Videókat sorolsz"):  # categories (19.13): scripted answers, else the first id
+                import re as _re
+                first = _re.search(r"^(\d+): ", body["messages"][1]["content"], _re.M).group(1)
+                answer = (fake.category_answers.pop(0) if fake.category_answers
+                          else f'```json\n{{"main": {first}, "side": [], "suggestion": null}}\n```')
+                return {"model": body["model"], "choices": [{"message": {"content": answer}}],
+                        "usage": {"prompt_tokens": 20, "completion_tokens": 4}}
             answer = "<think>hmm</think>## Összefoglaló\nKert."
             return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                     "usage": {"prompt_tokens": 50, "completion_tokens": 5}}
@@ -322,6 +329,7 @@ class FakeLlm:
         self.auths, self.limited, self.access_denied = [], 0, False
         self.stream, self.stall_s, self.cut, self.piece_delay = True, 0.0, False, 0.0
         self.info, self.info_calls = None, 0  # /model/info rows (LiteLLM); None = not a LiteLLM
+        self.category_answers: list[str] = []
 
 
 class FakeWhisper:

@@ -8,14 +8,14 @@ import tempfile
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import (ask, captions, cloud, gateway, indavideo, local, localllm, media, modelinfo, resolve, summarize,
-               tracks, translate, watch)
+from . import (ask, captions, categorize, cloud, gateway, indavideo, local, localllm, media, modelinfo, resolve,
+               summarize, tracks, translate, watch)
 from .config import Config
 from .errors import WorkError
 from .llm import Llm
 from .protocol import Central, CentralError
 
-KINDS = ("transcribe", "summarize", "translate", "ask")
+KINDS = ("transcribe", "summarize", "translate", "ask", "categorize")
 
 
 def capabilities(cfg: Config) -> dict[str, Any]:
@@ -24,7 +24,7 @@ def capabilities(cfg: Config) -> dict[str, Any]:
     modes = ["captions"] + (["cloud"] if cfg.assemblyai_key else []) + (["local"] if local_whisper else [])
     roles = [r for r, model in (("public", cfg.llm_public_model), ("private", cfg.llm_private_model))
              if cfg.llm_url and model]
-    kinds = ["transcribe"] + (["summarize", "translate", "ask"] if roles else [])
+    kinds = ["transcribe"] + (["summarize", "translate", "ask", "categorize"] if roles else [])
     info, server = modelinfo.cached(cfg) if roles else ({}, "")
     defaults = {"summarize": model_for(cfg, "summarize", "public"), "translate": model_for(cfg, "translate", "public"),
                 "ask": model_for(cfg, "ask", "public"), "private": cfg.llm_private_model}
@@ -198,7 +198,7 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
             video["title"] = video.get("title") or page.title
             video["channel"] = video.get("channel") or page.site
         return result
-    if kind in ("summarize", "translate", "ask"):
+    if kind in ("summarize", "translate", "ask", "categorize"):
         cfg = localllm.effective(cfg)
         role = data.get("role")
         model = model_for(cfg, kind, role)
@@ -220,7 +220,11 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
                   stall_s=LOCAL_STALL_S if localllm.uses_local(cfg) else STALL_S,
                   fixed_temperature=gateway.TRIAL_TEMPERATURE if gateway.is_trial(cfg.llm_url, model) else None)
         if kind == "summarize":
-            return summarize.run(data, llm, model, stage, progress=progress, context_tokens=context)
+            result = summarize.run(data, llm, model, stage, progress=progress, context_tokens=context)
+            categorize.after_summary(data, result, llm, model)  # decision 19.13: the user's categories
+            return result
+        if kind == "categorize":
+            return categorize.run(data, llm, model, stage, progress=progress)
         if kind == "ask":
             return ask.run(data, llm, model, stage, progress=progress, context_tokens=context)
         return translate.run(data, llm, model, stage, cancelled, progress=progress)

@@ -109,6 +109,8 @@ A letöltött modellek (whisper.cpp, Whisper-modell, beszélőmodellek, együtt 
 
 **A fájl sávjai (0.14):** feltöltött vagy figyelt mappás fájlnál a futtató megnézi a fájl hang- és feliratsávjait. A megadott nyelvű hangsávot írja át (üresen az alapértelmezettet); több hangsávnál csak azt. Felirat módban a fájlba ágyazott szöveges feliratot (SubRip, ASS/SSA, WebVTT) használja: azonnal, ingyen, beszélők nélkül. A képként tárolt felirat (PGS, VobSub) nem olvasható ki. A talált sávokat a dwyt az elem oldalán mutatja.
 
+**Kategóriák (0.15):** az összefoglaló után a futtató nyelvi modellje egy rövid külön kéréssel kiválasztja az elem fő és legfeljebb két mellékkategóriáját a dwyt-ben beállított listából (a dwyt-central 0.21 küldi), és ritkán új kategóriát javasol; a javaslatról a dwyt-ben te döntesz. A régebbi elemeket a dwyt a háttérben, kis adagokban küldi besorolásra (rejtett „Kategorizálás” munka; a dwyt Beállításaiban kikapcsolható). Saját felvételt csak a helyi modell sorol be, ahogy az összefoglalót is. Ha a választás nem sikerül, az összefoglaló ettől még elkészül.
+
 **Kisebb ablak (0.12):** a futtató ablaka a képernyőhöz igazodik (legfeljebb 1040 × 800, a képernyő 92 × 86 százaléka), a betűméret kisebb, és ha a tartalom hosszabb az ablaknál, görgetősáv látszik.
 
 **Gondolkodás felhős modellnél:** OpenRouter-modelleknél a `llm_reasoning` beállítás (Működés → Részletes beállítások): *a modell alapértelmezése*, *be* vagy *ki*. A futtató az OpenRouter modellistájából azt is kiolvassa, hogy az adott modell alapból gondolkodik-e, és mekkora a kontextusa; ezt a dwyt Futtatók oldala mutatja. Ahol a modell mindig gondolkodik, ott a „ki” nem hat.

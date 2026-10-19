@@ -9,13 +9,14 @@ from typing import Any
 
 from . import config
 
-KIND_LABELS = {"transcribe": "Átírás", "summarize": "Összefoglaló", "translate": "Fordítás", "ask": "Kérdés"}
+KIND_LABELS = {"transcribe": "Átírás", "summarize": "Összefoglaló", "translate": "Fordítás", "ask": "Kérdés",
+               "categorize": "Kategorizálás"}
 STAGE_LABELS = {
     "starting": "indul", "download": "letöltés", "captions": "felirat letöltése", "prepare-audio": "hang előkészítése",
     "upload": "feltöltés a felhőbe", "transcribe": "átírás", "diarize": "beszélők szétválasztása",
     "waiting-for-gpu": "vár a videókártyára", "download-model": "modell letöltése (első használat)",
     "summarize": "összefoglaló írása", "translate": "fordítás", "ask": "válasz írása", "write": "mentés",
-    "page": "felvétel keresése az oldalon",
+    "page": "felvétel keresése az oldalon", "categorize": "kategória választása",
 }
 HISTORY_MAX = 200
 _lock = threading.Lock()

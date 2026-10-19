@@ -61,8 +61,8 @@ def test_srt_cues_lose_tags_and_sound_notes():
 @pytest.fixture(scope="module")
 def film(tmp_path_factory) -> str:
     d = tmp_path_factory.mktemp("film")
-    (d / "en.srt").write_text(SRT_EN)
-    (d / "hu.srt").write_text(SRT_HU)
+    (d / "en.srt").write_text(SRT_EN, encoding="utf-8")
+    (d / "hu.srt").write_text(SRT_HU, encoding="utf-8")
     path = d / "film.mkv"
     subprocess.run([tools.ffmpeg(), "-nostdin", "-loglevel", "error", "-y",
                     "-f", "lavfi", "-i", "sine=frequency=440:duration=3",

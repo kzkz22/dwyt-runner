@@ -11,12 +11,12 @@ Amit végez:
 
 A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouTube a te IP-címedről, a te sávszélességeddel töltődik.
 
-- Terv és döntések: [dwyt-docs/docs/terv.md](https://github.com/kzkz22/dwyt-docs/blob/main/docs/terv.md) (8. fejezet)
-- Protokoll: [dwyt-docs/docs/protokoll.md](https://github.com/kzkz22/dwyt-docs/blob/main/docs/protokoll.md)
+- Telepítési útmutatók: [docs/utmutato](docs/utmutato/README.md)
+- A terv, a döntésnapló és a központ–futtató protokoll a projekt (nem nyilvános) dwyt-docs tárában van.
 
 ## Telepítés
 
-**Windowsra és Linux asztali gépre:** a dwyt Futtatók oldalán „Új futtató” → *Asztali gépre*: Windows-telepítő (rendszergazdai jog nélkül, kb. 70 MB) vagy Linux AppImage (kb. 300 MB). Mindkettő hozza a saját Pythonját; a whisper.cpp-t első használatkor tölti le. Útmutató: [Windows](https://github.com/kzkz22/dwyt-docs/blob/main/docs/utmutato/windows.md), [Linux asztal](https://github.com/kzkz22/dwyt-docs/blob/main/docs/utmutato/linux-asztal.md).
+**Windowsra és Linux asztali gépre:** a dwyt Futtatók oldalán „Új futtató” → *Asztali gépre*: Windows-telepítő (rendszergazdai jog nélkül, kb. 70 MB) vagy Linux AppImage (kb. 300 MB). Mindkettő hozza a saját Pythonját; a whisper.cpp-t első használatkor tölti le. Útmutató: [Windows](docs/utmutato/windows.md), [Linux asztal](docs/utmutato/linux-asztal.md).
 
 **Linux szerverre egy paranccsal (ajánlott):** a dwyt Futtatók oldalán az „Új futtató” → *Szerverre (Linux)* → „Telepítőparancs kérése”. A kapott parancs (`curl -fsSL https://dwyt.iodate.date/futtato.sh | sh -s -- KÓD`, 5 percig érvényes, egyszer használható) párosít, telepíti az uv-t és a futtatót, majd systemd-szolgáltatásként elindítja: rendszergazdaként külön `dwyt-runner` felhasználóval (`/var/lib/dwyt-runner`), különben a saját felhasználód szolgáltatásaként. Utána minden beállítás a dwyt-ben, a futtató **Beállítás** gombjával megy (lásd: Távoli beállítás). A kézi út:
 
@@ -121,7 +121,7 @@ A letöltött modellek (whisper.cpp, Whisper-modell, beszélőmodellek, együtt 
 
 ## Ablak (asztali kezelőfelület)
 
-A futtató saját ablakban is futhat: négy lap, ahogy a [mintákon](https://github.com/kzkz22/dwyt-docs/tree/main/docs/minta-7): **Állapot** (párosítás, a mostani munka, a legutóbbiak, a mai összesítés), **Működés** (működési mód: Felhő, Vegyes, Saját gép vagy Egyéni, ábrával; udvarias mód; részletes beállítások), **Gépem** (gépvizsgálat, próbafuttatás egy gombnyomásra), **Kulcsok** (beírás és próba; kiolvasni nem lehet).
+A futtató saját ablakban is futhat: négy lap, ahogy a mintákon: **Állapot** (párosítás, a mostani munka, a legutóbbiak, a mai összesítés), **Működés** (működési mód: Felhő, Vegyes, Saját gép vagy Egyéni, ábrával; udvarias mód; részletes beállítások), **Gépem** (gépvizsgálat, próbafuttatás egy gombnyomásra), **Kulcsok** (beírás és próba; kiolvasni nem lehet).
 
 **Telepítő lépések:** egy még nem párosított futtató ablaka a telepítő hat lépésével nyílik: *Üdvözlés*, *Gépvizsgálat* (lámpák, próbafuttatás, ajánlott mód), *Működési mód* (négy kártya, ábrával), *Hozzávalók* (amit a választott mód kér: a beszédfelismerő letöltése folyamatjelzővel, az OpenRouter-kulcs próbával, AssemblyAI-kulcs, helyi modellszerver és modell, letöltéssel), *Párosítás* (a futtató megnyitja a dwyt Futtatók oldalát kitöltött kóddal; ott egy gombbal jóváhagyod, miután összevetetted a kódot az ablakban láthatóval) és *Kész* (indulás bejelentkezéskor, a dwyt megnyitása). A *Mégse* kihagyja a lépéseket; később az Állapot lapról újra elindíthatók. A kitöltött kódot a dwyt-central 0.14.2 fogadja.
 

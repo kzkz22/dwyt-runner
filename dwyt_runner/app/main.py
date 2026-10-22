@@ -46,6 +46,17 @@ def icon_file() -> Path:
     return path
 
 
+def window_icon(webview_module) -> dict:
+    """`icon` for webview.start, only where it is read as a picture (GTK / Qt: the AppImage). On Windows pywebview
+    loads it with System.Drawing.Icon, which a PNG breaks: the window never appeared (0.15.1). There the window keeps
+    pythonw's icon; the shortcuts show the logo from the installer's .ico."""
+    if sys.platform in ("win32", "darwin"):
+        return {}
+    if "icon" not in inspect.signature(webview_module.start).parameters:
+        return {}
+    return {"icon": str(icon_file())}
+
+
 def wake_running() -> bool:
     """True when another app of this user is running and was asked to show its window."""
     return ask_running("/ablak")
@@ -214,10 +225,8 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
                 return False
 
             window.events.closing += closing
-            extra = {}
-            if "icon" in inspect.signature(webview.start).parameters:  # GTK / Qt windows (the AppImage); Windows
-                extra["icon"] = str(icon_file())                       # takes the shortcut's icon
-            webview.start(func=lambda: tray.start() or (hidden and show()), **extra)  # no tray: never start unseen
+            webview.start(func=lambda: tray.start() or (hidden and show()),  # no tray: never start unseen
+                          **window_icon(webview))
         else:
             has_tray = tray.start()
             if not hidden or not has_tray:

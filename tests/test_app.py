@@ -390,3 +390,24 @@ def test_the_logo_everywhere(window, tmp_path):
     assert png.size == (256, 256) and png.getpixel((128, 24))[:3] == logo.TILE  # above the frame: the tile
     assert png.getpixel((0, 0))[3] == 0  # rounded corner: transparent
     assert main.icon_file().is_file()
+
+
+def test_window_icon_never_on_windows(monkeypatch):
+    """0.15.1 handed pywebview a PNG icon; on Windows that breaks the window (System.Drawing.Icon wants .ico)."""
+    from dwyt_runner.app import main
+
+    class Webview:
+        @staticmethod
+        def start(func=None, icon=None):
+            pass
+    for platform in ("win32", "darwin"):
+        monkeypatch.setattr(main.sys, "platform", platform)
+        assert main.window_icon(Webview) == {}
+    monkeypatch.setattr(main.sys, "platform", "linux")
+    assert main.window_icon(Webview)["icon"].endswith(".png")
+
+    class Old:
+        @staticmethod
+        def start(func=None):
+            pass
+    assert main.window_icon(Old) == {}

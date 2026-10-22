@@ -1,6 +1,6 @@
 ﻿; dwyt runner – Windows installer (round 7c; plan 15b, decisions 18.15, 18.20). Built by packaging/build.py:
-;   iscc /DAppVersion=0.11.0 /DSrc=<folder with python\, bin\, dwyt-logo.ico> dwyt-runner.iss
-; Per-user, no admin rights: %LOCALAPPDATA%\Programs\dwyt-runner. Settings (%APPDATA%\dwyt-runner), keys (Credential
+;   iscc /DAppVersion=0.11.0 /DSrc=<folder with python\ (Skipwise.exe in it), bin\, dwyt-logo.ico> dwyt-runner.iss
+; Per-user, no admin rights: %LOCALAPPDATA%\Programs\Skipwise (before 0.17: Programs\dwyt-runner, kept). Settings (%APPDATA%\dwyt-runner), keys (Credential
 ; Manager) and models (%LOCALAPPDATA%\dwyt-runner\models) are the runner's own and stay on uninstall unless asked.
 
 #ifndef AppVersion
@@ -16,8 +16,9 @@ AppName=Skipwise futtató
 AppVersion={#AppVersion}
 AppVerName=Skipwise futtató {#AppVersion}
 AppPublisher=Skipwise
-AppPublisherURL=https://github.com/kzkz22/dwyt-runner
-DefaultDirName={localappdata}\Programs\dwyt-runner
+AppPublisherURL=https://github.com/kzkz22/skipwise-runner
+; new installs: Programs\Skipwise; an installed runner keeps its folder (UsePreviousAppDir, same AppId)
+DefaultDirName={localappdata}\Programs\Skipwise
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 DisableReadyPage=yes
@@ -25,7 +26,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
-OutputBaseFilename=dwyt-runner-setup-{#AppVersion}
+OutputBaseFilename=skipwise-runner-setup-{#AppVersion}
 SetupIconFile={#Src}\dwyt-logo.ico
 UninstallDisplayIcon={app}\dwyt-logo.ico
 ; tells Explorer to refresh its icons (the old "d" icon stayed in the cache)
@@ -58,13 +59,13 @@ Type: files; Name: "{userdesktop}\dwyt futtató.lnk"
 Source: "{#Src}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
-Name: "{userprograms}\Skipwise futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"
-Name: "{userdesktop}\Skipwise futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"; Tasks: desktopicon
+Name: "{userprograms}\Skipwise futtató"; Filename: "{app}\python\Skipwise.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"
+Name: "{userdesktop}\Skipwise futtató"; Filename: "{app}\python\Skipwise.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; Description: "A Skipwise futtató indítása"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\python\Skipwise.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; Description: "A Skipwise futtató indítása"; Flags: nowait postinstall skipifsilent
 ; after a silent update (from the app itself) the app comes back in the tray; /NOLAUNCH for tests
-Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main --hidden"; WorkingDir: "{app}"; Flags: nowait; Check: StartAfterSilentInstall
+Filename: "{app}\python\Skipwise.exe"; Parameters: "-m dwyt_runner.app.main --hidden"; WorkingDir: "{app}"; Flags: nowait; Check: StartAfterSilentInstall
 
 [UninstallDelete]
 ; Python writes __pycache__ while running: files the installer did not put there

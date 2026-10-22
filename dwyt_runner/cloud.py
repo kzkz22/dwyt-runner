@@ -56,7 +56,7 @@ class AssemblyAI:
         except httpx.HTTPError as exc:
             raise WorkError(f"Az AssemblyAI nem érhető el ({exc}); később újrapróbálom.", "later") from exc
         if resp.status_code in (401, 403):
-            raise WorkError("Az AssemblyAI elutasította a kulcsot; ellenőrizd: dwyt-runner config set "
+            raise WorkError("Az AssemblyAI elutasította a kulcsot; ellenőrizd: skipwise-runner config set "
                             "assemblyai_key ...")
         if resp.status_code == 429 or resp.status_code >= 500:
             raise WorkError(f"Az AssemblyAI most nem fogad kérést (HTTP {resp.status_code}).", "later")
@@ -103,7 +103,7 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
     if isinstance(fetch, str):
         fetch = media.from_url(fetch, cfg)
     if not cfg.assemblyai_key:
-        raise WorkError("Ennek a futtatónak nincs AssemblyAI-kulcsa (dwyt-runner config set assemblyai_key ...).")
+        raise WorkError("Ennek a futtatónak nincs AssemblyAI-kulcsa (skipwise-runner config set assemblyai_key ...).")
     api_model = resolve_model(options.get("model"), options.get("language"))
     stage("download")
     info = fetch.info()

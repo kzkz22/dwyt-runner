@@ -16,6 +16,7 @@ from pathlib import Path
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 NAME = "dwyt-runner"
 LABEL = "hu.dwyt.runner"
+LAUNCHER = "Skipwise.exe"  # the Windows package's pythonw copy with our name, description and icon
 
 
 def command(platform: str = sys.platform) -> list[str]:
@@ -25,22 +26,29 @@ def command(platform: str = sys.platform) -> list[str]:
         return [image, "--hidden"]
     here = Path(sys.argv[0]).resolve().parent if sys.argv and sys.argv[0] else Path()
     if platform == "win32":
-        for d in (here, Path(sys.executable).parent, Path(sys.executable).parent / "Scripts"):
-            exe = d / "dwyt-runner-app.exe"
-            if exe.is_file():
-                return [str(exe), "--hidden"]
-        found = shutil.which("dwyt-runner-app")
-        if found:
-            return [found, "--hidden"]
+        # the installer's own launcher (python\\Skipwise.exe: pythonw under our name, so Task Manager says
+        # "Skipwise futtató"), then uv's console-less scripts, new name first
+        brand = Path(sys.executable).with_name(LAUNCHER)
+        if brand.is_file():
+            return [str(brand), "-m", "dwyt_runner.app.main", "--hidden"]
+        for name in ("skipwise-runner-app", "dwyt-runner-app"):
+            for d in (here, Path(sys.executable).parent, Path(sys.executable).parent / "Scripts"):
+                exe = d / f"{name}.exe"
+                if exe.is_file():
+                    return [str(exe), "--hidden"]
+            found = shutil.which(name)
+            if found:
+                return [found, "--hidden"]
         pyw = Path(sys.executable).with_name("pythonw.exe")
         return [str(pyw if pyw.is_file() else Path(sys.executable)), "-m", "dwyt_runner.app.main", "--hidden"]
-    for d in (here, Path(sys.executable).parent):
-        exe = d / "dwyt-runner"
-        if exe.is_file():
-            return [str(exe), "app", "--hidden"]
-    found = shutil.which("dwyt-runner")
-    if found:
-        return [found, "app", "--hidden"]
+    for name in ("skipwise-runner", "dwyt-runner"):
+        for d in (here, Path(sys.executable).parent):
+            exe = d / name
+            if exe.is_file():
+                return [str(exe), "app", "--hidden"]
+        found = shutil.which(name)
+        if found:
+            return [found, "app", "--hidden"]
     return [sys.executable, "-m", "dwyt_runner.app.main", "--hidden"]
 
 

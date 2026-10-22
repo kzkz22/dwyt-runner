@@ -1,4 +1,4 @@
-"""Back to the start (plan 15b, decision 18.15): the window's "Alaphelyzet" and `dwyt-runner reset`.
+"""Back to the start (plan 15b, decision 18.15): the window's "Alaphelyzet" and `skipwise-runner reset`.
 
 Switches the start at login off, deletes the keys from the system key store, and deletes the settings
 folder (config.json, setup.json, the machine check, the test run, the history, the watched-folder state).

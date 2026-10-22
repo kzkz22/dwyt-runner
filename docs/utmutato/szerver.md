@@ -17,11 +17,11 @@ Mit csinál a parancs pontosan: a `/futtato.sh` címen olvasható, érdemes elol
 
 ## Beállítás a Skipwise-ból
 
-A futtató kártyáján a **Beállítás** gomb: működési mód, modellek, LLM-cím, figyelt mappák stb. A kulcsokat (AssemblyAI, LLM) a böngésződ a futtató saját kulcsával titkosítja, így a Skipwise nem látja őket, és visszaolvasni sem lehet. A változást a futtató pár másodpercen belül átveszi, ellenőrzi, és visszajelez; minden változás a napló részbe kerül, és értesítés megy róla. A szerver saját útvonalai (whisper.cpp helye, sütifájl, munkamappa) csak a szerveren állíthatók: `dwyt-runner config set …`; rendszergazdaként telepítve a futtató felhasználójával: `runuser -u dwyt-runner -- env HOME=/var/lib/dwyt-runner /var/lib/dwyt-runner/.local/bin/dwyt-runner config set …`.
+A futtató kártyáján a **Beállítás** gomb: működési mód, modellek, LLM-cím, figyelt mappák stb. A kulcsokat (AssemblyAI, LLM) a böngésződ a futtató saját kulcsával titkosítja, így a Skipwise nem látja őket, és visszaolvasni sem lehet. A változást a futtató pár másodpercen belül átveszi, ellenőrzi, és visszajelez; minden változás a napló részbe kerül, és értesítés megy róla. A szerver saját útvonalai (whisper.cpp helye, sütifájl, munkamappa) csak a szerveren állíthatók: `skipwise-runner config set …`; rendszergazdaként telepítve a futtató felhasználójával: `runuser -u dwyt-runner -- env HOME=/var/lib/dwyt-runner /var/lib/dwyt-runner/.local/bin/dwyt-runner config set …`.
 
 ## Frissítés
 
-Ha van újabb változat, a Skipwise Futtatók oldalán a kártyán megjelenik a **Frissítés most** gomb: a futtató két munka között telepíti az aláírt kiadást, és újraindul. A szerveren kézzel: `dwyt-runner update` (`--check`: csak megnézi, `--back`: vissza az előzőre; rendszergazdaként telepítve a fenti `runuser …` előtaggal), utána `systemctl restart dwyt-runner`. Ha azt szeretnéd, hogy magától frissüljön: Beállítás → „A futtató frissítése magától” → be.
+Ha van újabb változat, a Skipwise Futtatók oldalán a kártyán megjelenik a **Frissítés most** gomb: a futtató két munka között telepíti az aláírt kiadást, és újraindul. A szerveren kézzel: `skipwise-runner update` (`--check`: csak megnézi, `--back`: vissza az előzőre; rendszergazdaként telepítve a fenti `runuser …` előtaggal), utána `systemctl restart dwyt-runner`. Ha azt szeretnéd, hogy magától frissüljön: Beállítás → „A futtató frissítése magától” → be.
 
 ## Napló, leállítás, eltávolítás
 
@@ -31,4 +31,4 @@ Ha van újabb változat, a Skipwise Futtatók oldalán a kártyán megjelenik a 
 | Napló | `journalctl -u dwyt-runner -f` | `journalctl --user -u dwyt-runner -f` |
 | Leállítás | `systemctl disable --now dwyt-runner` | `systemctl --user disable --now dwyt-runner` |
 
-Eltávolítás: állítsd le a szolgáltatást, töröld a szolgáltatásfájlt (`/etc/systemd/system/dwyt-runner.service`, illetve `~/.config/systemd/user/dwyt-runner.service`), majd `dwyt-runner reset --models --yes` és `uv tool uninstall dwyt-runner` (rendszergazdaként a `dwyt-runner` felhasználóval: `runuser -u dwyt-runner -- …`, utána `userdel -r dwyt-runner`). A Skipwise-ban a futtatót a Futtatók oldalon vond vissza.
+Eltávolítás: állítsd le a szolgáltatást, töröld a szolgáltatásfájlt (`/etc/systemd/system/dwyt-runner.service`, illetve `~/.config/systemd/user/dwyt-runner.service`), majd `skipwise-runner reset --models --yes` és `uv tool uninstall dwyt-runner` (rendszergazdaként a `dwyt-runner` felhasználóval: `runuser -u dwyt-runner -- …`, utána `userdel -r dwyt-runner`). A Skipwise-ban a futtatót a Futtatók oldalon vond vissza.

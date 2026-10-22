@@ -1,6 +1,6 @@
 [project]
 name = "dwyt-runner"
-version = "0.16.0"
+version = "0.17.0"
 description = "dwyt runner: downloads, captions, cloud transcription and summaries on your own machine"
 requires-python = ">=3.11,<3.15"  # new Pythons first lack ready-made wheels (brotli for yt-dlp): uv then fetches a fitting one
 license = "MIT"
@@ -19,10 +19,12 @@ desktop = ["fastapi>=0.115", "uvicorn>=0.30", "jinja2>=3.1", "python-multipart>=
 test = ["pytest>=8", "fastapi>=0.115", "uvicorn>=0.30", "ruff>=0.6", "jinja2>=3.1", "python-multipart>=0.0.9", "pillow>=10"]
 
 [project.scripts]
-dwyt-runner = "dwyt_runner.cli:main"
+skipwise-runner = "dwyt_runner.cli:main"
+dwyt-runner = "dwyt_runner.cli:main"  # the name before 0.17
 
 [project.gui-scripts]
-dwyt-runner-app = "dwyt_runner.app.main:entry"  # no console window (start at login, shortcuts)
+skipwise-runner-app = "dwyt_runner.app.main:entry"  # no console window (start at login, shortcuts)
+dwyt-runner-app = "dwyt_runner.app.main:entry"  # the name before 0.17
 
 [build-system]
 requires = ["setuptools>=69"]

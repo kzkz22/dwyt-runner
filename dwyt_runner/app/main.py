@@ -279,7 +279,7 @@ def entry() -> None:
     import argparse
     import logging.handlers
     import sys
-    ap = argparse.ArgumentParser(prog="dwyt-runner-app")
+    ap = argparse.ArgumentParser(prog="skipwise-runner-app")
     ap.add_argument("--browser", action="store_true")
     ap.add_argument("--hidden", action="store_true")
     ap.add_argument("--after", type=int, default=0, help=argparse.SUPPRESS)

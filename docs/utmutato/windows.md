@@ -4,9 +4,9 @@ Windows 10 vagy 11, 64 bites. Rendszergazdai jog nem kell.
 
 ## Telepítés
 
-1. A Skipwise **Futtatók** oldalán: „Új futtató” → **Asztali gépre** → **Windows-telepítő letöltése** (`dwyt-runner-setup.exe`, kb. 70 MB).
+1. A Skipwise **Futtatók** oldalán: „Új futtató” → **Asztali gépre** → **Windows-telepítő letöltése** (`skipwise-runner-setup.exe`, kb. 70 MB).
 2. Indítsd el. A telepítő még nincs kódaláírással ellátva, ezért a Windows figyelmeztethet („A Windows megvédte a számítógépet”): **További információ** → **Futtatás mindenképp**. Ha a géped céges házirendje vagy az Intelligens alkalmazásvezérlés ezt nem engedi, a telepítő nem fog elindulni; ilyenkor egyelőre a [szerveres](szerver.md) változat marad.
-3. A telepítő a saját mappádba telepít (`%LOCALAPPDATA%\Programs\dwyt-runner`), és a Start menübe tesz egy „Skipwise futtató” ikont. A végén elindítja a futtatót.
+3. A telepítő a saját mappádba telepít (`%LOCALAPPDATA%\Programs\Skipwise`; a 0.17 előtt telepített futtató a régi `Programs\dwyt-runner` mappában marad), és a Start menübe tesz egy „Skipwise futtató” ikont. A végén elindítja a futtatót.
 
 ## Az első indítás
 

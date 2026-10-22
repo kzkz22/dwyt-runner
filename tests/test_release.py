@@ -150,13 +150,13 @@ def test_uv_install_keeps_the_extras(monkeypatch, tmp_path):
 def test_latest_json_lists_every_package_with_its_hash(tmp_path):
     sys.path.insert(0, str(Path(__file__).parent.parent / "packaging"))
     import latest_json
-    for name in ("dwyt_runner-1.2.3-py3-none-any.whl", "dwyt-runner-setup-1.2.3.exe",
-                 "dwyt-runner-1.2.3-x86_64.AppImage"):
+    for name in ("dwyt_runner-1.2.3-py3-none-any.whl", "skipwise-runner-setup-1.2.3.exe",
+                 "skipwise-runner-1.2.3-x86_64.AppImage"):
         (tmp_path / name).write_bytes(b"foo")
     data = latest_json.build("1.2.3", tmp_path)
     rel = release.parse(json.dumps(data).encode())
     assert rel.version == "1.2.3" and set(rel.assets) == set(updater.ASSET_FOR.values())
     assert rel.assets["windows"].sha256 == "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
-    (tmp_path / "dwyt-runner-1.2.3-x86_64.AppImage").unlink()
+    (tmp_path / "skipwise-runner-1.2.3-x86_64.AppImage").unlink()
     with pytest.raises(SystemExit):
         latest_json.build("1.2.3", tmp_path)

@@ -4,10 +4,10 @@
 
 ## Telepítés
 
-1. A Skipwise **Futtatók** oldalán: „Új futtató” → **Asztali gépre** → **Linux AppImage letöltése** (`dwyt-runner-x86_64.AppImage`, kb. 300 MB; az ablakhoz szükséges Qt is benne van).
+1. A Skipwise **Futtatók** oldalán: „Új futtató” → **Asztali gépre** → **Linux AppImage letöltése** (`skipwise-runner-x86_64.AppImage`, kb. 300 MB; az ablakhoz szükséges Qt is benne van).
 2. Tedd egy állandó helyre (például `~/Alkalmazások/`), és tedd futtathatóvá: a fájlkezelőben Tulajdonságok → Jogosultságok → „Futtatható”, vagy terminálban:
    ```bash
-   chmod +x ~/Alkalmazások/dwyt-runner-x86_64.AppImage
+   chmod +x ~/Alkalmazások/skipwise-runner-x86_64.AppImage
    ```
 3. Indítsd el dupla kattintással. Ha nem indul, és a hibaüzenet a FUSE-ra panaszkodik: `sudo apt install libfuse2` (Ubuntu 24.04-től a csomag neve `libfuse2t64`).
 

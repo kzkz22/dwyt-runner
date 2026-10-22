@@ -28,8 +28,8 @@ from .config import Config
 
 log = logging.getLogger("dwyt-runner")
 APP = False  # set by the desktop app: "auto" means off there
-SOURCE = "https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip"
-VERSION_URL = "https://raw.githubusercontent.com/kzkz22/dwyt-runner/main/pyproject.toml"
+SOURCE = "https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip"
+VERSION_URL = "https://raw.githubusercontent.com/kzkz22/skipwise-runner/main/pyproject.toml"
 LATEST_EVERY_S = 24 * 3600
 REPORT_EVERY_S = 3600
 RESTART_EXIT = 75  # systemd (Restart=on-failure) starts the new version

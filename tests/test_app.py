@@ -348,6 +348,44 @@ def test_login_start_command_prefers_the_console_less_app(tmp_path, monkeypatch)
     monkeypatch.setattr(sys, "argv", [str(tmp_path / "dwyt-runner")])
     assert autostart.command("win32") == [str((tmp_path / "dwyt-runner-app.exe").resolve()), "--hidden"]
     assert autostart.command("linux") == [str((tmp_path / "dwyt-runner").resolve()), "app", "--hidden"]
+    (tmp_path / "skipwise-runner-app.exe").write_text("")  # 0.17: the new names come first
+    (tmp_path / "skipwise-runner").write_text("")
+    assert autostart.command("win32") == [str((tmp_path / "skipwise-runner-app.exe").resolve()), "--hidden"]
+    assert autostart.command("linux") == [str((tmp_path / "skipwise-runner").resolve()), "app", "--hidden"]
+
+
+def test_login_start_uses_the_installers_skipwise_exe(tmp_path, monkeypatch):
+    """The Windows package: python\\Skipwise.exe (pythonw under our name) starts the app at login and after updates."""
+    import sys
+    from dwyt_runner import autostart
+    (tmp_path / "python.exe").write_text("")
+    (tmp_path / "pythonw.exe").write_text("")
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "python.exe"))
+    monkeypatch.setattr(sys, "argv", [str(tmp_path / "python.exe")])
+    assert autostart.command("win32")[0] == str(tmp_path / "pythonw.exe")
+    (tmp_path / "Skipwise.exe").write_text("")
+    assert autostart.command("win32") == [str(tmp_path / "Skipwise.exe"), "-m", "dwyt_runner.app.main", "--hidden"]
+
+
+def test_the_command_is_skipwise_runner_and_the_old_name_stays(capsys):
+    """0.17: the command and the repository carry the new name; `dwyt-runner` keeps working."""
+    import tomllib
+    from pathlib import Path
+
+    from dwyt_runner import cli, release, remote
+    meta = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    assert meta["scripts"]["skipwise-runner"] == meta["scripts"]["dwyt-runner"] == "dwyt_runner.cli:main"
+    assert meta["gui-scripts"]["skipwise-runner-app"] == meta["gui-scripts"]["dwyt-runner-app"]
+    assert release.REPO == "kzkz22/skipwise-runner" and "kzkz22/skipwise-runner" in remote.SOURCE
+    import sys
+    old = sys.argv
+    sys.argv = ["skipwise-runner", "--help"]
+    try:
+        with pytest.raises(SystemExit):
+            cli.main()
+    finally:
+        sys.argv = old
+    assert capsys.readouterr().out.startswith("usage: skipwise-runner")
 
 
 def test_login_start_switch_in_the_window(window, tmp_path, monkeypatch):

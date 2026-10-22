@@ -88,6 +88,37 @@ def icons(python: Path, out: Path) -> None:
     run(str(python), "-c", ICON_SCRIPT, str(out))
 
 
+RCEDIT = "rcedit@4.0.1"  # npm package carrying electron's rcedit.exe (Windows resource editor), pinned
+LAUNCHER = "Skipwise.exe"
+
+
+def launcher(python: Path, icon: Path) -> Path:
+    """python\\Skipwise.exe: pythonw.exe under our name, with our description and icon, so Task Manager, the
+    taskbar and Windows' "open with" lists say "Skipwise futtató" instead of Python. Same folder as python.exe,
+    so Python finds its home and DLLs exactly as for pythonw."""
+    exe = python.with_name(LAUNCHER)
+    shutil.copy(python.with_name("pythonw.exe"), exe)
+    tools = BUILD / "rcedit"
+    if not (tools / "node_modules" / "rcedit").is_dir():
+        run(shutil.which("npm") or "npm", "install", "--prefix", str(tools), "--no-audit", "--no-fund", RCEDIT)
+    script = tools / "brand.js"
+    script.write_text(
+        "const rcedit = require('rcedit');\n"
+        "const [exe, icon, version] = process.argv.slice(2);\n"
+        "rcedit(exe, {icon, 'file-version': version, 'product-version': version, 'version-string': {\n"
+        "  FileDescription: 'Skipwise futtató', ProductName: 'Skipwise futtató', CompanyName: 'Skipwise',\n"
+        "  InternalName: 'Skipwise', OriginalFilename: 'Skipwise.exe', LegalCopyright: 'MIT'}})\n"
+        "  .then(() => console.log('branded', exe), e => { console.error(e); process.exit(1); });\n",
+        encoding="utf-8")
+    run("node", str(script), str(exe), str(icon), version(), cwd=tools)
+    probe = python.parent / "launcher-probe.txt"  # it must still be Python: it writes this file, then it goes
+    subprocess.run([str(exe), "-c", f"open(r'{probe}', 'w').write('ok')"], check=True, timeout=60)
+    if probe.read_text() != "ok":
+        raise SystemExit(f"{LAUNCHER} does not run Python")
+    probe.unlink()
+    return exe
+
+
 def iscc() -> str:
     found = shutil.which("iscc")
     if found:
@@ -108,12 +139,14 @@ def windows() -> Path:
     install_runner(python, "inno", [])
     icons(python, src)
     (src / "bin").mkdir()
-    (src / "bin" / "dwyt-runner.cmd").write_text('@"%~dp0..\\python\\python.exe" -m dwyt_runner.cli %*\r\n',
+    for name in ("skipwise-runner", "dwyt-runner"):  # the command, and its name before 0.17
+        (src / "bin" / f"{name}.cmd").write_text('@"%~dp0..\\python\\python.exe" -m dwyt_runner.cli %*\r\n',
                                                  encoding="ascii")
+    launcher(python, src / "dwyt-logo.ico")
     DIST.mkdir(exist_ok=True)
     run(iscc(), f"/DAppVersion={version()}", f"/DSrc={src}", f"/O{DIST}",
         str(ROOT / "packaging" / "windows" / "dwyt-runner.iss"))
-    out = DIST / f"dwyt-runner-setup-{version()}.exe"
+    out = DIST / f"skipwise-runner-setup-{version()}.exe"
     print("built", out)
     return out
 
@@ -150,7 +183,7 @@ DESKTOP = """[Desktop Entry]
 Type=Application
 Name=Skipwise futtató
 Comment=Átírás és összefoglaló a Skipwise-nak, ezen a gépen
-Exec=dwyt-runner
+Exec=skipwise-runner
 Icon=dwyt-runner
 Categories=AudioVideo;Utility;
 Terminal=false
@@ -175,7 +208,7 @@ def appimage() -> Path:
         urllib.request.urlretrieve(APPIMAGETOOL, tool)
         tool.chmod(tool.stat().st_mode | stat.S_IEXEC)
     DIST.mkdir(exist_ok=True)
-    out = DIST / f"dwyt-runner-{version()}-x86_64.AppImage"
+    out = DIST / f"skipwise-runner-{version()}-x86_64.AppImage"
     run(str(tool), "--appimage-extract-and-run", "--no-appstream", str(appdir), str(out),
         env={**os.environ, "ARCH": "x86_64"})
     print("built", out)

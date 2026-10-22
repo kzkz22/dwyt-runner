@@ -1,4 +1,4 @@
-"""dwyt-runner <command>
+"""skipwise-runner <command> (dwyt-runner: the same, the name before 0.17)
 
   pair SERVER [--name NAME]  pair with a dwyt central service (prints a code to approve there)
   adopt --server URL --runner-id N [--name NAME] --token-stdin
@@ -71,7 +71,7 @@ def pair(server: str, name: str | None) -> int:
             cfg.name = name or done.get("name") or socket.gethostname()
             config.save(cfg)
             _out(f"Párosítva: {done.get('name')}. Beállítások: {config.path()}")
-            _out("Indítás: dwyt-runner run")
+            _out("Indítás: skipwise-runner run")
             return 0
     _out("A kód lejárt; indítsd újra a párosítást.")
     return 1
@@ -98,7 +98,7 @@ def update_cmd(only_check: bool, back: bool) -> int:
     from . import release, updater
     if not updater.signed():
         _out("Ebben a változatban még nincs aláírt frissítés. Kézi frissítés: uv tool install --force --refresh "
-             "--python 3.13 https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip")
+             "--python 3.13 https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip")
         return 1
     if only_check:
         rel = updater.check()
@@ -122,13 +122,13 @@ def update_cmd(only_check: bool, back: bool) -> int:
 def run() -> int:
     cfg = config.load()
     if not cfg.paired:
-        _out("Előbb párosítsd: dwyt-runner pair https://KÖZPONT-CÍME")
+        _out("Előbb párosítsd: skipwise-runner pair https://KÖZPONT-CÍME")
         return 1
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     if hasattr(signal, "SIGTERM"):
         signal.signal(signal.SIGTERM, lambda *_: stop.set())
-    _out(f"dwyt-runner {__version__}: munkát kérek innen: {cfg.server} (leállítás: Ctrl+C)")
+    _out(f"Skipwise futtató {__version__}: munkát kérek innen: {cfg.server} (leállítás: Ctrl+C)")
     try:
         for line in machine.watch_at_start(cfg):
             _out(line)
@@ -137,7 +137,7 @@ def run() -> int:
     try:
         worker.loop(cfg, stop)
     except Unauthorized as exc:
-        _out(f"A központ nem fogadja el a tokent ({exc}). Párosítsd újra: dwyt-runner pair {cfg.server}")
+        _out(f"A központ nem fogadja el a tokent ({exc}). Párosítsd újra: skipwise-runner pair {cfg.server}")
         return 2
     except Outdated as exc:
         _out(f"{exc} Frissítés: uv tool upgrade dwyt-runner")
@@ -176,7 +176,7 @@ def reset_cmd(models: bool, yes: bool) -> int:
 def check() -> int:
     cfg = config.load()
     ok = True
-    _out(f"dwyt-runner {__version__}, beállítások: {config.path()}")
+    _out(f"Skipwise futtató {__version__}, beállítások: {config.path()}")
     _out(f"eszközök: {json.dumps(tools.versions())}")
     _out(f"ffmpeg: {tools.ffmpeg()}")
     _out(f"deno: {tools.deno() or 'NINCS (a YouTube-letöltéshez kellhet)'}")
@@ -196,7 +196,7 @@ def check() -> int:
         _out(f"helyi modellszerver: {local.title} ({local.url}): {state}")
     _out(f"engedélyezett tartományok: {', '.join(cfg.allowed_domains)}")
     if not cfg.paired:
-        _out("párosítás: még nincs (dwyt-runner pair SERVER)")
+        _out("párosítás: még nincs (skipwise-runner pair SERVER)")
         return 1
     try:
         central = Central(cfg.server, cfg.token)
@@ -241,7 +241,7 @@ def show_machine(as_json: bool) -> int:
         for x in last.lamps:
             _out(f"  {x.label}: {x.value}" + (f" · {x.note}" if x.note else ""))
     else:
-        _out("\nPróbafuttatás még nem volt: dwyt-runner trial")
+        _out("\nPróbafuttatás még nem volt: skipwise-runner trial")
     return 0
 
 
@@ -281,13 +281,13 @@ def local_llm(action: str, name: str | None) -> int:
     cfg = config.load()
     s = localllm.server(cfg)
     if s is None:
-        _out("Nincs beállítva helyi modellszerver: dwyt-runner config set local_llm ollama (vagy lmstudio)")
+        _out("Nincs beállítva helyi modellszerver: skipwise-runner config set local_llm ollama (vagy lmstudio)")
         return 1
     try:
         if action == "status":
             if not s.running():
                 _out(f"{s.title}: nem fut ({'telepítve' if s.installed() else 'nincs telepítve'}); "
-                     "indítás: dwyt-runner llm start")
+                     "indítás: skipwise-runner llm start")
                 return 1
             version = s.version()
             _out(f"{s.title}{' ' + version if version else ''}: fut ({s.url}); az összefoglalókhoz: {s.openai_url}")
@@ -349,7 +349,7 @@ def whisper_cmd(action: str, model: str, path: str | None, language: str | None,
             _out(f"beszédfelismerés: {whispercpp.vad_model(stage)}")
             seg, emb = whispercpp.speaker_models(stage)
             _out(f"beszélők: {seg.name}, {emb.name}")
-            _out("Kész. Bekapcsolás: dwyt-runner config set whisper_builtin igen")
+            _out("Kész. Bekapcsolás: skipwise-runner config set whisper_builtin igen")
             return 0
         cfg.whisper_builtin, cfg.whisper_url = True, ""
         if model not in cfg.whisper_models:
@@ -382,7 +382,7 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles
     except (AttributeError, ValueError):
         pass
-    parser = argparse.ArgumentParser(prog="dwyt-runner")
+    parser = argparse.ArgumentParser(prog="skipwise-runner")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -449,7 +449,7 @@ def main() -> None:
         except ImportError:
             _out("Az ablakhoz telepítsd a futtatót a desktop kiegészítővel: "
                  "uv tool install --force --python 3.13 \"dwyt-runner[desktop,local] @ "
-                 "https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip\"")
+                 "https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\"")
             sys.exit(1)
         sys.exit(app_main.run(args.browser, args.hidden, args.after))
     if args.cmd == "reset":

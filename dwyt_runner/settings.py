@@ -223,7 +223,7 @@ def parse(key: str, raw: str) -> Any:
 
 
 def summary() -> str:
-    """The settings as text, group by group (dwyt-runner config describe)."""
+    """The settings as text, group by group (skipwise-runner config describe)."""
     lines = []
     for g in describe()["groups"]:
         lines += [g["title"], ""]

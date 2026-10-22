@@ -10,8 +10,9 @@ import json
 import sys
 from pathlib import Path
 
-PATTERNS = {"wheel": "dwyt_runner-{v}-py3-none-any.whl", "windows": "dwyt-runner-setup-{v}.exe",
-            "appimage": "dwyt-runner-{v}-x86_64.AppImage"}
+# the runner takes the file names from here, so installed runners find renamed files (0.17: skipwise-runner-*)
+PATTERNS = {"wheel": "dwyt_runner-{v}-py3-none-any.whl", "windows": "skipwise-runner-setup-{v}.exe",
+            "appimage": "skipwise-runner-{v}-x86_64.AppImage"}
 
 
 def entry(path: Path) -> dict:

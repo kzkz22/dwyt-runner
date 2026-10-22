@@ -225,7 +225,7 @@ def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
         tag, asset = pick_release(releases if isinstance(releases, list) else [], bool(machine.nvidia_smi()))
         if asset is None:
             raise WorkError("A whisper.cpp legutóbbi kiadásaiban nem találok Windowsos csomagot. Töltsd le kézzel, "
-                            "és add meg a mappáját: dwyt-runner config set whisper_cli MAPPA")
+                            "és add meg a mappáját: skipwise-runner config set whisper_cli MAPPA")
         name = asset["name"]
         digest = str(asset.get("digest") or "")
         target = folder / f"{tag}-{name[:-4]}"
@@ -242,7 +242,7 @@ def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
     if found:
         return found
     raise WorkError("Ezen a gépen nincs whisper-cli. Telepítsd (például a whisper.cpp csomagjából), vagy add meg a "
-                    "helyét: dwyt-runner config set whisper_cli /út/whisper-cli")
+                    "helyét: skipwise-runner config set whisper_cli /út/whisper-cli")
 
 
 # ---- running ------------------------------------------------------------------------------------
@@ -346,7 +346,7 @@ def diarize(wav: str, speakers: int | None, threshold: float, stage: Callable[[s
     except ImportError as exc:
         raise WorkError("A beszélők szétválasztásához hiányzik a sherpa-onnx. Telepítsd a futtatót a helyi "
                         "kiegészítővel: uv tool install --force --python 3.13 \"dwyt-runner[local] @ "
-                        "https://github.com/kzkz22/dwyt-runner/archive/refs/heads/main.zip\"") from exc
+                        "https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\"") from exc
     seg, emb = speaker_models(stage)
     stage("diarize")
     threads = max(1, (os.cpu_count() or 2) - 1)

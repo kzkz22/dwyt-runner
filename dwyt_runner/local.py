@@ -56,8 +56,8 @@ def _refusal(resp: httpx.Response) -> WorkError:
         return WorkError(f"A GPU-gép most nem indítható (HTTP {resp.status_code}: {str(detail)[:300]}); "
                          "később újrapróbálom.", "later")
     if resp.status_code == 404:
-        return WorkError(f"A Whisper-cím nem jó (HTTP 404): {str(detail)[:200]}. Ellenőrizd: dwyt-runner config set "
-                         "whisper_url http://AI-ROUTER:8080/upstream/whisper")
+        return WorkError(f"A Whisper-cím nem jó (HTTP 404): {str(detail)[:200]}. Ellenőrizd: "
+                         "skipwise-runner config set whisper_url http://AI-ROUTER:8080/upstream/whisper")
     return WorkError(f"A Whisper-worker elutasította a munkát (HTTP {resp.status_code}): {str(detail)[:400]}")
 
 
@@ -112,8 +112,8 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
     if isinstance(fetch, str):
         fetch = media.from_url(fetch, cfg)
     if not cfg.whisper_url and not cfg.whisper_builtin:
-        raise WorkError("Ennek a futtatónak nincs helyi Whispere (dwyt-runner config set whisper_url ..., vagy "
-                        "ezen a gépen: dwyt-runner config set whisper_builtin igen).")
+        raise WorkError("Ennek a futtatónak nincs helyi Whispere (skipwise-runner config set whisper_url ..., vagy "
+                        "ezen a gépen: skipwise-runner config set whisper_builtin igen).")
     model = str(options.get("model") or (cfg.whisper_models or ["large-v3"])[0])
     if model not in cfg.whisper_models or (not cfg.whisper_url and model not in whispercpp.MODELS):
         raise WorkError(f"Ezt a Whisper-modellt a futtató nem ismeri: {model} (whisper_models: "

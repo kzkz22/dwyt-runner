@@ -3,14 +3,14 @@
 # in $HOME/.config/dwyt-runner) and installed the program with `uv tool install`
 # ($HOME/.local/bin/dwyt-runner). Edit the three lines if that is not root.
 [Unit]
-Description=dwyt runner
+Description=Skipwise futtató
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 User=root
 Environment=HOME=/root
-ExecStart=/root/.local/bin/dwyt-runner run
+ExecStart=/root/.local/bin/skipwise-runner run
 Restart=on-failure
 RestartSec=10
 # 75: "Frissítés most" installed a new version (start it); 2: token revoked, 3: the dwyt service wants a

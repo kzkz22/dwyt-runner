@@ -82,7 +82,7 @@ class LocalServer:
             raise LocalLlmError(f"A(z) {self.title} nem érhető el ({self.url}).", "later") from exc
         if r.status_code in (401, 403):
             raise LocalLlmError(f"A(z) {self.title} nem fogadta el a kérést (HTTP {r.status_code}). Ha bekapcsoltad "
-                                "az API-tokent, add meg: dwyt-runner config set lmstudio_token ...")
+                                "az API-tokent, add meg: skipwise-runner config set lmstudio_token ...")
         if r.status_code >= 400:
             raise LocalLlmError(f"A(z) {self.title} hibát adott (HTTP {r.status_code}): {_detail(r)}",
                                 "later" if r.status_code >= 500 else "never")

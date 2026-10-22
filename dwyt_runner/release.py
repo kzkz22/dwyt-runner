@@ -21,7 +21,7 @@ import httpx
 
 from . import __version__
 
-REPO = "kzkz22/dwyt-runner"
+REPO = "kzkz22/skipwise-runner"
 BASE = f"https://github.com/{REPO}/releases"
 # The project's minisign public key (the second line of packaging/minisign.pub; the secret half is only in the
 # owner's keeping and the repository's Actions secrets). Empty = no signed update, nothing installed from a release.

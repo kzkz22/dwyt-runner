@@ -115,7 +115,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
 
     @api.post("/ablak/kilepes")
     def quit_from_outside(request: Request):
-        """The uninstaller (or `dwyt-runner app-quit`) closes the running app: same secret as /ablak."""
+        """The uninstaller (or `skipwise-runner app-quit`) closes the running app: same secret as /ablak."""
         given = request.headers.get("x-dwyt-instance", "")
         if not secrets.compare_digest(given, state.instance_secret):
             return Response(status_code=403)

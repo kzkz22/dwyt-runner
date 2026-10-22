@@ -1,12 +1,12 @@
 # dwyt runner as a systemd user service: ~/.config/systemd/user/dwyt-runner.service
 #   systemctl --user enable --now dwyt-runner && loginctl enable-linger $USER
 [Unit]
-Description=dwyt runner
+Description=Skipwise futtató
 Wants=network-online.target
 After=network-online.target
 
 [Service]
-ExecStart=%h/.local/bin/dwyt-runner run
+ExecStart=%h/.local/bin/skipwise-runner run
 Restart=on-failure
 RestartSec=10
 # 75: "Frissítés most" installed a new version (start it); 2: token revoked, 3: the dwyt service wants a

@@ -175,7 +175,7 @@ class Llm:
             # LiteLLM answers "No connected db" when the key is not its master key (it would look
             # the key up in a database it does not have).
             raise WorkError(f"Az LLM-szerver nem fogadta el a kulcsot (HTTP {resp.status_code}: {detail[:200]}). "
-                            "Ellenőrizd: dwyt-runner config set llm_key ... "
+                            "Ellenőrizd: skipwise-runner config set llm_key ... "
                             "(LiteLLM-nél a LITELLM_MASTER_KEY értéke), majd indítsd újra a futtatót.")
         raise WorkError(f"Az LLM-szerver elutasította a kérést (HTTP {resp.status_code}): {detail}")
 

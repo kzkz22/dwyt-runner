@@ -73,7 +73,8 @@ jobs:
           $out = & "$app\python\python.exe" -m dwyt_runner.app.main --self-test 2>&1
           if ($LASTEXITCODE -ne 0) { Fail "the window app would not start: $out" }
           Write-Output "app: $out"
-          if (-not (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "dwyt*.lnk")) { Fail "no Start menu shortcut" }
+          if (-not (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "Skipwise*.lnk")) { Fail "no Start menu shortcut" }
+          if (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "dwyt*.lnk") { Fail "the old dwyt shortcut is still there" }
           Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
           Start-Sleep -Seconds 5
           if (Test-Path "$app\python") { Fail ("uninstall left: " + ((Get-ChildItem $app | Select-Object -ExpandProperty Name) -join ", ")) }
@@ -127,5 +128,5 @@ jobs:
           v="${{ needs.wheel.outputs.version }}"
           cp "out/dwyt-runner-setup-$v.exe" out/dwyt-runner-setup.exe
           cp "out/dwyt-runner-$v-x86_64.AppImage" out/dwyt-runner-x86_64.AppImage
-          gh release create "v$v" out/* --target "$GITHUB_SHA" --title "dwyt futtató $v" \
+          gh release create "v$v" out/* --target "$GITHUB_SHA" --title "Skipwise futtató $v" \
             --notes "Windows: dwyt-runner-setup-$v.exe (rendszergazdai jog nélkül). Linux: dwyt-runner-$v-x86_64.AppImage. Szerverre: a dwyt Futtatók oldalán az egysoros telepítő. A futtató csak a projekt kulcsával aláírt kiadást telepíti magától."

@@ -78,17 +78,13 @@ def install_runner(python: Path, kind: str, extra: list[str]) -> None:
 ICON_SCRIPT = """
 import sys
 from pathlib import Path
-from dwyt_runner.app.tray import image
-out = Path(sys.argv[1])
-out.mkdir(parents=True, exist_ok=True)
-img = image("green", 256)
-img.save(out / "dwyt-runner.png")
-img.save(out / "dwyt-runner.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+from dwyt_runner.app.logo import write_icons
+write_icons(Path(sys.argv[1]))
 """
 
 
 def icons(python: Path, out: Path) -> None:
-    """The tray icon's drawing (Pillow is in the bundled Python with the desktop extra)."""
+    """The dwyt logo as .png and .ico (Pillow is in the bundled Python with the desktop extra)."""
     run(str(python), "-c", ICON_SCRIPT, str(out))
 
 

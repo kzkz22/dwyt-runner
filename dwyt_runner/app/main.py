@@ -8,6 +8,7 @@ the tray icon or a new start brings it back, "Kilépés" in the tray or in the w
 """
 from __future__ import annotations
 
+import inspect
 import json
 import logging
 import os
@@ -33,6 +34,16 @@ def free_port() -> int:
 
 def instance_file() -> Path:
     return config.home() / "window.json"
+
+
+def icon_file() -> Path:
+    """The logo as a PNG for the window (made once per version of the drawing, next to the settings)."""
+    from .logo import image
+    path = config.home() / "logo-256.png"
+    if not path.is_file():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        image(256).save(path)
+    return path
 
 
 def wake_running() -> bool:
@@ -203,7 +214,10 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
                 return False
 
             window.events.closing += closing
-            webview.start(func=lambda: tray.start() or (hidden and show()))  # no tray: never start unseen
+            extra = {}
+            if "icon" in inspect.signature(webview.start).parameters:  # GTK / Qt windows (the AppImage); Windows
+                extra["icon"] = str(icon_file())                       # takes the shortcut's icon
+            webview.start(func=lambda: tray.start() or (hidden and show()), **extra)  # no tray: never start unseen
         else:
             has_tray = tray.start()
             if not hidden or not has_tray:

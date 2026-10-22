@@ -372,3 +372,21 @@ def test_the_test_run_keeps_the_model_it_was_run_with(window):
     trial.save(trial.TrialResult(at=time.time(), gpu="", whisper_model="large-v3", llm_model="google/gemma-4-e4b"))
     page = client.get("/gepem").text
     assert '<option value="google/gemma-4-e4b" selected>' in page and page.count("<option") == 2
+
+
+def test_the_logo_everywhere(window, tmp_path):
+    """Decision 19.16: the window's page, the installer icons and the window icon use the dwyt logo."""
+    from PIL import Image
+
+    from dwyt_runner.app import logo, main
+    client, state, _runtime = window
+    page = enter(client, state).get("/allapot").text
+    assert 'class="app-logo" src="/static/logo.svg"' in page and 'rel="icon" href="/static/logo.svg"' in page
+    assert client.get("/static/logo.svg").text == logo.SVG
+    logo.write_icons(tmp_path)
+    ico = Image.open(tmp_path / "dwyt-runner.ico")
+    assert ico.info["sizes"] == {(s, s) for s in logo.ICO_SIZES}
+    png = Image.open(tmp_path / "dwyt-runner.png")
+    assert png.size == (256, 256) and png.getpixel((128, 24))[:3] == logo.TILE  # above the frame: the tile
+    assert png.getpixel((0, 0))[3] == 0  # rounded corner: transparent
+    assert main.icon_file().is_file()

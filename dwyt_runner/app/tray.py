@@ -23,19 +23,19 @@ POLL_S = 2.0
 def state_of(s: dict[str, Any]) -> tuple[str, str]:
     """(colour, tooltip) from Runtime.status()."""
     if not s.get("paired"):
-        return "grey", "dwyt futtató – nincs párosítva"
+        return "grey", "Skipwise futtató – nincs párosítva"
     if s.get("error"):
-        return "red", ("dwyt futtató – leállt: " + s["error"])[:120]
+        return "red", ("Skipwise futtató – leállt: " + s["error"])[:120]
     if not s.get("running"):
-        return "grey", "dwyt futtató – nem fut"
+        return "grey", "Skipwise futtató – nem fut"
     if (s.get("swap") or {}).get("phase") in ("waiting", "swapping", "whisper"):
-        return "orange", "dwyt futtató – modellcsere: most ne használd a helyi modelleket"
+        return "orange", "Skipwise futtató – modellcsere: most ne használd a helyi modelleket"
     cur = s.get("current") or {}
     if cur:
         label = cur.get("kind_label") or "munka"
         stage = cur.get("stage_label") or ""
-        return "blue", f"dwyt futtató – {label}" + (f": {stage}" if stage else "")
-    return "green", "dwyt futtató – vár a következő munkára"
+        return "blue", f"Skipwise futtató – {label}" + (f": {stage}" if stage else "")
+    return "green", "Skipwise futtató – vár a következő munkára"
 
 
 def image(colour: str, size: int = 64):
@@ -89,7 +89,7 @@ class Tray:
         return True
 
     def _tip(self) -> str:
-        return getattr(self, "tooltip", "").removeprefix("dwyt futtató – ").capitalize()
+        return getattr(self, "tooltip", "").removeprefix("Skipwise futtató – ").capitalize()
 
     def _follow(self) -> None:
         while not self.stopped.wait(POLL_S):
@@ -104,7 +104,7 @@ class Tray:
             return
         if colour != self.colour:
             if colour == "red":
-                self.notify(tip.removeprefix("dwyt futtató – "))
+                self.notify(tip.removeprefix("Skipwise futtató – "))
             self.icon.icon = image(colour)
             self.colour = colour
         if tip != getattr(self, "tooltip", ""):
@@ -115,7 +115,7 @@ class Tray:
     def notify(self, text: str) -> None:
         try:
             if self.icon is not None and getattr(self.icon, "HAS_NOTIFICATION", False):
-                self.icon.notify(text, "dwyt futtató")
+                self.icon.notify(text, "Skipwise futtató")
         except Exception:  # noqa: BLE001
             log.debug("tray notification", exc_info=True)
 

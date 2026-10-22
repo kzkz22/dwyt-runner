@@ -59,7 +59,7 @@ def test_a_change_from_dwyt_is_checked_applied_and_answered(cfg, central):
     worker.loop(config.load(), threading.Event(), Central(central.url, "tok-1"), once=True)
     result = central.change_results[5]
     assert sorted(result["applied"]) == ["allowed_domains", "assemblyai_key", "llm_key", "polite_wait_min"]
-    assert result["errors"]["whisper_cli"] == "ez a beállítás a dwyt-ből nem állítható"
+    assert result["errors"]["whisper_cli"] == "ez a beállítás a Skipwise-ból nem állítható"
     assert "számot várok" in result["errors"]["max_file_mb"]
     assert result["checks"]["llm_key"][0] is True  # the key was tried at once
     saved = config.load()
@@ -152,7 +152,7 @@ def test_the_window_switch(monkeypatch):
     client = TestClient(api)
     client.get(f"/belepes?t={state.launch_code}")
     page = client.get("/mukodes").text
-    assert "A dwyt-ből is állítható" in page and "https://dwyt.example/futtatok" in page
+    assert "A Skipwise-ból is állítható" in page and "https://dwyt.example/futtatok" in page
     assert 'name="remote_settings"' not in page  # not twice: only the switch
     token = re.search(r'name="csrf" value="([^"]+)"', page).group(1)
     client.post("/mukodes/tavoli", data={"csrf": token, "on": "on"})

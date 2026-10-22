@@ -48,7 +48,7 @@ def test_only_the_window_that_opened_it_gets_in(window):
 def test_pairing_from_the_window(window, central):
     client, state, runtime = enter(*window[:2]) and window
     page = client.get("/allapot").text
-    assert "Párosítás a dwyt-vel" in page
+    assert "Párosítás a Skipwise-zal" in page
     central.approved = False
     r = client.post("/parositas", data={"csrf": csrf(page), "server": central.url, "name": "laptop"},
                     follow_redirects=True)
@@ -203,9 +203,9 @@ def test_tray_colour_follows_the_runner():
     from dwyt_runner.app import tray
     base = {"paired": True, "running": True, "error": "", "current": {}, "swap": {"phase": "idle"}}
     assert tray.state_of({**base, "paired": False})[0] == "grey"
-    assert tray.state_of(base) == ("green", "dwyt futtató – vár a következő munkára")
+    assert tray.state_of(base) == ("green", "Skipwise futtató – vár a következő munkára")
     busy = {**base, "current": {"kind_label": "Átírás", "stage_label": "beszédfelismerés"}}
-    assert tray.state_of(busy) == ("blue", "dwyt futtató – Átírás: beszédfelismerés")
+    assert tray.state_of(busy) == ("blue", "Skipwise futtató – Átírás: beszédfelismerés")
     assert tray.state_of({**busy, "swap": {"phase": "waiting"}})[0] == "orange"  # swap wins over working
     colour, tip = tray.state_of({**base, "error": "x" * 500})
     assert colour == "red" and len(tip) <= 120  # Windows cuts tooltips at 128

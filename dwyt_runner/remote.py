@@ -183,7 +183,7 @@ def apply(cfg: Config, change: dict[str, Any]) -> dict[str, Any]:
     for key, text in (change.get("values") or {}).items():
         s = _allowed(key, secret=False)
         if s is None:
-            errors[key] = "ez a beállítás a dwyt-ből nem állítható"
+            errors[key] = "ez a beállítás a Skipwise-ból nem állítható"
             continue
         try:
             setattr(cfg, key, settings.parse(key, str(text)))
@@ -192,16 +192,16 @@ def apply(cfg: Config, change: dict[str, Any]) -> dict[str, Any]:
             errors[key] = str(exc)
     for key, blob in (change.get("secrets") or {}).items():
         if _allowed(key, secret=True) is None:
-            errors[key] = "ez a kulcs a dwyt-ből nem állítható"
+            errors[key] = "ez a kulcs a Skipwise-ból nem állítható"
             continue
         try:
             setattr(cfg, key, decrypt(str(blob)).strip())
             applied.append(key)
         except Exception:  # noqa: BLE001 - wrong key pair, damaged text: the owner gives it again
-            errors[key] = "a kulcsot nem sikerült megfejteni; add meg újra a dwyt-ben"
+            errors[key] = "a kulcsot nem sikerült megfejteni; add meg újra a Skipwise-ban"
     for key in change.get("clear") or []:
         if _allowed(key, secret=True) is None:
-            errors[key] = "ez a kulcs a dwyt-ből nem törölhető"
+            errors[key] = "ez a kulcs a Skipwise-ból nem törölhető"
             continue
         setattr(cfg, key, "")
         applied.append(key)

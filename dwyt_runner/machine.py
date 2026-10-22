@@ -467,7 +467,7 @@ def assess(m: Machine) -> Assessment:
         rows.append(Lamp("disk", "Szabad hely", "nem sikerült megnézni", YELLOW))
     else:
         level = GREEN if free >= WHISPER_DISK_GB + LOCAL_LLM_DISK_GB else YELLOW if free >= WHISPER_DISK_GB else RED
-        have = f" · a dwyt modelljei {_num(m.models_gb)} GB" if m.models_gb else ""
+        have = f" · a futtató modelljei {_num(m.models_gb)} GB" if m.models_gb else ""
         rows.append(Lamp("disk", "Szabad hely", f"{_num(free)} GB{have}", level,
                          f"kell: kb. {WHISPER_DISK_GB} GB, saját összefoglalóhoz +{LOCAL_LLM_DISK_GB} GB"))
     running = [s for s in m.servers if s.running]

@@ -1,7 +1,7 @@
 {% extends "telepites.html" %}
 {% block step %}
 <h1>Kész!</h1>
-<p class="lead">A dwyt futtató mostantól a tálcán fut (jobb alul, a kerek „d” ikon). Az ablak bezárása csak elrejti;
+<p class="lead">A Skipwise futtató mostantól a tálcán fut (jobb alul, a kék Skipwise-ikon, sarkában az állapotot mutató színes pöttyel). Az ablak bezárása csak elrejti;
   kilépni az ikon menüjéből lehet.</p>
 <div class="card">
   <p class="lampline"><span class="dot green"></span><span><strong>Zöld:</strong> rendben, várja a munkát</span></p>
@@ -15,7 +15,7 @@
     <span>Induljon a gép bekapcsolásakor</span></label>
   {% if cfg.server %}
   <label class="check"><input type="checkbox" name="open_dwyt" checked>
-    <span>Nyissuk meg a dwyt-et, és küldjünk be egy első videót</span></label>
+    <span>Nyissuk meg a Skipwise-t, és küldjünk be egy első videót</span></label>
   {% endif %}
   <div class="actions"><button class="primary">Befejezés</button></div>
 </form>

@@ -233,7 +233,7 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
     try:
         if webview is not None:
             width, height = window_size(webview)
-            window = webview.create_window("dwyt futtató", state.start_url, width=width, height=height,
+            window = webview.create_window("Skipwise futtató", state.start_url, width=width, height=height,
                                            min_size=(420, 520), hidden=hidden)
 
             def closing() -> bool:
@@ -299,7 +299,7 @@ def entry() -> None:
         code = run(args.browser, args.hidden, args.after)
     except Exception as exc:  # noqa: BLE001 - without a console nobody would see it
         logging.getLogger("dwyt").exception("the app could not start")
-        tell_failure(f"A dwyt futtató nem indult el: {exc}\n\nRészletek: {home / 'app.log'}")
+        tell_failure(f"A Skipwise futtató nem indult el: {exc}\n\nRészletek: {home / 'app.log'}")
         code = 1
     sys.exit(code)
 
@@ -310,7 +310,7 @@ def tell_failure(text: str) -> None:
         return
     try:
         import ctypes
-        ctypes.windll.user32.MessageBoxW(None, text, "dwyt futtató", 0x10)
+        ctypes.windll.user32.MessageBoxW(None, text, "Skipwise futtató", 0x10)
     except Exception:  # noqa: BLE001
         pass
 

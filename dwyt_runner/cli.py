@@ -86,7 +86,7 @@ def adopt(server: str, runner_id: int, name: str | None, token: str) -> int:
     cfg = config.load()
     if cfg.paired and (cfg.server.rstrip("/") != server.rstrip("/") or cfg.runner_id != runner_id):
         _out(f"Ez a gép eddig a(z) {cfg.runner_id}. futtató volt itt: {cfg.server}; mostantól az új párosítás érvényes "
-             "(a régit a dwyt Futtatók oldalán vond vissza).")
+             "(a régit a Skipwise Futtatók oldalán vond vissza).")
     cfg.server, cfg.token, cfg.runner_id = server.rstrip("/"), token, runner_id
     cfg.name = name or cfg.name or socket.gethostname()
     config.save(cfg)
@@ -169,7 +169,7 @@ def reset_cmd(models: bool, yes: bool) -> int:
     for line in reset.run(models):
         _out(line)
     if server:
-        _out(f"A dwyt-ben ({server}/futtatok) a régi futtatót vond vissza.")
+        _out(f"A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza.")
     return 0
 
 

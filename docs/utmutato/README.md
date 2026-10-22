@@ -1,14 +1,14 @@
 # Útmutatók
 
-A dwyt futtatója végzi a munkát (letöltés, felirat, átírás, összefoglaló, kérdések) a saját gépeden vagy szervereden; a kulcsaid nála maradnak. Válaszd ki, hová telepíted:
+A Skipwise futtatója végzi a munkát (letöltés, felirat, átírás, összefoglaló, kérdések) a saját gépeden vagy szervereden; a kulcsaid nála maradnak. Válaszd ki, hová telepíted:
 
 | Hová | Kinek | Útmutató |
 | --- | --- | --- |
 | Windows-gép | laikusoknak is: ablak, tálcaikon, a telepítő végigvezet | [Windows](windows.md) |
 | Linux asztali gép | ugyanaz, AppImage-ként | [Linux asztal](linux-asztal.md) |
-| Linux szerver (VPS, LXC, NAS) | egy paranccsal, beállítás a dwyt-ből | [Szerver](szerver.md) |
+| Linux szerver (VPS, LXC, NAS) | egy paranccsal, beállítás a Skipwise-ból | [Szerver](szerver.md) |
 
-Mindegyikhez kell egy dwyt-fiók. A letöltések és a telepítőparancs a dwyt **Futtatók** oldalán, az „Új futtató” részen vannak.
+Mindegyikhez kell egy Skipwise-fiók. A letöltések és a telepítőparancs a Skipwise **Futtatók** oldalán, az „Új futtató” részen vannak.
 
 **Melyik működési mód?** A telepítés közben a futtató megvizsgálja a gépet, és ajánl egyet:
 

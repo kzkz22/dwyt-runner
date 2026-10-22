@@ -45,7 +45,7 @@ class Runtime:
         try:
             worker.loop(cfg, stop)
         except Unauthorized:
-            self.error = "A dwyt nem fogadja el a párosítást (visszavonták?). Párosítsd újra."
+            self.error = "A Skipwise nem fogadja el a párosítást (visszavonták?). Párosítsd újra."
         except Outdated as exc:
             self.error = f"{exc} Frissítsd a futtatót."
         except Exception as exc:  # noqa: BLE001 - the window must say it, not die with it

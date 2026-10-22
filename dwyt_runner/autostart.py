@@ -108,8 +108,8 @@ def enable(platform: str = sys.platform) -> None:
         return
     f = _desktop_file()
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text("[Desktop Entry]\nType=Application\nName=dwyt futtató\n"
-                 "Comment=A dwyt futtatója a tálcán\n"
+    f.write_text("[Desktop Entry]\nType=Application\nName=Skipwise futtató\n"
+                 "Comment=A Skipwise futtatója a tálcán\n"
                  f"Exec={_desktop_exec(parts)}\nTerminal=false\nX-GNOME-Autostart-enabled=true\n",
                  encoding="utf-8")
 

@@ -35,13 +35,13 @@
   <p class="muted" data-unsaved hidden>Ez a választott mód képe; a <strong>Mentés</strong> után lép életbe.</p>
   <p class="muted legend"><span class="sw local"></span> ezen a gépen <span class="sw cloud"></span> felhőben · a pöttyök mutatják, merre halad az adat</p>
   <div class="card table">
-    <div class="tr"><span class="th">Felirat használata</span><span>A dwyt-ben állítod be (alapból csak a feltöltő saját felirata; gépi feliratnál átírás).</span>
-      {% if cfg.server %}<a class="right" href="{{ cfg.server }}/beallitasok" target="_blank" rel="noopener">Módosítás a dwyt-ben</a>{% endif %}</div>
-    <div class="tr"><span class="th">Ha a gép ki van kapcsolva</span><span>A munkák a dwyt-ben várnak, és bekapcsoláskor folytatódnak. Felhőbe magától nem kerülnek.</span></div>
+    <div class="tr"><span class="th">Felirat használata</span><span>A Skipwise-ban állítod be (alapból csak a feltöltő saját felirata; gépi feliratnál átírás).</span>
+      {% if cfg.server %}<a class="right" href="{{ cfg.server }}/beallitasok" target="_blank" rel="noopener">Módosítás a Skipwise-ban</a>{% endif %}</div>
+    <div class="tr"><span class="th">Ha a gép ki van kapcsolva</span><span>A munkák a Skipwise-ban várnak, és bekapcsoláskor folytatódnak. Felhőbe magától nem kerülnek.</span></div>
   </div>
   {% if cfg.local_llm %}
   <div class="note warn"><strong>Fontos, ha te is használod az Ollamát vagy az LM Studiót.</strong>
-    A videókártyán egyszerre csak egy nagy modell fér el. Amikor a dwyt átír egy videót, kiveszi a memóriából az éppen betöltött nyelvi modellt; a következő kérésnél a modellszerver magától visszatölti. Ha közben te is beszélgetsz egy modellel, a válaszod lelassulhat vagy megszakadhat.</div>
+    A videókártyán egyszerre csak egy nagy modell fér el. Amikor a futtató átír egy videót, kiveszi a memóriából az éppen betöltött nyelvi modellt; a következő kérésnél a modellszerver magától visszatölti. Ha közben te is beszélgetsz egy modellel, a válaszod lelassulhat vagy megszakadhat.</div>
   {% endif %}
   <label class="check"><input type="checkbox" name="polite_mode"{% if cfg.polite_mode %} checked{% endif %}>
     <span><strong>Udvarias mód:</strong> ha épp te használsz egy modellt, legfeljebb {{ cfg.polite_wait_min }} percet várok, mielőtt kiveszem a memóriából</span></label>
@@ -60,9 +60,9 @@
 <form method="post" action="/mukodes/tavoli" class="card login-start">
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <label class="check"><input type="checkbox" name="on"{% if remote_on %} checked{% endif %} data-autosubmit>
-    <span><strong>A dwyt-ből is állítható:</strong> a beállítások a dwyt Futtatók oldalán, a Beállítás gombbal is
+    <span><strong>A Skipwise-ból is állítható:</strong> a beállítások a Skipwise Futtatók oldalán, a Beállítás gombbal is
       módosíthatók{% if paired %} ({{ server }}/futtatok){% endif %}. A kulcsokat a böngésző ennek a gépnek a saját
-      kulcsával titkosítja, a dwyt nem látja őket; minden változás naplóba kerül, és értesítés megy róla.</span></label>
+      kulcsával titkosítja, a Skipwise nem látja őket; minden változás naplóba kerül, és értesítés megy róla.</span></label>
   <noscript><div class="actions"><button>Mentés</button></div></noscript>
 </form>
 
@@ -104,7 +104,7 @@
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <h2>Alaphelyzet</h2>
   <p class="muted">Mintha most telepítenéd először: leállítja a futtatót, kikapcsolja a bejelentkezéskori indulást, törli a
-    beállításokat és a kulcsokat, majd a telepítő lépései jönnek. A dwyt-ben a futtatót utána vond vissza a
+    beállításokat és a kulcsokat, majd a telepítő lépései jönnek. A Skipwise-ban a futtatót utána vond vissza a
     Futtatók oldalon.</p>
   <label class="check"><input type="checkbox" name="models"><span>A letöltött modelleket is töröld
     ({{ models_gb|string|replace(".", ",") }} GB, {{ models_dir }}); különben megmaradnak, és nem kell újra letölteni</span></label>

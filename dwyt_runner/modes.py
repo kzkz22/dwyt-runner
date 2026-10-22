@@ -108,4 +108,4 @@ def flow(cfg: Config) -> list[Box]:
     else:
         llm = Box("Összefoglaló, fordítás, kérdések", "nincs beállítva", "", False)
     return [Box("YouTube-videó", "vagy saját felvétel", "", False), transcribe, llm,
-            Box("dwyt könyvtár", "bárhonnan olvasható", "", False)]
+            Box("Skipwise-könyvtár", "bárhonnan olvasható", "", False)]

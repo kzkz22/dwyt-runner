@@ -87,7 +87,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         if not (path in ("/belepes", "/ablak", "/ablak/kilepes") or path.startswith("/static/")):
             sid = request.cookies.get(COOKIE, "")
             if sid not in state.sessions:
-                return Response("Ezt az oldalt a dwyt futtató ablaka nyitja meg.", status_code=403)
+                return Response("Ezt az oldalt a Skipwise futtató ablaka nyitja meg.", status_code=403)
         response = await call_next(request)
         response.headers.update({"Content-Security-Policy": CSP, "X-Content-Type-Options": "nosniff",
                                  "Referrer-Policy": "no-referrer", "Cache-Control": "no-store"})
@@ -130,7 +130,8 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     async def quit_app(request: Request):
         await state.form(request)
         threading.Timer(0.5, state.on_quit).start()  # the goodbye page gets out first
-        return HTMLResponse("<!doctype html><html lang=\"hu\"><head><meta charset=\"utf-8\"><title>dwyt futtató</title>"
+        return HTMLResponse("<!doctype html><html lang=\"hu\"><head><meta charset=\"utf-8\">"
+                            "<title>Skipwise futtató</title>"
                             "<link rel=\"stylesheet\" href=\"/static/style.css\"></head><body><main>"
                             "<h1>A futtató leállt</h1><p class=\"muted\">Nem vesz fel munkát, amíg újra nem indítod."
                             "</p></main></body></html>")
@@ -206,7 +207,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
 
     @api.post("/mukodes/tavoli")
     async def remote_save(request: Request):
-        """A dwyt-ből is állítható (round 7d): on/off here; the change reaches dwyt with the next report."""
+        """A Skipwise-ból is állítható (round 7d): on/off here; the change reaches dwyt with the next report."""
         form = await state.form(request)
         cfg = config.load()
         cfg.remote_settings = "on" if form.get("on") == "on" else "off"
@@ -224,7 +225,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         from starlette.concurrency import run_in_threadpool
         said = await run_in_threadpool(runtime.reset, form.get("models") == "on")
         if server:
-            said.append(f"A dwyt-ben ({server}/futtatok) a régi futtatót vond vissza: onnan ez a gép nem tudja "
+            said.append(f"A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza: onnan ez a gép nem tudja "
                         "törölni magát.")
         state.reset_said = said
         return RedirectResponse("/telepites/1", status_code=303)

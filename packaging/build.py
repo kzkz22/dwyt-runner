@@ -148,8 +148,8 @@ def bundle_libs(lib_dir: Path) -> None:
 
 DESKTOP = """[Desktop Entry]
 Type=Application
-Name=dwyt futtató
-Comment=Átírás és összefoglaló a dwyt-nek, ezen a gépen
+Name=Skipwise futtató
+Comment=Átírás és összefoglaló a Skipwise-nak, ezen a gépen
 Exec=dwyt-runner
 Icon=dwyt-runner
 Categories=AudioVideo;Utility;

@@ -1,4 +1,4 @@
-// dwyt futtató — the window's little bit of script (no inline script: strict CSP).
+// Skipwise futtató — the window's little bit of script (no inline script: strict CSP).
 (function () {
   "use strict";
 

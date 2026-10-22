@@ -12,7 +12,7 @@ from typing import Any
 from .config import Config
 
 GROUPS = [
-    ("connection", "Kapcsolat a dwyt-vel"),
+    ("connection", "Kapcsolat a Skipwise-zal"),
     ("cloud", "Felhős átírás"),
     ("local", "Helyi átírás ezen a gépen"),
     ("llm", "Összefoglaló, fordítás, kérdések"),
@@ -43,14 +43,16 @@ class Setting:
 S = Setting
 SETTINGS: tuple[Setting, ...] = (
     # -- connection --
-    S("server", "url", "connection", "A dwyt címe", "Ahová a futtató munkáért fordul. A párosítás tölti ki.",
+    S("server", "url", "connection", "A Skipwise címe", "Ahová a futtató munkáért fordul. A párosítás tölti ki.",
       remote=False, readonly=True),
-    S("token", "secret", "connection", "Párosítási token", "A párosításkor kapott belépő; a dwyt Futtatók oldalán "
+    S("token", "secret", "connection", "Párosítási token", "A párosításkor kapott belépő; a Skipwise Futtatók oldalán "
       "visszavonható.", remote=False, readonly=True),
     S("runner_id", "int", "connection", "Futtató azonosító", "A párosítás tölti ki.", remote=False, readonly=True),
-    S("name", "text", "connection", "A futtató neve", "Így látszik a dwyt Futtatók oldalán, például „otthoni gép”."),
-    S("remote_settings", "choice", "connection", "A dwyt-ből is állítható", "A beállítások a dwyt Futtatók oldaláról, "
-      "a Beállítás gombbal is módosíthatók; a kulcsokat a böngésző a futtató saját kulcsával titkosítja. Minden "
+    S("name", "text", "connection", "A futtató neve", "Így látszik a Skipwise Futtatók oldalán, "
+      "például „otthoni gép”."),
+    S("remote_settings", "choice", "connection", "A Skipwise-ból is állítható",
+      "A beállítások a Skipwise Futtatók oldaláról, a Beállítás gombbal is módosíthatók; a kulcsokat a böngésző "
+      "a futtató saját kulcsával titkosítja. Minden "
       "változás naplóba kerül. Automatikusan: szerveren be, az asztali alkalmazásban ki.",
       choices=(("auto", "automatikus"), ("on", "be"), ("off", "ki")), remote=False),
     # -- cloud transcription --
@@ -124,8 +126,8 @@ SETTINGS: tuple[Setting, ...] = (
     # -- sources --
     S("allowed_domains", "list", "sources", "Engedélyezett oldalak", "Honnan tölthet le a futtató (* = bárhonnan)."),
     S("auto_update", "choice", "sources", "A futtató frissítése magától", "Naponta megnézi, van-e aláírt újabb "
-      "változat, és két munka között telepíti. Automatikusan: az asztali alkalmazásban be; szerveren ki, ott a dwyt "
-      "Futtatók oldala szól, és a Frissítés most gombbal telepíthető.",
+      "változat, és két munka között telepíti. Automatikusan: az asztali alkalmazásban be; szerveren ki, "
+      "ott a Skipwise Futtatók oldala szól, és a Frissítés most gombbal telepíthető.",
       choices=(("auto", "automatikus"), ("on", "be"), ("off", "ki"))),
     S("ytdlp_auto_update", "bool", "sources", "A yt-dlp frissítése magától", "A YouTube gyakran változik; a "
       "futtató naponta (és egy elutasított letöltés után) megnézi, van-e újabb yt-dlp, és két munka között "

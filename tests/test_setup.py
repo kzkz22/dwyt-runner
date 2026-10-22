@@ -23,7 +23,7 @@ def test_a_new_runner_opens_on_the_setup_steps_and_can_skip_them(setup_window):
     client, runtime, first = setup_window
     assert first == "/telepites/1"
     page = client.get("/telepites/1").text
-    assert "Üdvözöl a dwyt futtató" in page and "A munka csak akkor halad" in page
+    assert "Üdvözöl a Skipwise futtató" in page and "A munka csak akkor halad" in page
     client.post("/telepites/kihagyas", data={"csrf": csrf(page)})
     assert wizard.load()["done"] and not wizard.needed(config.load())
     assert "A telepítő lépései" in client.get("/allapot").text  # still reachable while not paired

@@ -1,10 +1,10 @@
-# A dwyt futtató Linux asztali gépre
+# A Skipwise futtató Linux asztali gépre
 
 64 bites Linux grafikus felülettel (GNOME, KDE, Xfce, Cinnamon …). Rendszergazdai jog nem kell.
 
 ## Telepítés
 
-1. A dwyt **Futtatók** oldalán: „Új futtató” → **Asztali gépre** → **Linux AppImage letöltése** (`dwyt-runner-x86_64.AppImage`, kb. 300 MB; az ablakhoz szükséges Qt is benne van).
+1. A Skipwise **Futtatók** oldalán: „Új futtató” → **Asztali gépre** → **Linux AppImage letöltése** (`dwyt-runner-x86_64.AppImage`, kb. 300 MB; az ablakhoz szükséges Qt is benne van).
 2. Tedd egy állandó helyre (például `~/Alkalmazások/`), és tedd futtathatóvá: a fájlkezelőben Tulajdonságok → Jogosultságok → „Futtatható”, vagy terminálban:
    ```bash
    chmod +x ~/Alkalmazások/dwyt-runner-x86_64.AppImage
@@ -23,4 +23,4 @@ Az első indítás lépései ugyanazok, mint Windowson: [lásd ott](windows.md#a
 
 A futtató magától frissül (aláírt kiadásból, két munka között); az AppImage fájlt cseréli ki, és újraindul. A Gépem lapon kérheted azonnal is, vagy állhatsz vissza az előzőre.
 
-Eltávolítás: Működés → indulás bejelentkezéskor kikapcsolva, majd töröld az AppImage-et. Ha a beállításokat és a modelleket is: Működés → **Alaphelyzet** (a modellek külön pipával), utána töröld a fájlt. A dwyt-ben a futtatót a Futtatók oldalon vond vissza.
+Eltávolítás: Működés → indulás bejelentkezéskor kikapcsolva, majd töröld az AppImage-et. Ha a beállításokat és a modelleket is: Működés → **Alaphelyzet** (a modellek külön pipával), utána töröld a fájlt. A Skipwise-ban a futtatót a Futtatók oldalon vond vissza.

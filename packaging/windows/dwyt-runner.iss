@@ -12,10 +12,10 @@
 
 [Setup]
 AppId={{6E0C3D6A-3B7F-4C1E-9A55-2D8B1F0E7C41}
-AppName=dwyt futtató
+AppName=Skipwise futtató
 AppVersion={#AppVersion}
-AppVerName=dwyt futtató {#AppVersion}
-AppPublisher=dwyt
+AppVerName=Skipwise futtató {#AppVersion}
+AppPublisher=Skipwise
 AppPublisherURL=https://github.com/kzkz22/dwyt-runner
 DefaultDirName={localappdata}\Programs\dwyt-runner
 DisableDirPage=yes
@@ -30,7 +30,7 @@ SetupIconFile={#Src}\dwyt-logo.ico
 UninstallDisplayIcon={app}\dwyt-logo.ico
 ; tells Explorer to refresh its icons (the old "d" icon stayed in the cache)
 ChangesAssociations=yes
-UninstallDisplayName=dwyt futtató
+UninstallDisplayName=Skipwise futtató
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -50,16 +50,19 @@ Name: "desktopicon"; Description: "Ikon az asztalon"; Flags: unchecked
 Type: filesandordirs; Name: "{app}\python"
 ; the icon before 0.15.3 (the "d"); the logo comes under a new name so no cached copy is shown
 Type: files; Name: "{app}\dwyt-runner.ico"
+; the shortcuts before 0.16 were called "dwyt futtató" (the new name: Skipwise)
+Type: files; Name: "{userprograms}\dwyt futtató.lnk"
+Type: files; Name: "{userdesktop}\dwyt futtató.lnk"
 
 [Files]
 Source: "{#Src}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
-Name: "{userprograms}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"
-Name: "{userdesktop}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"; Tasks: desktopicon
+Name: "{userprograms}\Skipwise futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"
+Name: "{userdesktop}\Skipwise futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; Description: "A dwyt futtató indítása"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; Description: "A Skipwise futtató indítása"; Flags: nowait postinstall skipifsilent
 ; after a silent update (from the app itself) the app comes back in the tray; /NOLAUNCH for tests
 Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main --hidden"; WorkingDir: "{app}"; Flags: nowait; Check: StartAfterSilentInstall
 
@@ -91,7 +94,7 @@ begin
     { unticked by default: a reinstall should find everything where it was (decision 18.15) }
     if MsgBox('Töröljem a futtató beállításait, a kulcsait és a letöltött modelleket is?' + #13#10#13#10 +
               'Ha később újratelepíted, nélkülük újra be kell állítani, és a modelleket újra le kell tölteni. ' +
-              'A dwyt-ben a futtatót a Futtatók oldalon vond vissza.',
+              'A Skipwise-ban a futtatót a Futtatók oldalon vond vissza.',
               mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
       Exec(ExpandConstant('{app}\python\python.exe'), '-m dwyt_runner.cli reset --models --yes', '',
            SW_HIDE, ewWaitUntilTerminated, Code);

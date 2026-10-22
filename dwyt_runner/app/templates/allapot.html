@@ -2,13 +2,13 @@
 {% block main %}
 <div data-poll="/allapot"{% if s.paired or s.pairing.state == "waiting" %} data-live="1"{% endif %}>
 {% if not s.paired %}
-  <h1>Párosítás a dwyt-vel</h1>
+  <h1>Párosítás a Skipwise-zal</h1>
   <p><a class="button primary" href="/telepites/1">A telepítő lépései</a>
     <span class="muted">· gépvizsgálat, működési mód, hozzávalók és párosítás, lépésről lépésre</span></p>
   {% if s.pairing.state == "waiting" %}
   <div class="note info">
     <p class="big">Párosítókód: <strong class="code">{{ s.pairing.code }}</strong></p>
-    <p>Nyisd meg a dwyt <strong>Futtatók</strong> oldalát ({{ s.pairing.server }}/futtatok), és írd be ezt a kódot.
+    <p>Nyisd meg a Skipwise <strong>Futtatók</strong> oldalát ({{ s.pairing.server }}/futtatok), és írd be ezt a kódot.
        Az ablak magától továbblép, ha jóváhagytad.</p>
   </div>
   {% else %}
@@ -16,8 +16,8 @@
   {% if s.pairing.state == "error" %}<div class="note warn">{{ s.pairing.error }}</div>{% endif %}
   <form method="post" action="/parositas" class="card form">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label>A dwyt címe<input name="server" required placeholder="https://dwyt.example.hu" value="{{ cfg.server }}"></label>
-    <label>A futtató neve (így látszik a dwyt-ben)<input name="name" placeholder="otthoni gép" value="{{ cfg.name }}"></label>
+    <label>A Skipwise címe<input name="server" required placeholder="https://skipwise.app" value="{{ cfg.server }}"></label>
+    <label>A futtató neve (így látszik a Skipwise-ban)<input name="name" placeholder="otthoni gép" value="{{ cfg.name }}"></label>
     <button class="primary">Párosítás</button>
   </form>
   {% endif %}
@@ -39,7 +39,7 @@
         <span class="muted">{{ s.current.stage_label }}{% if s.current.part %} · {{ s.current.part }}{% endif %} · {{ s.current.minutes }} perce</span></div>
     </div>
   {% else %}
-    <p class="muted">{% if s.running %}Nincs munka; várom a következőt a dwyt-ből.{% else %}A futtató nem fut.{% endif %}</p>
+    <p class="muted">{% if s.running %}Nincs munka; várom a következőt a Skipwise-ból.{% else %}A futtató nem fut.{% endif %}</p>
   {% endif %}
   </div>
   {% if s.recent %}
@@ -52,7 +52,7 @@
   </ul>
   {% endif %}
   <p class="foot muted">Ma: {% for k, n in s.today.items() %}{{ n }} {{ {"transcribe": "átírás", "summarize": "összefoglaló", "translate": "fordítás", "ask": "kérdés"}.get(k, k) }}{% if not loop.last %} · {% endif %}{% else %}még semmi{% endfor %}
-    · <a href="{{ s.server }}" target="_blank" rel="noopener">megnyitás a dwyt-ben</a> · {{ s.name }}</p>
+    · <a href="{{ s.server }}" target="_blank" rel="noopener">megnyitás a Skipwise-ban</a> · {{ s.name }}</p>
 {% endif %}
 </div>
 {% endblock %}

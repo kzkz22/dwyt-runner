@@ -46,7 +46,7 @@ def test_describe_command(capsys, monkeypatch):
     cli.main()
     out = capsys.readouterr().out
     assert "Helyi átírás ezen a gépen" in out and "  polite_wait_min (perc)" in out and "token" not in out.split(
-        "Felhős átírás")[0].split("Kapcsolat a dwyt-vel")[1].replace("lmstudio_token", "")
+        "Felhős átírás")[0].split("Kapcsolat a Skipwise-zal")[1].replace("lmstudio_token", "")
     monkeypatch.setattr("sys.argv", ["dwyt-runner", "config", "set", "local_llm", "vllm"])
     with pytest.raises(SystemExit):
         cli.main()

@@ -296,6 +296,13 @@ class FakeLlm:
                           else f'```json\n{{"main": {first}, "side": [], "suggestion": null}}\n```')
                 return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                         "usage": {"prompt_tokens": 20, "completion_tokens": 4}}
+            if system.startswith("Fejezetekre bontasz"):  # chapters (19.21): scripted, else every 4th listed line
+                import re as _re
+                stamps = _re.findall(r"^\[([\d:]+)\] ", body["messages"][1]["content"], _re.M)
+                answer = (fake.chapter_answers.pop(0) if fake.chapter_answers else '{"chapters": [' + ", ".join(
+                    f'{{"start": "{st}", "title": "Rész {n + 1}"}}' for n, st in enumerate(stamps[::4])) + "]}")
+                return {"model": body["model"], "choices": [{"message": {"content": answer}}],
+                        "usage": {"prompt_tokens": 30, "completion_tokens": 6}}
             answer = "<think>hmm</think>## Összefoglaló\nKert."
             return {"model": body["model"], "choices": [{"message": {"content": answer}}],
                     "usage": {"prompt_tokens": 50, "completion_tokens": 5}}
@@ -330,6 +337,7 @@ class FakeLlm:
         self.stream, self.stall_s, self.cut, self.piece_delay = True, 0.0, False, 0.0
         self.info, self.info_calls = None, 0  # /model/info rows (LiteLLM); None = not a LiteLLM
         self.category_answers: list[str] = []
+        self.chapter_answers: list[str] = []
 
 
 class FakeWhisper:

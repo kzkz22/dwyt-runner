@@ -17,8 +17,13 @@ def video_meta(info: dict[str, Any]) -> dict[str, Any]:
     published = info.get("upload_date")
     if published and len(published) == 8:
         published = f"{published[:4]}-{published[4:6]}-{published[6:]}"
-    return {"title": info.get("title"), "channel": info.get("uploader") or info.get("channel"),
+    from .chapters import from_ytdlp
+    meta = {"title": info.get("title"), "channel": info.get("uploader") or info.get("channel"),
             "duration_s": int(info.get("duration") or 0) or None, "published": published}
+    chapters = from_ytdlp(info)  # the uploader's own chapters (decision 19.21)
+    if chapters:
+        meta["chapters"] = chapters
+    return meta
 
 
 def probe(url: str, cfg: Config) -> dict[str, Any]:

@@ -111,6 +111,8 @@ A letöltött modellek (whisper.cpp, Whisper-modell, beszélőmodellek, együtt 
 
 **Kategóriák (0.15):** az összefoglaló után a futtató nyelvi modellje egy rövid külön kéréssel kiválasztja az elem fő és legfeljebb két mellékkategóriáját a Skipwise-ban beállított listából (a dwyt-central 0.21 küldi), és ritkán új kategóriát javasol; a javaslatról a Skipwise-ban te döntesz. A régebbi elemeket a Skipwise a háttérben, kis adagokban küldi besorolásra (rejtett „Kategorizálás” munka; a Skipwise Beállításaiban kikapcsolható). Saját felvételt csak a helyi modell sorol be, ahogy az összefoglalót is. Ha a választás nem sikerül, az összefoglaló ettől még elkészül.
 
+**Fejezetek (0.18):** ha a videónak van feltöltői fejezete, a futtató az átírással együtt elküldi. Ha nincs, és a felvétel legalább 5 perces, a Skipwise az összefoglalóval együtt fejezeteket is kér: a futtató nyelvi modellje az összefoglaló után egy rövid külön kéréssel magyar fejezetcímeket ír az átirat időpontjaihoz. A régebbi elemekhez a Skipwise-ban gombbal kérhető (Fejezetek munka). Saját felvételnél csak a helyi modell dolgozik rajta. Ha a fejezetek nem sikerülnek, az összefoglaló ettől még elkészül.
+
 **Kisebb ablak (0.12):** a futtató ablaka a képernyőhöz igazodik (legfeljebb 1040 × 800, a képernyő 92 × 86 százaléka), a betűméret kisebb, és ha a tartalom hosszabb az ablaknál, görgetősáv látszik.
 
 **Gondolkodás felhős modellnél:** OpenRouter-modelleknél a `llm_reasoning` beállítás (Működés → Részletes beállítások): *a modell alapértelmezése*, *be* vagy *ki*. A futtató az OpenRouter modellistájából azt is kiolvassa, hogy az adott modell alapból gondolkodik-e, és mekkora a kontextusa; ezt a Skipwise Futtatók oldala mutatja. Ahol a modell mindig gondolkodik, ott a „ki” nem hat.

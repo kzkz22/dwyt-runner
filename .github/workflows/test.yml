@@ -20,6 +20,9 @@ jobs:
       - name: pythonnet on Windows (the window icon is loaded with System.Drawing.Icon, as pywebview does)
         if: runner.os == 'Windows'
         run: uv pip install pythonnet
+      - name: Windows reads the window icon (fails here, not on a user's machine)
+        if: runner.os == 'Windows'
+        run: uv run --no-sync python -c "import clr; clr.AddReference('System.Drawing'); from System.Drawing import Icon; from pathlib import Path; from dwyt_runner.app.logo import write_ico; i = Icon(str(write_ico(Path('ci-logo.ico')))); print('icon ok', i.Width, i.Height)"
       - run: uv run --no-sync ruff check --select F,E,W dwyt_runner tests tools packaging
       - run: uv run --no-sync pytest -q -rf --junitxml=pytest.xml
       - name: failures as annotations (readable without the log)

@@ -17,6 +17,7 @@ from .protocol import Central, CentralError, JobGone
 
 log = logging.getLogger("dwyt-runner")
 HEARTBEAT_S = 30  # the lease, and how soon a cancel on the dwyt page is noticed
+PARTIAL_S = 1.0  # an answer being written goes to the central at most this often (19a item 8)
 DELIVERY_DELAYS = (2, 5, 15, 30, 60, 120, 300, 600)
 WATCH_INTERVAL_S = 60
 RELOAD = threading.Event()  # the window saved new settings: read them before the next claim (never mid-job)
@@ -33,6 +34,10 @@ class Job:
         self.gone = threading.Event()
         self.done = threading.Event()
         self._last_beat = 0.0
+        self._partial: tuple[str, bool] | None = None  # the newest text not sent yet
+        self._partial_ok = True  # an older central does not take it: stop trying
+        self._partial_lock = threading.Lock()
+        self._partial_thread: threading.Thread | None = None
         self.interval = min(HEARTBEAT_S, max(5, int(job.get("lease_s", 900)) / 3))
 
     def beat(self) -> None:
@@ -60,6 +65,37 @@ class Job:
         activity.progress(data)
         if time.monotonic() - self._last_beat > 5:
             self.beat()
+
+    def partial(self, text: str, thinking: bool) -> None:
+        """The answer so far (called for every streamed piece); a thread sends the newest one at most every
+        PARTIAL_S seconds, so a slow central never slows the stream down."""
+        if not self._partial_ok:
+            return
+        with self._partial_lock:
+            self._partial = (text, thinking)
+            if self._partial_thread is None:
+                self._partial_thread = threading.Thread(target=self._send_partials, daemon=True)
+                self._partial_thread.start()
+
+    def _send_partials(self) -> None:
+        sent: tuple[str, bool] | None = None
+        while not self.done.is_set() and self._partial_ok:
+            with self._partial_lock:
+                newest = self._partial
+            if newest is not None and newest != sent:
+                try:
+                    answer = self.central.partial(self.id, *newest)
+                except CentralError as exc:
+                    log.info("partial answer not sent: %s", exc)
+                    answer = {}
+                if answer is None:
+                    self._partial_ok = False
+                    break
+                sent = newest
+                if answer.get("cancel"):
+                    self.cancel.set()  # stopped on the dwyt page: the stream ends at the next piece
+            if self.done.wait(PARTIAL_S):
+                break
 
     def heartbeats(self) -> None:
         while not self.done.wait(self.interval):
@@ -96,7 +132,8 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
     from . import llm
     llm.watch_cancel(job.cancel.is_set)  # a streamed LLM answer stops when the job is cancelled
     try:
-        result = work.run(job_data, cfg, job.stage, job.cancel.is_set, central, progress=job.progress)
+        result = work.run(job_data, cfg, job.stage, job.cancel.is_set, central, progress=job.progress,
+                          partial=job.partial)
         if job.gone.is_set():
             outcome = "gone"
             return "gone"

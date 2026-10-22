@@ -309,7 +309,7 @@ def test_a_question_background_is_cut_to_the_local_context():
     from dwyt_runner.llm import Answer
 
     class Model:
-        def complete(self, model, messages, temperature=None):
+        def complete(self, model, messages, temperature=None, on_text=None):
             self.system = messages[0]["content"]
             return Answer(text="Válasz.", model=model, prompt_tokens=1, completion_tokens=1, seconds=0.1)
     long = [{"start": i, "text": "szó " * 40} for i in range(2000)]  # ~330 000 characters

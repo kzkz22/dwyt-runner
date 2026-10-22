@@ -146,7 +146,9 @@ CUT_NOTE = "\n\n[A háttér innen hiányzik: a helyi modell kontextusába ennyi 
 
 def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], None] = lambda s: None,
         progress: Callable[[dict[str, Any]], None] = lambda p: None,
-        context_tokens: int | None = None) -> dict[str, Any]:
+        context_tokens: int | None = None,
+        partial: Callable[[str, bool], None] | None = None) -> dict[str, Any]:
+    """partial(text so far, thinking): the answer as it is written, shown on the dwyt page (19a item 8)."""
     check(job_input)
     scope = job_input["scope"]
     blocks = "\n\n".join(_source_block(src, scope) for src in job_input["sources"] if isinstance(src, dict))
@@ -174,7 +176,7 @@ def run(job_input: dict[str, Any], llm: Llm, model: str, stage: Callable[[str], 
     progress({"model": model})
     usage = Usage()
     # no temperature: the model's own setting (a thinking model wants its recommended one)
-    answer = usage.add(llm.complete(model, messages, temperature=None))
+    answer = usage.add(llm.complete(model, messages, temperature=None, on_text=partial))
     if cut:
         log.info("ask: background cut to the local model's context (%s tokens)", context_tokens)
     return {"text": answer.text, "model": model, "prompt_version": PROMPT_VERSION, **usage.facts()}

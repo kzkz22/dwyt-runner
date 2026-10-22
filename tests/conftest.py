@@ -118,6 +118,16 @@ class FakeCentral:
                 return JSONResponse({"error": "no such job"}, status_code=404)
             return {"lease_s": 900, "cancel": job_id in fake.cancel}
 
+        @app.put("/runner/v1/jobs/{job_id}/partial")
+        async def partial(job_id: int, request: Request):
+            bad = check(request)
+            if bad:
+                return bad
+            if fake.no_partial:  # an older central: no such route
+                return JSONResponse({"detail": "Not Found"}, status_code=404)
+            fake.partials.append((job_id, await request.json()))
+            return {"ok": True, "cancel": job_id in fake.stop_on_partial}
+
         @app.put("/runner/v1/jobs/{job_id}/result")
         async def result(job_id: int, request: Request):
             bad = check(request)
@@ -184,6 +194,7 @@ class FakeCentral:
         self.approved, self.result_failures = False, 0
         self.files, self.registered, self.cut_once = {}, [], False
         self.reports, self.changes, self.change_results, self.no_settings = [], [], {}, False
+        self.partials, self.no_partial, self.stop_on_partial = [], False, set()
 
     def add_job(self, job_id: int, kind: str, data: dict) -> None:
         self.known.add(job_id)

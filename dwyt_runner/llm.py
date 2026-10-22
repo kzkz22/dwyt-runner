@@ -123,16 +123,20 @@ class Llm:
         return self.complete(model, [{"role": "system", "content": system}, {"role": "user", "content": user}],
                              temperature)
 
-    def complete(self, model: str, messages: list[dict], temperature: float | None = 0.3) -> Answer:
+    def complete(self, model: str, messages: list[dict], temperature: float | None = 0.3,
+                 on_text: Callable[[str, bool], None] | None = None) -> Answer:
         """A whole conversation; temperature None leaves it to the server (the model's preset).
 
         The answer is asked for as a stream (every OpenAI-compatible server can): a dead connection shows up
         as silence (stall_s), and a job cancelled on the dwyt page stops at the next piece. A server that
         answers in one piece anyway is read the same way as before. "Too many requests" (HTTP 429, e.g. a free
-        AssemblyAI account) is waited out a few times before the job is handed back for later."""
+        AssemblyAI account) is waited out a few times before the job is handed back for later.
+
+        on_text(text so far, thinking): called as the answer comes, with the visible text (thinking left out) and
+        whether the model is still thinking; used to show a question's answer as it is written (19a item 8)."""
         for attempt in range(RATE_TRIES + 1):
             try:
-                return self._complete(model, messages, temperature)
+                return self._complete(model, messages, temperature, on_text)
             except RateLimited as exc:
                 if attempt == RATE_TRIES:
                     raise WorkError(f"A(z) {model} modell percenkénti kerete elfogyott (HTTP 429); később "
@@ -140,7 +144,8 @@ class Llm:
                 _wait(exc.retry_after or RATE_WAIT_S[min(attempt, len(RATE_WAIT_S) - 1)])
         raise AssertionError("unreachable")
 
-    def _complete(self, model: str, messages: list[dict], temperature: float | None) -> Answer:
+    def _complete(self, model: str, messages: list[dict], temperature: float | None,
+                  on_text: Callable[[str, bool], None] | None = None) -> Answer:
         started = time.monotonic()
         body: dict = {"model": model, "messages": messages, "stream": True,
                       "stream_options": {"include_usage": True}, **self.extra}
@@ -160,7 +165,7 @@ class Llm:
                 if "text/event-stream" not in resp.headers.get("content-type", ""):
                     resp.read()
                     return self._whole(resp, model, started)
-                return self._streamed(resp, model, started)
+                return self._streamed(resp, model, started, on_text)
         except httpx.TimeoutException as exc:
             raise WorkError(f"A(z) {model} modell {int(self.stall_s // 60) or 1} perce nem küldött semmit; a "
                             "kapcsolat valószínűleg megszakadt. Később újrapróbálom.", "later") from exc
@@ -187,7 +192,8 @@ class Llm:
             raise WorkError("Az LLM-szerver válasza nem értelmezhető.", "later") from exc
         return _answer(text, data.get("model"), data.get("usage") or {}, started)
 
-    def _streamed(self, resp: httpx.Response, model: str, started: float) -> Answer:
+    def _streamed(self, resp: httpx.Response, model: str, started: float,
+                  on_text: Callable[[str, bool], None] | None = None) -> Answer:
         parts: list[str] = []
         usage: dict = {}
         used = None
@@ -214,15 +220,31 @@ class Llm:
                 raise WorkError(f"A(z) {model} modell válasza félbeszakadt: {str(text)[:200]}", "later")
             used = chunk.get("model") or used
             usage = chunk.get("usage") or usage
+            reasoning = False
             for choice in chunk.get("choices") or []:
-                piece = (choice.get("delta") or {}).get("content")
+                delta = choice.get("delta") or {}
+                piece = delta.get("content")
                 if piece:
                     parts.append(piece)
+                reasoning = reasoning or bool(delta.get("reasoning_content") or delta.get("reasoning"))
                 finished = finished or bool(choice.get("finish_reason"))
+            if on_text is not None:
+                on_text(*visible("".join(parts), reasoning))
         if not finished:
             raise WorkError(f"A(z) {model} modell válasza félbeszakadt (a kapcsolat megszakadt); később "
                             "újrapróbálom.", "later")
         return _answer("".join(parts), used, usage, started)
+
+
+def visible(text: str, reasoning: bool = False) -> tuple[str, bool]:
+    """The part of an answer still being written that a reader may see, and whether the model is thinking:
+    finished <think> blocks are dropped, an open one hides the rest (it is the model's thinking)."""
+    text = _THINK.sub("", text)
+    start = text.find("<think>")
+    if start >= 0:
+        return text[:start].strip(), True
+    text = text.lstrip()
+    return text, reasoning and not text
 
 
 def _answer(text: str, model: str | None, usage: dict, started: float) -> Answer:

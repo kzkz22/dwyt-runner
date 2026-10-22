@@ -12,6 +12,9 @@ from . import __version__
 PROTOCOL = 1
 
 
+PARTIAL_CHARS = 20000  # the central keeps at most this much of an answer being written
+
+
 class CentralError(Exception):
     """The central service could not be reached or answered unexpectedly: try again later."""
 
@@ -88,6 +91,20 @@ class Central:
         resp = self._call("POST", f"/runner/v1/jobs/{job_id}/heartbeat", json={"stage": stage, "progress": progress})
         if resp.status_code != 200:
             raise CentralError(_message(resp))
+        return resp.json()
+
+    def partial(self, job_id: int, text: str, thinking: bool = False) -> dict[str, Any] | None:
+        """The answer of a question as written so far (19a item 8). None: the central does not take it (an older
+        version, or the job is no longer there; the heartbeat finds that out); {"cancel": true}: stop."""
+        try:
+            resp = self.http.request("PUT", f"/runner/v1/jobs/{job_id}/partial",
+                                     json={"text": text[:PARTIAL_CHARS], "thinking": thinking}, timeout=15)
+        except httpx.HTTPError as exc:
+            raise CentralError(f"A központ nem érhető el ({self.server}): {exc}") from exc
+        if resp.status_code == 401:
+            raise Unauthorized(_message(resp))
+        if resp.status_code != 200:
+            return None
         return resp.json()
 
     def result(self, job_id: int, result: dict[str, Any]) -> dict[str, Any]:

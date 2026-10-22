@@ -149,7 +149,8 @@ def _embedded_subtitles(fetch: media.from_file, options: dict[str, Any], cfg: Co
 
 def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         cancelled: Callable[[], bool], central: Central | None = None,
-        progress: Callable[[dict[str, Any]], None] = lambda p: None) -> dict[str, Any]:
+        progress: Callable[[dict[str, Any]], None] = lambda p: None,
+        partial: Callable[[str, bool], None] | None = None) -> dict[str, Any]:
     """Validate the job strictly (the central service is not trusted blindly) and run it."""
     kind, data = job.get("kind"), job.get("input") or {}
     if kind == "transcribe" and (data.get("source") or {}).get("kind") in ("upload", "local"):
@@ -229,6 +230,6 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         if kind == "categorize":
             return categorize.run(data, llm, model, stage, progress=progress)
         if kind == "ask":
-            return ask.run(data, llm, model, stage, progress=progress, context_tokens=context)
+            return ask.run(data, llm, model, stage, progress=progress, context_tokens=context, partial=partial)
         return translate.run(data, llm, model, stage, cancelled, progress=progress)
     raise WorkError(f"Ismeretlen munkafajta: {kind}.")

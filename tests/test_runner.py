@@ -600,6 +600,40 @@ def test_a_cancelled_job_stops_its_streamed_answer(cfg, llm):
     assert str(info.value) == "megszakítva" and info.value.retry == "never"
 
 
+def test_the_visible_part_of_an_answer_being_written():
+    from dwyt_runner.llm import visible
+    assert visible("<thi") == ("<thi", False)  # not known yet: shown, the next piece decides
+    assert visible("<think>hmm, a ker") == ("", True)
+    assert visible("<think>hmm</think>  A kert") == ("A kert", False)
+    assert visible("", True) == ("", True) and visible("Kész", True) == ("Kész", False)
+    assert visible("Előtte <think>gondol") == ("Előtte", True)
+
+
+def test_a_question_is_answered_as_it_is_written(cfg, central, llm):
+    llm.piece_delay = 0.25  # the fake writes 7 characters per piece
+    central.add_job(70, "ask", _ask_job())
+    _run_once(cfg, central)
+    assert central.results[70]["text"] == "A kertről szól [00:00]. (1 üzenet)"
+    sent = [body for job, body in central.partials if job == 70]
+    assert 3 <= len(sent) <= 12  # at most one a second, not one per piece
+    assert sent[0] == {"text": "", "thinking": True}  # "<think>" came first
+    texts = [b["text"] for b in sent if b["text"]]
+    assert texts and all("A kertről szól [00:00]. (1 üzenet)".startswith(x) for x in texts)
+    assert all("hmm" not in b["text"] and "<think>" not in b["text"] for b in sent)
+
+
+def test_stop_on_the_page_ends_the_answer_and_an_older_central_is_left_alone(cfg, central, llm):
+    llm.piece_delay = 0.3
+    central.stop_on_partial.add(71)
+    central.add_job(71, "ask", _ask_job())
+    _run_once(cfg, central)
+    assert 71 not in central.results and central.failures[71]["error"] == "megszakítva"
+    central.no_partial = True  # an older central: 404 once, then no more tries, the answer still comes
+    central.add_job(72, "ask", _ask_job())
+    _run_once(cfg, central)
+    assert central.results[72]["text"].startswith("A kertről szól") and not [b for j, b in central.partials if j == 72]
+
+
 def test_asking_for_work_says_no_job_is_in_hand(cfg, central):
     from dwyt_runner.protocol import Central
     Central(central.url, "tok-1").claim({"kinds": []}, {})

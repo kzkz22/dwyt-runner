@@ -1,7 +1,8 @@
 """The tray icon (plan 15b, decision 18.7): the runner's state at a glance, the window on a click, and the
 way to quit. Closing the window only hides it while the icon is there.
 
-Colours: green = waiting for work, blue = working, orange = the GPU is being handed over between the
+The icon is the dwyt logo with a coloured dot. Colours: green = waiting for work, blue = working,
+orange = the GPU is being handed over between the
 language model and Whisper (do not use the local models now), red = stopped with an error, grey = not
 paired. Where no tray exists (some Linux desktops) the app runs on without it; a new start shows the window.
 """
@@ -38,17 +39,17 @@ def state_of(s: dict[str, Any]) -> tuple[str, str]:
 
 
 def image(colour: str, size: int = 64):
-    """A round icon in the given colour with a white 'd' (Pillow; drawn, so no image files to ship)."""
-    from PIL import Image, ImageDraw
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    """The dwyt logo with a status dot in the lower right corner (white ring, so it reads on the blue tile)."""
+    from PIL import ImageDraw
+
+    from .logo import image as logo
+    img = logo(size)
     d = ImageDraw.Draw(img)
-    d.ellipse((2, 2, size - 3, size - 3), fill=COLOURS[colour] + (255,))
-    w = max(3, size // 10)  # a simple 'd': a ring and a stem
-    r0, r1 = int(size * 0.26), int(size * 0.62)
-    c1 = int(size * 0.44)
-    d.ellipse((r0, c1 - (r1 - r0) // 2 + size // 10, r1, c1 + (r1 - r0) // 2 + size // 10),
-              outline=(255, 255, 255, 255), width=w)
-    d.rectangle((r1 - w, int(size * 0.2), r1, int(size * 0.8) - w // 2), fill=(255, 255, 255, 255))
+    r = size * 0.25
+    cx = cy = size - r - size * 0.01
+    ring = max(1.0, size * 0.06)
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(255, 255, 255, 255))
+    d.ellipse((cx - r + ring, cy - r + ring, cx + r - ring, cy + r - ring), fill=COLOURS[colour] + (255,))
     return img
 
 

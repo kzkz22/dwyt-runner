@@ -123,7 +123,7 @@ A letöltött modellek (whisper.cpp, Whisper-modell, beszélőmodellek, együtt 
 
 A futtató saját ablakban is futhat: négy lap, ahogy a mintákon: **Állapot** (párosítás, a mostani munka, a legutóbbiak, a mai összesítés), **Működés** (működési mód: Felhő, Vegyes, Saját gép vagy Egyéni, ábrával; udvarias mód; részletes beállítások), **Gépem** (gépvizsgálat, próbafuttatás egy gombnyomásra), **Kulcsok** (beírás és próba; kiolvasni nem lehet).
 
-A telepítő, a parancsikonok, az AppImage és az ablak a dwyt logóját használja (videókeret előretekeréssel, alatta az összefoglaló sora); a tálcaikon továbbra is színnel mutatja az állapotot (zöld: vár, kék: dolgozik, narancs: videókártya-csere, piros: leállt, szürke: nincs párosítva).
+A telepítő, a parancsikonok, az AppImage és az ablak a dwyt logóját használja (videókeret előretekeréssel, alatta az összefoglaló sora); a tálcaikon is a logó, a sarkában színes pötty mutatja az állapotot (zöld: vár, kék: dolgozik, narancs: videókártya-csere, piros: leállt, szürke: nincs párosítva).
 
 **Telepítő lépések:** egy még nem párosított futtató ablaka a telepítő hat lépésével nyílik: *Üdvözlés*, *Gépvizsgálat* (lámpák, próbafuttatás, ajánlott mód), *Működési mód* (négy kártya, ábrával), *Hozzávalók* (amit a választott mód kér: a beszédfelismerő letöltése folyamatjelzővel, az OpenRouter-kulcs próbával, AssemblyAI-kulcs, helyi modellszerver és modell, letöltéssel), *Párosítás* (a futtató megnyitja a dwyt Futtatók oldalát kitöltött kóddal; ott egy gombbal jóváhagyod, miután összevetetted a kódot az ablakban láthatóval) és *Kész* (indulás bejelentkezéskor, a dwyt megnyitása). A *Mégse* kihagyja a lépéseket; később az Állapot lapról újra elindíthatók. A kitöltött kódot a dwyt-central 0.14.2 fogadja.
 

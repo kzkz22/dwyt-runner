@@ -46,9 +46,34 @@ def image(size: int = 256):
     return img.resize((size, size), Image.Resampling.LANCZOS)
 
 
+ICO_NAME = "dwyt-logo.ico"  # a new name: Windows keeps old icons in its cache by path ("d" from before 0.15.3)
+
+
+def write_ico(path: Path, draw=None) -> Path:
+    """An .ico with every size drawn on its own, as uncompressed bitmaps: Windows' System.Drawing.Icon (the window
+    icon in pywebview) does not take every PNG-compressed icon; the shell, Inno Setup and the taskbar take both."""
+    draw = draw or image
+    images = [draw(s) for s in ICO_SIZES]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    images[-1].save(path, format="ICO", sizes=[(s, s) for s in ICO_SIZES], append_images=images[:-1],
+                    bitmap_format="bmp")
+    return path
+
+
+def ico_frames(path: Path) -> list[tuple[int, bool]]:
+    """(size, is_png) per frame, read from the file's own directory (for the tests and the self-test)."""
+    import struct
+    data = path.read_bytes()
+    count = struct.unpack_from("<H", data, 4)[0]
+    frames = []
+    for i in range(count):
+        width, _h, _c, _r, _p, _b, _size, offset = struct.unpack_from("<BBBBHHII", data, 6 + 16 * i)
+        frames.append((width or 256, data[offset:offset + 4] == b"\x89PNG"))
+    return frames
+
+
 def write_icons(out: Path) -> None:
-    """dwyt-runner.png (256 px) and dwyt-runner.ico with every size drawn on its own."""
+    """dwyt-runner.png (256 px, the AppImage) and the .ico (installer, shortcuts, uninstall entry)."""
     out.mkdir(parents=True, exist_ok=True)
-    images = [image(s) for s in ICO_SIZES]
-    images[-1].save(out / "dwyt-runner.png")
-    images[-1].save(out / "dwyt-runner.ico", sizes=[(s, s) for s in ICO_SIZES], append_images=images[:-1])
+    image(256).save(out / "dwyt-runner.png")
+    write_ico(out / ICO_NAME)

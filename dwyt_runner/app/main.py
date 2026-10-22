@@ -36,25 +36,42 @@ def instance_file() -> Path:
     return config.home() / "window.json"
 
 
-def icon_file() -> Path:
-    """The logo as a PNG for the window (made once per version of the drawing, next to the settings)."""
-    from .logo import image
-    path = config.home() / "logo-256.png"
+APP_ID = "kzkz22.dwyt-runner"  # the same AppUserModelID as the installer's shortcuts: the taskbar shows their icon
+
+
+def icon_file(kind: str = "png") -> Path:
+    """The logo for the window, next to the settings: PNG for GTK / Qt, a bitmap .ico for Windows."""
+    from .logo import ICO_NAME, image, write_ico
+    path = config.home() / (ICO_NAME if kind == "ico" else "logo-256.png")
     if not path.is_file():
         path.parent.mkdir(parents=True, exist_ok=True)
-        image(256).save(path)
+        if kind == "ico":
+            write_ico(path)
+        else:
+            image(256).save(path)
     return path
 
 
 def window_icon(webview_module) -> dict:
-    """`icon` for webview.start, only where it is read as a picture (GTK / Qt: the AppImage). On Windows pywebview
-    loads it with System.Drawing.Icon, which a PNG breaks: the window never appeared (0.15.1). There the window keeps
-    pythonw's icon; the shortcuts show the logo from the installer's .ico."""
-    if sys.platform in ("win32", "darwin"):
+    """`icon` for webview.start. Windows loads it with System.Drawing.Icon: it must be an .ico it can read (a PNG
+    kept the window from appearing in 0.15.1), hence the bitmap .ico; the release self-test loads it the same way.
+    macOS takes the icon from the app bundle, not from here."""
+    if sys.platform == "darwin":
         return {}
     if "icon" not in inspect.signature(webview_module.start).parameters:
         return {}
-    return {"icon": str(icon_file())}
+    return {"icon": str(icon_file("ico" if sys.platform == "win32" else "png"))}
+
+
+def set_app_id() -> None:
+    """Windows: group the window under the shortcuts' AppUserModelID (their icon on the taskbar, not Python's)."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
+    except (AttributeError, OSError):
+        log.warning("AppUserModelID not set", exc_info=True)
 
 
 def wake_running() -> bool:
@@ -212,6 +229,7 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
         quit_app()
     from .. import updater
     updater.ON_RESTART = on_update
+    set_app_id()
     try:
         if webview is not None:
             width, height = window_size(webview)
@@ -306,7 +324,15 @@ def self_test() -> int:
     from .server import create
     create(Runtime(start_worker=False), "127.0.0.1:1")
     width, height = window_size(webview)
-    print(f"ok {width}x{height}")
+    from .tray import image
+    image("green", 32)
+    icon = window_icon(webview).get("icon", "")
+    if sys.platform == "win32" and icon:  # what pywebview's WinForms window does with it (0.15.1 broke here)
+        import clr
+        clr.AddReference("System.Drawing")
+        from System.Drawing import Icon
+        Icon(icon).Dispose()
+    print(f"ok {width}x{height} icon={Path(icon).name or '-'}")
     return 0
 
 

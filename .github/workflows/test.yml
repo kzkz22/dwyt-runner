@@ -17,6 +17,9 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv venv
       - run: uv pip install -e ".[test]"
+      - name: pythonnet on Windows (the window icon is loaded with System.Drawing.Icon, as pywebview does)
+        if: runner.os == 'Windows'
+        run: uv pip install pythonnet
       - run: uv run --no-sync ruff check --select F,E,W dwyt_runner tests tools packaging
       - run: uv run --no-sync pytest -q -rf --junitxml=pytest.xml
       - name: failures as annotations (readable without the log)

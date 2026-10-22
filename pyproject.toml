@@ -1,6 +1,6 @@
 [project]
 name = "dwyt-runner"
-version = "0.15.2"
+version = "0.15.3"
 description = "dwyt runner: downloads, captions, cloud transcription and summaries on your own machine"
 requires-python = ">=3.11,<3.15"  # new Pythons first lack ready-made wheels (brotli for yt-dlp): uv then fetches a fitting one
 license = "MIT"
@@ -15,7 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 local = ["sherpa-onnx>=1.12", "numpy>=1.26"]  # built-in local transcription: speakers (whisper.cpp is a program)
-desktop = ["fastapi>=0.115", "uvicorn>=0.30", "jinja2>=3.1", "python-multipart>=0.0.9", "pywebview>=5", "pystray>=0.19", "pillow>=10"]  # the window
+desktop = ["fastapi>=0.115", "uvicorn>=0.30", "jinja2>=3.1", "python-multipart>=0.0.9", "pywebview>=5", "pystray>=0.19", "pillow>=10.1"]  # the window
 test = ["pytest>=8", "fastapi>=0.115", "uvicorn>=0.30", "ruff>=0.6", "jinja2>=3.1", "python-multipart>=0.0.9", "pillow>=10"]
 
 [project.scripts]

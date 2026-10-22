@@ -1,5 +1,5 @@
 ﻿; dwyt runner – Windows installer (round 7c; plan 15b, decisions 18.15, 18.20). Built by packaging/build.py:
-;   iscc /DAppVersion=0.11.0 /DSrc=<folder with python\, bin\, dwyt-runner.ico> dwyt-runner.iss
+;   iscc /DAppVersion=0.11.0 /DSrc=<folder with python\, bin\, dwyt-logo.ico> dwyt-runner.iss
 ; Per-user, no admin rights: %LOCALAPPDATA%\Programs\dwyt-runner. Settings (%APPDATA%\dwyt-runner), keys (Credential
 ; Manager) and models (%LOCALAPPDATA%\dwyt-runner\models) are the runner's own and stay on uninstall unless asked.
 
@@ -26,8 +26,10 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputBaseFilename=dwyt-runner-setup-{#AppVersion}
-SetupIconFile={#Src}\dwyt-runner.ico
-UninstallDisplayIcon={app}\dwyt-runner.ico
+SetupIconFile={#Src}\dwyt-logo.ico
+UninstallDisplayIcon={app}\dwyt-logo.ico
+; tells Explorer to refresh its icons (the old "d" icon stayed in the cache)
+ChangesAssociations=yes
 UninstallDisplayName=dwyt futtató
 Compression=lzma2/max
 SolidCompression=yes
@@ -46,13 +48,15 @@ Name: "desktopicon"; Description: "Ikon az asztalon"; Flags: unchecked
 [InstallDelete]
 ; a new version brings its whole Python: no packages left over from the previous one
 Type: filesandordirs; Name: "{app}\python"
+; the icon before 0.15.3 (the "d"); the logo comes under a new name so no cached copy is shown
+Type: files; Name: "{app}\dwyt-runner.ico"
 
 [Files]
 Source: "{#Src}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
-Name: "{userprograms}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-runner.ico"
-Name: "{userdesktop}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-runner.ico"; Tasks: desktopicon
+Name: "{userprograms}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"
+Name: "{userdesktop}\dwyt futtató"; Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; IconFilename: "{app}\dwyt-logo.ico"; AppUserModelID: "kzkz22.dwyt-runner"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\python\pythonw.exe"; Parameters: "-m dwyt_runner.app.main"; WorkingDir: "{app}"; Description: "A dwyt futtató indítása"; Flags: nowait postinstall skipifsilent

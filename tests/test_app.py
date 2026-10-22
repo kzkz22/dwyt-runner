@@ -1,5 +1,6 @@
 """The desktop window (round 7c): its local page, modes, activity, pairing."""
 import re
+import sys
 import time
 from dataclasses import replace
 
@@ -208,8 +209,10 @@ def test_tray_colour_follows_the_runner():
     assert tray.state_of({**busy, "swap": {"phase": "waiting"}})[0] == "orange"  # swap wins over working
     colour, tip = tray.state_of({**base, "error": "x" * 500})
     assert colour == "red" and len(tip) <= 120  # Windows cuts tooltips at 128
-    img = tray.image("orange")
-    assert img.size == (64, 64) and img.getpixel((32, 6))[:3] == tray.COLOURS["orange"]
+    img = tray.image("orange")  # the logo with an orange dot in the corner (no more "d")
+    assert img.size == (64, 64) and img.getpixel((52, 52))[:3] == tray.COLOURS["orange"]
+    from dwyt_runner.app import logo
+    assert all(abs(a - b) <= 2 for a, b in zip(img.getpixel((32, 4))[:3], logo.TILE))  # the tile (resampled)
 
 
 def test_tray_icon_changes_and_says_when_the_runner_stopped():
@@ -384,25 +387,30 @@ def test_the_logo_everywhere(window, tmp_path):
     assert 'class="app-logo" src="/static/logo.svg"' in page and 'rel="icon" href="/static/logo.svg"' in page
     assert client.get("/static/logo.svg").text.strip() == logo.SVG.strip()  # Windows checkouts: CRLF
     logo.write_icons(tmp_path)
-    ico = Image.open(tmp_path / "dwyt-runner.ico")
+    ico = Image.open(tmp_path / logo.ICO_NAME)
     assert ico.info["sizes"] == {(s, s) for s in logo.ICO_SIZES}
+    assert logo.ico_frames(tmp_path / logo.ICO_NAME) == [(s, False) for s in logo.ICO_SIZES]  # bitmaps, no PNG
+    assert not (tmp_path / "dwyt-runner.ico").exists()  # the old name stays in Windows' icon cache
     png = Image.open(tmp_path / "dwyt-runner.png")
     assert png.size == (256, 256) and png.getpixel((128, 24))[:3] == logo.TILE  # above the frame: the tile
     assert png.getpixel((0, 0))[3] == 0  # rounded corner: transparent
     assert main.icon_file().is_file()
 
 
-def test_window_icon_never_on_windows(monkeypatch):
-    """0.15.1 handed pywebview a PNG icon; on Windows that breaks the window (System.Drawing.Icon wants .ico)."""
-    from dwyt_runner.app import main
+def test_window_icon_is_a_bitmap_ico_on_windows(monkeypatch):
+    """0.15.1 handed pywebview a PNG icon; on Windows that broke the window (System.Drawing.Icon). Windows now gets
+    a bitmap .ico, GTK / Qt a PNG, macOS nothing (the bundle's icon)."""
+    from dwyt_runner.app import logo, main
 
     class Webview:
         @staticmethod
         def start(func=None, icon=None):
             pass
-    for platform in ("win32", "darwin"):
-        monkeypatch.setattr(main.sys, "platform", platform)
-        assert main.window_icon(Webview) == {}
+    monkeypatch.setattr(main.sys, "platform", "darwin")
+    assert main.window_icon(Webview) == {}
+    monkeypatch.setattr(main.sys, "platform", "win32")
+    ico = main.window_icon(Webview)["icon"]
+    assert ico.endswith(logo.ICO_NAME) and all(not png for _s, png in logo.ico_frames(main.Path(ico)))
     monkeypatch.setattr(main.sys, "platform", "linux")
     assert main.window_icon(Webview)["icon"].endswith(".png")
 
@@ -411,3 +419,15 @@ def test_window_icon_never_on_windows(monkeypatch):
         def start(func=None):
             pass
     assert main.window_icon(Old) == {}
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows only")
+def test_windows_loads_the_window_icon_like_pywebview():
+    """The real check behind 0.15.2: System.Drawing.Icon (what pywebview's WinForms window calls) reads our .ico."""
+    clr = pytest.importorskip("clr")
+    from dwyt_runner.app import main
+    clr.AddReference("System.Drawing")
+    from System.Drawing import Icon
+    icon = Icon(str(main.icon_file("ico")))
+    assert icon.Width > 0
+    icon.Dispose()

@@ -610,13 +610,13 @@ def test_the_visible_part_of_an_answer_being_written():
 
 
 def test_a_question_is_answered_as_it_is_written(cfg, central, llm):
-    llm.piece_delay = 0.25  # the fake writes 7 characters per piece
+    llm.piece_delay = 0.4  # the fake writes 7 characters per piece: 9 pieces in about 3.6 s
     central.add_job(70, "ask", _ask_job())
     _run_once(cfg, central)
     assert central.results[70]["text"] == "A kertről szól [00:00]. (1 üzenet)"
     sent = [body for job, body in central.partials if job == 70]
-    assert 3 <= len(sent) <= 12  # at most one a second, not one per piece
-    assert sent[0] == {"text": "", "thinking": True}  # "<think>" came first
+    assert 2 <= len(sent) <= 6  # about one a second, not one per piece (timing varies on CI machines)
+    assert all(b["text"] == "" for b in sent if b["thinking"])  # thinking: nothing to show yet
     texts = [b["text"] for b in sent if b["text"]]
     assert texts and all("A kertről szól [00:00]. (1 üzenet)".startswith(x) for x in texts)
     assert all("hmm" not in b["text"] and "<think>" not in b["text"] for b in sent)

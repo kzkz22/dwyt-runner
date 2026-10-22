@@ -382,7 +382,7 @@ def test_the_logo_everywhere(window, tmp_path):
     client, state, _runtime = window
     page = enter(client, state).get("/allapot").text
     assert 'class="app-logo" src="/static/logo.svg"' in page and 'rel="icon" href="/static/logo.svg"' in page
-    assert client.get("/static/logo.svg").text == logo.SVG
+    assert client.get("/static/logo.svg").text.strip() == logo.SVG.strip()  # Windows checkouts: CRLF
     logo.write_icons(tmp_path)
     ico = Image.open(tmp_path / "dwyt-runner.ico")
     assert ico.info["sizes"] == {(s, s) for s in logo.ICO_SIZES}

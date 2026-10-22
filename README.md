@@ -6,7 +6,7 @@ Amit végez:
 
 - **YouTube-felirat** letöltése (gyors, ingyenes, beszélők nélkül);
 - **felhős átírás** az AssemblyAI-jal, a **saját kulcsoddal** (a költség a tiéd);
-- **helyi átírás beszélőkkel** a saját GPU-don (Whisper; ehhez [dwyt-airouter](https://github.com/kzkz22/dwyt-airouter) és [dwyt-gpu](https://github.com/kzkz22/dwyt-gpu) kell);
+- **helyi átírás beszélőkkel** a saját GPU-don (Whisper; ehhez [skipwise-airouter](https://github.com/kzkz22/skipwise-airouter) és [skipwise-gpu](https://github.com/kzkz22/skipwise-gpu) kell);
 - **magyar összefoglaló és fordítás** bármely OpenAI-kompatibilis szerverrel: LiteLLM, OpenRouter, llama-server, Ollama, vagy próbaként az AssemblyAI LLM Gateway-jével, ugyanazzal a kulccsal, mint az átírás.
 
 A kulcsaid csak itt, a gépeden vannak; a központ soha nem látja őket. A YouTube a te IP-címedről, a te sávszélességeddel töltődik.

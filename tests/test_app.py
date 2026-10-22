@@ -362,6 +362,7 @@ def test_login_start_uses_the_installers_skipwise_exe(tmp_path, monkeypatch):
     (tmp_path / "pythonw.exe").write_text("")
     monkeypatch.setattr(sys, "executable", str(tmp_path / "python.exe"))
     monkeypatch.setattr(sys, "argv", [str(tmp_path / "python.exe")])
+    monkeypatch.setattr(autostart.shutil, "which", lambda name: None)  # not the test machine's own scripts
     assert autostart.command("win32")[0] == str(tmp_path / "pythonw.exe")
     (tmp_path / "Skipwise.exe").write_text("")
     assert autostart.command("win32") == [str(tmp_path / "Skipwise.exe"), "-m", "dwyt_runner.app.main", "--hidden"]

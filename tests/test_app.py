@@ -346,6 +346,8 @@ def test_login_start_command_prefers_the_console_less_app(tmp_path, monkeypatch)
     (tmp_path / "dwyt-runner-app.exe").write_text("")
     (tmp_path / "dwyt-runner").write_text("")
     monkeypatch.setattr(sys, "argv", [str(tmp_path / "dwyt-runner")])
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "python.exe"))  # not the test machine's own scripts
+    monkeypatch.setattr(autostart.shutil, "which", lambda name: None)
     assert autostart.command("win32") == [str((tmp_path / "dwyt-runner-app.exe").resolve()), "--hidden"]
     assert autostart.command("linux") == [str((tmp_path / "dwyt-runner").resolve()), "app", "--hidden"]
     (tmp_path / "skipwise-runner-app.exe").write_text("")  # 0.17: the new names come first

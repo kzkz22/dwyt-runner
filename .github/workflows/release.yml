@@ -8,8 +8,9 @@ name: release
 on:
   push:
     tags: ["v*"]
-    branches: [main]
-    # a new version in pyproject.toml on main is released (no tag needed); a packaging change only builds and tries
+    # main: a new version in pyproject.toml is released (no tag needed); a packaging change only builds and tries.
+    # proba/*: builds and tries the packages before a change goes to main, never publishes
+    branches: [main, "proba/**"]
     paths: ["packaging/**", ".github/workflows/release.yml", "pyproject.toml"]
   workflow_dispatch:
 permissions:
@@ -35,7 +36,7 @@ jobs:
         run: |
           v=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
           echo "version=$v" >> "$GITHUB_OUTPUT"
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || gh release view "v$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "${GITHUB_REF#refs/heads/proba/}" != "$GITHUB_REF" ] || gh release view "v$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "release=no" >> "$GITHUB_OUTPUT"
           else
             echo "release=yes" >> "$GITHUB_OUTPUT"

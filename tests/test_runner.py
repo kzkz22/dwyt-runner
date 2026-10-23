@@ -638,3 +638,57 @@ def test_asking_for_work_says_no_job_is_in_hand(cfg, central):
     from dwyt_runner.protocol import Central
     Central(central.url, "tok-1").claim({"kinds": []}, {})
     assert central.claims[-1]["holding"] == []
+
+
+# ---- content languages (round 9, decision 19.24) ---------------------------------------------------------------
+
+def test_other_content_languages_get_the_english_instructions(cfg, central, llm):
+    from dwyt_runner import formatting, langs, work
+    assert work.capabilities(cfg)["content_languages"][:3] == ["bg", "cs", "da"]
+    assert formatting.speaker_word("de") == "Sprecher" and formatting.speaker_word("ja") == "Speaker"
+    assert langs.code("de-AT") == "de" and langs.is_source(None) and langs.english_name("lv") == "Latvian"
+    central.add_job(80, "summarize", {"role": "public", "language": "de", "meta": {"title": "Garden"},
+                                      "transcript": {"language": "hu", "mode": "cloud", "diarized": True,
+                                                     "speakers": ["Szereplő 1"], "segments": [
+                                                         {"start": 0, "end": 2, "speaker": "Szereplő 1",
+                                                          "text": "Szia kert."}]}})
+    _run_once(cfg, central)
+    assert central.results[80]["language"] == "de"
+    system, user = (m["content"] for m in llm.calls[-1]["messages"])
+    assert "You always write in German" in system and "magyar" not in system
+    assert "## Zusammenfassung" in user and "## Hauptpunkte" in user and "## Sprecher" in user
+    assert '"Szereplő 1"' in user and "Language of the transcript: Hungarian" in user and "Átirat" not in user
+    # a translation into German
+    _translate_job(central, 81)
+    central.queue[-1]["input"]["target"] = "de"
+    _run_once(cfg, central)
+    assert central.results[81]["language"] == "de"
+    assert "from English into German" in llm.calls[-1]["messages"][0]["content"]
+    assert "EXPLAINED:" in llm.calls[-1]["messages"][0]["content"]
+    # a question: the answer in the language of the question
+    central.add_job(82, "ask", _ask_job(language="fr"))
+    _run_once(cfg, central)
+    system = llm.calls[-1]["messages"][0]["content"]
+    assert "in the language the user writes in (usually French)" in system
+    assert "(translation: Szia kert. Locsold.)" in system
+    assert "mindig magyarul" not in system
+
+
+def test_explained_terms_are_read_in_either_form():
+    from dwyt_runner.translate import parse
+    lines, terms = parse("0| Hallo\nEXPLAINED: GPU; API", {0})
+    assert lines == {0: "Hallo"} and terms == ["GPU", "API"]
+    assert parse("0| Szia\nMAGYARÁZOTT: -", {0})[1] == []
+
+
+def test_chapters_and_categories_in_another_language(cfg, llm):
+    from dwyt_runner import categorize, chapters
+    from dwyt_runner.llm import Llm, Usage
+    client = Llm(cfg.llm_url, "k")
+    segs = [{"start": i * 30.0, "end": i * 30.0 + 28, "text": f"Gondolat {i}."} for i in range(20)]
+    chapters.make(client, "osszefoglalo", {"segments": segs}, {"title": "T", "duration_s": 600}, Usage(), None, "es")
+    system, user = (m["content"] for m in llm.calls[-1]["messages"][:2])
+    assert "chapter titles in Spanish" in system and "Divide this section" in user and "Title: T" in user
+    categorize.choose(client, "osszefoglalo", [{"id": 1, "name": "Kert"}], "Egy kert.", {}, Usage(), "it")
+    user = llm.calls[-1]["messages"][1]["content"]
+    assert "in Italian" in user and "Categories (id: name" in user

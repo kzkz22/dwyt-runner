@@ -286,10 +286,11 @@ class FakeLlm:
 
         def answer_for(body):
             system = body["messages"][0]["content"]
-            if system.startswith("Fordító vagy"):
+            if system.startswith(("Fordító vagy", "You are a translator")):
                 import re as _re
                 user = body["messages"][1]["content"]
-                rows = _re.findall(r"^(\d+)\| (.*)$", user.split("Fordítandó sorok:\n", 1)[1], _re.M)
+                marker = "Fordítandó sorok:\n" if system.startswith("Fordító") else "Lines to translate:\n"
+                rows = _re.findall(r"^(\d+)\| (.*)$", user.split(marker, 1)[1], _re.M)
                 if fake.drop_once and len(rows) > 1:  # leave one line out: the runner must ask again
                     rows, fake.drop_once = rows[:-1], False
                 answer = "\n".join(f"{i}| HU {t}" for i, t in rows) + "\nMAGYARÁZOTT: GPU (grafikus processzor)"

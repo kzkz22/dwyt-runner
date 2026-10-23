@@ -8,7 +8,7 @@ import tempfile
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from . import (ask, captions, categorize, chapters, cloud, gateway, indavideo, local, localllm, media, modelinfo,
+from . import (ask, captions, langs, categorize, chapters, cloud, gateway, indavideo, local, localllm, media, modelinfo,
                resolve, summarize, tracks, translate, watch)
 from .config import Config
 from .errors import WorkError
@@ -35,7 +35,9 @@ def capabilities(cfg: Config) -> dict[str, Any]:
             "allowed_domains": cfg.allowed_domains, "local_sources": False,
             "whisper_models": whisper_models(cfg),
             "source_kinds": ["upload"] + (["local"] if cfg.watch_dirs else []),
-            "embedded_subtitles": True}  # captions mode on an own file: its embedded subtitles (19.12)
+            "embedded_subtitles": True,  # captions mode on an own file: its embedded subtitles (19.12)
+            # round 9: summaries, translations, chapters and answers in these languages (older runners: Hungarian)
+            "content_languages": sorted(langs.TABLE) if roles else []}
 
 
 def whisper_models(cfg: Config) -> list[str]:

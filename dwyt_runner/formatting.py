@@ -2,12 +2,14 @@
 (Ported from the old yt-transcribe API.)"""
 from __future__ import annotations
 
-SPEAKER_WORD = {"hu": "Szereplő", "en": "Speaker"}
+from . import langs
+
 UNKNOWN_WORD = {"hu": "Ismeretlen", "en": "Unknown"}
 
 
 def speaker_word(language: str | None) -> str:
-    return SPEAKER_WORD.get((language or "").lower(), "Speaker")
+    """The label word in the transcript's own language ("Szereplő 1", "Sprecher 1"; round 9)."""
+    return langs.speaker_word(language)
 
 
 def unknown_word(language: str | None) -> str:

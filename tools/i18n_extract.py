@@ -52,7 +52,12 @@ def render(cat: Catalog) -> bytes:
 def main(argv: list[str]) -> int:
     data = render(build())
     if "--check" in argv:
-        if not POT.is_file() or POT.read_bytes() != data:
+        # the texts only: line numbers differ between Python versions and Windows checks files out with CRLF
+        have = set()
+        if POT.is_file():
+            with POT.open("rb") as f:
+                have = {m.id for m in read_po(f) if m.id}
+        if have != {m.id for m in build() if m.id}:
             print("dwyt_runner/locale/messages.pot is out of date: python tools/i18n_extract.py")
             return 1
         return 0

@@ -187,7 +187,7 @@ def check() -> int:
     _out(_("Skipwise futtató {__version__}, beállítások: {path}").format(__version__=__version__, path=config.path()))
     _out(_("eszközök: {dumps}").format(dumps=json.dumps(tools.versions())))
     _out(f"ffmpeg: {tools.ffmpeg()}")
-    _out(f"deno: {tools.deno() or _('NINCS (a YouTube-letöltéshez kellhet)')}")
+    _out("deno: " + (tools.deno() or _("NINCS (a YouTube-letöltéshez kellhet)")))
     caps = work.capabilities(cfg)
     _out(_("képességek: átírás {join}; összefoglaló: {join2}").format(
            join=', '.join(caps['transcribe_modes']),

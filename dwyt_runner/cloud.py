@@ -18,6 +18,7 @@ import httpx
 from . import formatting, media
 from .config import Config
 from .errors import WorkError
+from .i18n import gettext as _
 
 MODELS = {"universal-2": "universal-2", "universal-3-5-pro": "universal-3-5-pro"}
 PRO_LANGUAGES = frozenset({"en", "es", "fr", "de", "it", "pt", "ar", "da", "nl", "fi", "he", "hi",
@@ -34,9 +35,11 @@ def resolve_model(requested: str | None, language: str | None) -> str:
     if requested == "auto":
         return MODELS["universal-3-5-pro"] if lang in PRO_LANGUAGES else MODELS["universal-2"]
     if requested not in MODELS:
-        raise WorkError(f"Ismeretlen felhős modell: {requested}.")
+        raise WorkError(_("Ismeretlen felhős modell: {requested}.").format(requested=requested))
     if requested == "universal-3-5-pro" and lang is not None and lang not in PRO_LANGUAGES:
-        raise WorkError(f"A universal-3-5-pro nem támogatja ezt a nyelvet: {lang}. Válaszd az auto-t.")
+        raise WorkError(_("A universal-3-5-pro nem támogatja ezt a nyelvet: {lang}. Válaszd az "
+                           "auto-t.").format(
+                          lang=lang))
     return MODELS[requested]
 
 
@@ -54,18 +57,21 @@ class AssemblyAI:
         try:
             resp = self.http.request(method, path, **kw)
         except httpx.HTTPError as exc:
-            raise WorkError(f"Az AssemblyAI nem érhető el ({exc}); később újrapróbálom.", "later") from exc
+            raise WorkError(_("Az AssemblyAI nem érhető el ({exc}); később újrapróbálom.").format(
+                exc=exc), "later") from exc
         if resp.status_code in (401, 403):
-            raise WorkError("Az AssemblyAI elutasította a kulcsot; ellenőrizd: skipwise-runner config set "
-                            "assemblyai_key ...")
+            raise WorkError(_("Az AssemblyAI elutasította a kulcsot; ellenőrizd: skipwise-runner config set "
+                            "assemblyai_key ..."))
         if resp.status_code == 429 or resp.status_code >= 500:
-            raise WorkError(f"Az AssemblyAI most nem fogad kérést (HTTP {resp.status_code}).", "later")
+            raise WorkError(_("Az AssemblyAI most nem fogad kérést (HTTP {status_code}).").format(
+                status_code=resp.status_code), "later")
         if resp.status_code >= 400:
             try:
                 detail = resp.json().get("error", resp.text)
             except ValueError:
                 detail = resp.text
-            raise WorkError(f"Az AssemblyAI hibát adott (HTTP {resp.status_code}): {str(detail)[:300]}")
+            raise WorkError(_("Az AssemblyAI hibát adott (HTTP {status_code}): {str}").format(
+                status_code=resp.status_code, str=str(detail)[:300]))
         return resp.json() if resp.content else {}
 
 
@@ -103,7 +109,8 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
     if isinstance(fetch, str):
         fetch = media.from_url(fetch, cfg)
     if not cfg.assemblyai_key:
-        raise WorkError("Ennek a futtatónak nincs AssemblyAI-kulcsa (skipwise-runner config set assemblyai_key ...).")
+        raise WorkError(_("Ennek a futtatónak nincs AssemblyAI-kulcsa "
+                          "(skipwise-runner config set assemblyai_key ...)."))
     api_model = resolve_model(options.get("model"), options.get("language"))
     stage("download")
     info = fetch.info()
@@ -115,7 +122,7 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
         source = fetch.get(workdir)
         info = fetch.info()
         if cancelled():
-            raise WorkError("megszakítva")
+            raise WorkError(_("megszakítva"))
         stage("prepare-audio")
         flac = media.to_flac(source, workdir)
         stage("upload")
@@ -130,13 +137,13 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
         deadline = time.monotonic() + TIMEOUT_S
         while transcript.get("status") not in ("completed", "error"):
             if time.monotonic() > deadline:
-                raise WorkError("Az AssemblyAI egy órán belül nem végzett.", "later")
+                raise WorkError(_("Az AssemblyAI egy órán belül nem végzett."), "later")
             if cancelled():
-                raise WorkError("megszakítva")
+                raise WorkError(_("megszakítva"))
             time.sleep(3)
             transcript = api.call("GET", f"/v2/transcript/{transcript_id}")
         if transcript["status"] == "error":
-            raise WorkError(f"Az AssemblyAI nem tudta átírni a hangot: {transcript.get('error')}")
+            raise WorkError(_("Az AssemblyAI nem tudta átírni a hangot: {get}").format(get=transcript.get('error')))
         deleted = False
         if cfg.cloud_delete_after:
             try:
@@ -149,12 +156,12 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
         language = (transcript.get("language_code") or options.get("language") or "en").split("_")[0].lower()
         segments = formatting.clean_segments(formatting.segments_from_words(_words(transcript)))
         if not segments:
-            raise WorkError("A hangban nem volt felismerhető beszéd.")
+            raise WorkError(_("A hangban nem volt felismerhető beszéd."))
         diarize = bool(options.get("diarize", True))
         diarized = diarize and any(seg.get("speaker") for seg in segments)
         warnings = []
         if diarize and not diarized:
-            warnings.append("A szolgáltató nem adott beszélőket ehhez a felvételhez.")
+            warnings.append(_("A szolgáltató nem adott beszélőket ehhez a felvételhez."))
         speakers: list[dict] = []
         if diarized:
             speakers = formatting.relabel_speakers(segments, formatting.speaker_word(language),

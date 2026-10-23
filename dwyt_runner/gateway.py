@@ -13,13 +13,14 @@ from dataclasses import replace
 from urllib.parse import urlsplit
 
 from .config import Config
+from .i18n import N_
 
 URL = "https://llm-gateway.assemblyai.com/v1"
 EU_URL = "https://llm-gateway.eu.assemblyai.com/v1"
 TRIAL_MODEL = "qwen3.5-4b-32k-fast"
 TRIAL_CONTEXT = 32768
 TRIAL_TEMPERATURE = 0.3
-TRIAL_NOTE = "próba-modell: a magyar szöveg gyengébb lehet, a számokat és neveket érdemes ellenőrizni"
+TRIAL_NOTE = N_("próba-modell: a magyar szöveg gyengébb lehet, a számokat és neveket érdemes ellenőrizni")
 
 
 def is_gateway(url: str | None) -> bool:

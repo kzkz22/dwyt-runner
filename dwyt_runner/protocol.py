@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from . import __version__
+from .i18n import gettext as _
 
 PROTOCOL = 1
 
@@ -49,7 +50,8 @@ class Central:
         try:
             resp = self.http.request(method, path, **kw)
         except httpx.HTTPError as exc:
-            raise CentralError(f"A központ nem érhető el ({self.server}): {exc}") from exc
+            raise CentralError(_("A központ nem érhető el ({server}): {exc}").format(
+                server=self.server, exc=exc)) from exc
         if resp.status_code == 401:
             raise Unauthorized(_message(resp))
         if resp.status_code == 426:
@@ -57,14 +59,15 @@ class Central:
         if resp.status_code in (404, 409, 410) and "/jobs/" in path:
             raise JobGone(_message(resp))
         if resp.status_code >= 500 or resp.status_code in (408, 429):
-            raise CentralError(f"A központ hibát adott (HTTP {resp.status_code}).")
+            raise CentralError(_("A központ hibát adott (HTTP {status_code}).").format(status_code=resp.status_code))
         return resp
 
     # pairing
     def pair_start(self) -> dict[str, Any]:
         resp = self._call("POST", "/runner/v1/pair/start")
         if resp.status_code != 200:
-            raise CentralError(f"A párosítás nem indult el (HTTP {resp.status_code}): {_message(resp)}")
+            raise CentralError(_("A párosítás nem indult el (HTTP {status_code}): {_message}").format(
+                status_code=resp.status_code, _message=_message(resp)))
         return resp.json()
 
     def pair_poll(self, poll_id: str) -> dict[str, Any] | None:
@@ -81,10 +84,12 @@ class Central:
             "capabilities": capabilities, "runner_version": __version__, "tool_versions": tool_versions,
             "holding": []})  # one job at a time: asking for work = no job in hand (a restart left none)
         self.settings_pending = resp.headers.get("dwyt-settings") == "pending"
+        self.languages = resp.headers.get("dwyt-languages")  # the owner's languages (round 9)
         if resp.status_code == 204:
             return None
         if resp.status_code != 200:
-            raise CentralError(f"Munkakérés: HTTP {resp.status_code}: {_message(resp)}")
+            raise CentralError(_("Munkakérés: HTTP {status_code}: {_message}").format(
+                status_code=resp.status_code, _message=_message(resp)))
         return resp.json()
 
     def heartbeat(self, job_id: int, stage: str | None = None, progress: dict | None = None) -> dict[str, Any]:
@@ -100,7 +105,8 @@ class Central:
             resp = self.http.request("PUT", f"/runner/v1/jobs/{job_id}/partial",
                                      json={"text": text[:PARTIAL_CHARS], "thinking": thinking}, timeout=15)
         except httpx.HTTPError as exc:
-            raise CentralError(f"A központ nem érhető el ({self.server}): {exc}") from exc
+            raise CentralError(_("A központ nem érhető el ({server}): {exc}").format(
+                server=self.server, exc=exc)) from exc
         if resp.status_code == 401:
             raise Unauthorized(_message(resp))
         if resp.status_code != 200:
@@ -110,7 +116,9 @@ class Central:
     def result(self, job_id: int, result: dict[str, Any]) -> dict[str, Any]:
         resp = self._call("PUT", f"/runner/v1/jobs/{job_id}/result", json=result, timeout=300)
         if resp.status_code != 200:
-            raise CentralError(f"Az eredményt a központ nem fogadta el (HTTP {resp.status_code}): {_message(resp)}")
+            raise CentralError(_("Az eredményt a központ nem fogadta el (HTTP {status_code}): "
+                                  "{_message}").format(
+                                 status_code=resp.status_code, _message=_message(resp)))
         return resp.json()
 
     def fail(self, job_id: int, error: str, retry: str) -> None:
@@ -126,19 +134,22 @@ class Central:
         if resp.status_code in (404, 405):
             return 0
         if resp.status_code != 200:
-            raise CentralError(f"A beállítások jelentése: HTTP {resp.status_code}: {_message(resp)}")
+            raise CentralError(_("A beállítások jelentése: HTTP {status_code}: {_message}").format(
+                status_code=resp.status_code, _message=_message(resp)))
         return int(resp.json().get("pending") or 0)
 
     def setting_changes(self) -> list[dict[str, Any]]:
         resp = self._call("GET", "/runner/v1/settings/changes")
         if resp.status_code != 200:
-            raise CentralError(f"A beállítás-változások lekérése: HTTP {resp.status_code}: {_message(resp)}")
+            raise CentralError(_("A beállítás-változások lekérése: HTTP {status_code}: {_message}").format(
+                status_code=resp.status_code, _message=_message(resp)))
         return list(resp.json().get("changes") or [])
 
     def setting_result(self, change_id: int, result: dict[str, Any]) -> None:
         resp = self._call("POST", f"/runner/v1/settings/changes/{change_id}/result", json=result)
         if resp.status_code not in (200, 404):
-            raise CentralError(f"A beállítás eredménye: HTTP {resp.status_code}: {_message(resp)}")
+            raise CentralError(_("A beállítás eredménye: HTTP {status_code}: {_message}").format(
+                status_code=resp.status_code, _message=_message(resp)))
 
     # pairing by install code (the one-line installer redeems it; this is for tests and other installers)
     def redeem(self, code: str, name: str) -> dict[str, Any]:
@@ -161,7 +172,8 @@ class Central:
                         resp.read()
                         raise JobGone(_message(resp))
                     if resp.status_code not in (200, 206):
-                        raise CentralError(f"A fájl letöltése: HTTP {resp.status_code}")
+                        raise CentralError(_("A fájl letöltése: HTTP {status_code}").format(
+                            status_code=resp.status_code))
                     mode = "ab" if resp.status_code == 206 else "wb"
                     if mode == "wb":
                         done = 0
@@ -169,12 +181,13 @@ class Central:
                         for chunk in resp.iter_bytes(1024 * 1024):
                             done += len(chunk)
                             if done > max_bytes:
-                                raise CentralError("A fájl nagyobb, mint amennyit ez a futtató elfogad (max_file_mb).")
+                                raise CentralError(_("A fájl nagyobb, mint amennyit ez a futtató elfogad "
+                                                     "(max_file_mb)."))
                             fh.write(chunk)
                 return done
             except httpx.HTTPError as exc:
                 if attempt == attempts - 1:
-                    raise CentralError(f"A fájl letöltése megszakadt: {exc}") from exc
+                    raise CentralError(_("A fájl letöltése megszakadt: {exc}").format(exc=exc)) from exc
                 time.sleep(2 * (attempt + 1))
         return done
 

@@ -12,6 +12,7 @@ import logging
 import threading
 from collections.abc import Callable
 from typing import Any
+from ..i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 
@@ -23,19 +24,19 @@ POLL_S = 2.0
 def state_of(s: dict[str, Any]) -> tuple[str, str]:
     """(colour, tooltip) from Runtime.status()."""
     if not s.get("paired"):
-        return "grey", "Skipwise futtató – nincs párosítva"
+        return "grey", _("Skipwise futtató – nincs párosítva")
     if s.get("error"):
-        return "red", ("Skipwise futtató – leállt: " + s["error"])[:120]
+        return "red", (_("Skipwise futtató – leállt: ") + s["error"])[:120]
     if not s.get("running"):
-        return "grey", "Skipwise futtató – nem fut"
+        return "grey", _("Skipwise futtató – nem fut")
     if (s.get("swap") or {}).get("phase") in ("waiting", "swapping", "whisper"):
-        return "orange", "Skipwise futtató – modellcsere: most ne használd a helyi modelleket"
+        return "orange", _("Skipwise futtató – modellcsere: most ne használd a helyi modelleket")
     cur = s.get("current") or {}
     if cur:
         label = cur.get("kind_label") or "munka"
         stage = cur.get("stage_label") or ""
-        return "blue", f"Skipwise futtató – {label}" + (f": {stage}" if stage else "")
-    return "green", "Skipwise futtató – vár a következő munkára"
+        return "blue", _("Skipwise futtató – {label}").format(label=label) + (f": {stage}" if stage else "")
+    return "green", _("Skipwise futtató – vár a következő munkára")
 
 
 def image(colour: str, size: int = 64):
@@ -72,10 +73,10 @@ class Tray:
             return False
         colour, tip = state_of(self.status())
         menu = pystray.Menu(
-            pystray.MenuItem("Ablak megnyitása", lambda *_: self.show(), default=True),
+            pystray.MenuItem(_("Ablak megnyitása"), lambda *_: self.show(), default=True),
             pystray.MenuItem(lambda _item: self._tip(), None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Kilépés", lambda *_: self.quit()),
+            pystray.MenuItem(_("Kilépés"), lambda *_: self.quit()),
         )
         try:
             self.icon = pystray.Icon("dwyt-runner", image(colour), tip, menu)
@@ -89,7 +90,7 @@ class Tray:
         return True
 
     def _tip(self) -> str:
-        return getattr(self, "tooltip", "").removeprefix("Skipwise futtató – ").capitalize()
+        return getattr(self, "tooltip", "").removeprefix(_("Skipwise futtató – ")).capitalize()
 
     def _follow(self) -> None:
         while not self.stopped.wait(POLL_S):
@@ -104,7 +105,7 @@ class Tray:
             return
         if colour != self.colour:
             if colour == "red":
-                self.notify(tip.removeprefix("Skipwise futtató – "))
+                self.notify(tip.removeprefix(_("Skipwise futtató – ")))
             self.icon.icon = image(colour)
             self.colour = colour
         if tip != getattr(self, "tooltip", ""):
@@ -115,7 +116,7 @@ class Tray:
     def notify(self, text: str) -> None:
         try:
             if self.icon is not None and getattr(self.icon, "HAS_NOTIFICATION", False):
-                self.icon.notify(text, "Skipwise futtató")
+                self.icon.notify(text, _("Skipwise futtató"))
         except Exception:  # noqa: BLE001
             log.debug("tray notification", exc_info=True)
 

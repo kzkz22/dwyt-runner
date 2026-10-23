@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block main %}
-<h1>Működési mód</h1>
+<h1>{{ _("Működési mód") }}</h1>
 {% if missing %}
-<div class="note warn"><strong>Még hiányzik:</strong><ul>{% for m in missing %}<li>{{ m }}</li>{% endfor %}</ul></div>
+<div class="note warn"><strong>{{ _("Még hiányzik:") }}</strong><ul>{% for m in missing %}<li>{{ m }}</li>{% endfor %}</ul></div>
 {% endif %}
 <form method="post" action="/mukodes">
   <input type="hidden" name="csrf" value="{{ csrf }}">
@@ -10,7 +10,7 @@
     {% for id, label in modes.items() if id != "egyeni" %}
     <label class="seg{% if mode == id %} on{% endif %}"><input type="radio" name="mode" value="{{ id }}"{% if mode == id %} checked{% endif %}>{{ label }}</label>
     {% endfor %}
-    <label class="seg{% if mode == 'egyeni' %} on{% endif %}"><input type="radio" name="mode" value="egyeni"{% if mode == 'egyeni' %} checked{% endif %}>Egyéni</label>
+    <label class="seg{% if mode == 'egyeni' %} on{% endif %}"><input type="radio" name="mode" value="egyeni"{% if mode == 'egyeni' %} checked{% endif %}>{{ _("Egyéni") }}</label>
   </div>
   {% for id, flow in flows.items() %}
   <div class="flow" data-flow-for="{{ id }}"{% if id != mode %} hidden{% endif %}>
@@ -23,29 +23,32 @@
     {% endfor %}
   </div>
   {% endfor %}
-  {% if trial_llm %}
-  <div class="note warn"><strong>Próba-modell írja az összefoglalókat</strong> (AssemblyAI · Qwen3.5 4B).
-    <p>Gyors és szinte ingyenes, de a magyar szöveg gyengébb lehet, és ritkán elferdít egy számot vagy nevet.
-      Jobb minőséghez:</p>
-    <ul><li>töltsd fel az AssemblyAI-egyenleged, és válassz nagyobb modellt lent, a <em>Részletes beállítások → Összefoglaló, fordítás,
-      kérdések</em> alatt (ugyanaz a kulcs), vagy</li>
-      <li>add meg egy OpenRouter-kulcsot a <a href="/kulcsok">Kulcsok</a> lapon, és állíts át rá:
-        <button class="small" form="to-openrouter">Átállás OpenRouterre</button></li></ul></div>
+  {% if weak_language %}
+  <div class="note warn">{{ _("A fiókod tartalomnyelve: %(language)s. Ezen a nyelven a helyi modellek összefoglalója és fordítása érezhetően gyengébb, mint egy felhős modellé. Jobb eredményhez válaszd a Vegyes módot: az átírás itt marad, az összefoglaló a felhőben készül.", language=weak_language) }}</div>
   {% endif %}
-  <p class="muted" data-unsaved hidden>Ez a választott mód képe; a <strong>Mentés</strong> után lép életbe.</p>
-  <p class="muted legend"><span class="sw local"></span> ezen a gépen <span class="sw cloud"></span> felhőben · a pöttyök mutatják, merre halad az adat</p>
+  {% if trial_llm %}
+  <div class="note warn"><strong>{{ _("Próba-modell írja az összefoglalókat") }}</strong> {{ _("(AssemblyAI · Qwen3.5 4B).") }}
+    <p>{{ _("Gyors és szinte ingyenes, de a magyar szöveg gyengébb lehet, és ritkán elferdít egy számot vagy nevet.
+      Jobb minőséghez:") }}</p>
+    <ul><li>{{ _("töltsd fel az AssemblyAI-egyenleged, és válassz nagyobb modellt lent, a") }} <em>{{ _("Részletes beállítások → Összefoglaló, fordítás,
+      kérdések") }}</em> {{ _("alatt (ugyanaz a kulcs), vagy") }}</li>
+      <li>{{ _("add meg egy OpenRouter-kulcsot a") }} <a href="/kulcsok">{{ _("Kulcsok") }}</a> {{ _("lapon, és állíts át rá:") }}
+        <button class="small" form="to-openrouter">{{ _("Átállás OpenRouterre") }}</button></li></ul></div>
+  {% endif %}
+  <p class="muted" data-unsaved hidden>{{ _("Ez a választott mód képe; a") }} <strong>{{ _("Mentés") }}</strong> {{ _("után lép életbe.") }}</p>
+  <p class="muted legend"><span class="sw local"></span> {{ _("ezen a gépen") }} <span class="sw cloud"></span> {{ _("felhőben · a pöttyök mutatják, merre halad az adat") }}</p>
   <div class="card table">
-    <div class="tr"><span class="th">Felirat használata</span><span>A Skipwise-ban állítod be (alapból csak a feltöltő saját felirata; gépi feliratnál átírás).</span>
-      {% if cfg.server %}<a class="right" href="{{ cfg.server }}/beallitasok" target="_blank" rel="noopener">Módosítás a Skipwise-ban</a>{% endif %}</div>
-    <div class="tr"><span class="th">Ha a gép ki van kapcsolva</span><span>A munkák a Skipwise-ban várnak, és bekapcsoláskor folytatódnak. Felhőbe magától nem kerülnek.</span></div>
+    <div class="tr"><span class="th">{{ _("Felirat használata") }}</span><span>{{ _("A Skipwise-ban állítod be (alapból csak a feltöltő saját felirata; gépi feliratnál átírás).") }}</span>
+      {% if cfg.server %}<a class="right" href="{{ cfg.server }}/beallitasok" target="_blank" rel="noopener">{{ _("Módosítás a Skipwise-ban") }}</a>{% endif %}</div>
+    <div class="tr"><span class="th">{{ _("Ha a gép ki van kapcsolva") }}</span><span>{{ _("A munkák a Skipwise-ban várnak, és bekapcsoláskor folytatódnak. Felhőbe magától nem kerülnek.") }}</span></div>
   </div>
   {% if cfg.local_llm %}
-  <div class="note warn"><strong>Fontos, ha te is használod az Ollamát vagy az LM Studiót.</strong>
-    A videókártyán egyszerre csak egy nagy modell fér el. Amikor a futtató átír egy videót, kiveszi a memóriából az éppen betöltött nyelvi modellt; a következő kérésnél a modellszerver magától visszatölti. Ha közben te is beszélgetsz egy modellel, a válaszod lelassulhat vagy megszakadhat.</div>
+  <div class="note warn"><strong>{{ _("Fontos, ha te is használod az Ollamát vagy az LM Studiót.") }}</strong>
+    {{ _("A videókártyán egyszerre csak egy nagy modell fér el. Amikor a futtató átír egy videót, kiveszi a memóriából az éppen betöltött nyelvi modellt; a következő kérésnél a modellszerver magától visszatölti. Ha közben te is beszélgetsz egy modellel, a válaszod lelassulhat vagy megszakadhat.") }}</div>
   {% endif %}
   <label class="check"><input type="checkbox" name="polite_mode"{% if cfg.polite_mode %} checked{% endif %}>
-    <span><strong>Udvarias mód:</strong> ha épp te használsz egy modellt, legfeljebb {{ cfg.polite_wait_min }} percet várok, mielőtt kiveszem a memóriából</span></label>
-  <div class="actions"><button class="primary">Mentés</button></div>
+    <span><strong>{{ _("Udvarias mód:") }}</strong> {{ _("ha épp te használsz egy modellt, legfeljebb %(polite_wait_min)s percet várok, mielőtt kiveszem a memóriából", polite_wait_min=cfg.polite_wait_min) }}</span></label>
+  <div class="actions"><button class="primary">{{ _("Mentés") }}</button></div>
 </form>
 
 {% if trial_llm %}<form method="post" action="/mukodes/osszefoglalo" id="to-openrouter" hidden>
@@ -53,35 +56,35 @@
 <form method="post" action="/mukodes/inditas" class="card login-start">
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <label class="check"><input type="checkbox" name="on"{% if login_start %} checked{% endif %} data-autosubmit>
-    <span><strong>Indítás bejelentkezéskor:</strong> a futtató a gép bekapcsolása után magától elindul a tálcán, ablak nélkül, és felveszi a munkákat</span></label>
-  <noscript><div class="actions"><button>Mentés</button></div></noscript>
+    <span><strong>{{ _("Indítás bejelentkezéskor:") }}</strong> {{ _("a futtató a gép bekapcsolása után magától elindul a tálcán, ablak nélkül, és felveszi a munkákat") }}</span></label>
+  <noscript><div class="actions"><button>{{ _("Mentés") }}</button></div></noscript>
 </form>
 
 <form method="post" action="/mukodes/tavoli" class="card login-start">
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <label class="check"><input type="checkbox" name="on"{% if remote_on %} checked{% endif %} data-autosubmit>
-    <span><strong>A Skipwise-ból is állítható:</strong> a beállítások a Skipwise Futtatók oldalán, a Beállítás gombbal is
-      módosíthatók{% if paired %} ({{ server }}/futtatok){% endif %}. A kulcsokat a böngésző ennek a gépnek a saját
-      kulcsával titkosítja, a Skipwise nem látja őket; minden változás naplóba kerül, és értesítés megy róla.</span></label>
-  <noscript><div class="actions"><button>Mentés</button></div></noscript>
+    <span><strong>{{ _("A Skipwise-ból is állítható:") }}</strong> {{ _("a beállítások a Skipwise Futtatók oldalán, a Beállítás gombbal is
+      módosíthatók") }}{% if paired %} {{ _("(%(server)s/futtatok)", server=server) }}{% endif %}{{ _(". A kulcsokat a böngésző ennek a gépnek a saját
+      kulcsával titkosítja, a Skipwise nem látja őket; minden változás naplóba kerül, és értesítés megy róla.") }}</span></label>
+  <noscript><div class="actions"><button>{{ _("Mentés") }}</button></div></noscript>
 </form>
 
 <details class="card details"{% if mode == "egyeni" %} open{% endif %}>
-  <summary>Részletes beállítások</summary>
+  <summary>{{ _("Részletes beállítások") }}</summary>
   <form method="post" action="/mukodes/reszletek" data-show-if>
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label class="check small"><input type="checkbox" data-toggle-advanced> Haladó beállítások is</label>
+    <label class="check small"><input type="checkbox" data-toggle-advanced> {{ _("Haladó beállítások is") }}</label>
     {% for g in groups %}
     <fieldset><legend>{{ g.title }}</legend>
       {% for s in g.settings if not s.readonly and s.kind != "secret" and s.key != "remote_settings" %}
       <div class="field{% if s.advanced %} advanced{% endif %}" data-key="{{ s.key }}"{% if s.show_if %} data-when='{{ s.show_if|tojson }}'{% endif %}>
         {% set v = values[s.key] %}
         {% if s.kind == "bool" %}
-        <label class="check"><input type="checkbox" name="{{ s.key }}"{% if v %} checked{% endif %}><span><strong>{{ s.label }}</strong><small>{{ s.help }}</small></span></label>
+        <label class="check"><input type="checkbox" name="{{ s.key }}"{% if v %} checked{% endif %}><span><strong>{{ _(s.label) }}</strong><small>{{ _(s.help) }}</small></span></label>
         {% else %}
-        <label><strong>{{ s.label }}</strong>{% if s.unit %} <span class="muted">({{ s.unit }})</span>{% endif %}<small>{{ s.help }}</small>
+        <label><strong>{{ _(s.label) }}</strong>{% if s.unit %} <span class="muted">({{ _(s.unit) }})</span>{% endif %}<small>{{ _(s.help) }}</small>
         {% if s.kind == "choice" %}
-          <select name="{{ s.key }}">{% for c in s.choices %}<option value="{{ c.value }}"{% if c.value == v %} selected{% endif %}>{{ c.label }}</option>{% endfor %}</select>
+          <select name="{{ s.key }}">{% for c in s.choices %}<option value="{{ c.value }}"{% if c.value == v %} selected{% endif %}>{{ _(c.label) }}</option>{% endfor %}</select>
         {% elif s.kind == "list" %}
           <input name="{{ s.key }}" value="{{ v|join(', ') }}">
         {% elif s.kind == "map" %}
@@ -96,19 +99,19 @@
       {% endfor %}
     </fieldset>
     {% endfor %}
-    <div class="actions"><button class="primary">Mentés</button></div>
+    <div class="actions"><button class="primary">{{ _("Mentés") }}</button></div>
   </form>
 </details>
 
-<form method="post" action="/alaphelyzet" class="card reset" data-busy="Alaphelyzet folyamatban …">
+<form method="post" action="/alaphelyzet" class="card reset" data-busy="{{ _("Alaphelyzet folyamatban …") }}">
   <input type="hidden" name="csrf" value="{{ csrf }}">
-  <h2>Alaphelyzet</h2>
-  <p class="muted">Mintha most telepítenéd először: leállítja a futtatót, kikapcsolja a bejelentkezéskori indulást, törli a
+  <h2>{{ _("Alaphelyzet") }}</h2>
+  <p class="muted">{{ _("Mintha most telepítenéd először: leállítja a futtatót, kikapcsolja a bejelentkezéskori indulást, törli a
     beállításokat és a kulcsokat, majd a telepítő lépései jönnek. A Skipwise-ban a futtatót utána vond vissza a
-    Futtatók oldalon.</p>
-  <label class="check"><input type="checkbox" name="models"><span>A letöltött modelleket is töröld
-    ({{ models_gb|string|replace(".", ",") }} GB, {{ models_dir }}); különben megmaradnak, és nem kell újra letölteni</span></label>
-  <label class="check"><input type="checkbox" name="ertem" required><span>Értem: a beállítások és a kulcsok törlődnek</span></label>
-  <div class="actions"><button class="danger">Alaphelyzet</button></div>
+    Futtatók oldalon.") }}</p>
+  <label class="check"><input type="checkbox" name="models"><span>{{ _("A letöltött modelleket is töröld
+    (%(models_gb)s GB, %(models_dir)s); különben megmaradnak, és nem kell újra letölteni", models_gb=models_gb|string|replace(".", ","), models_dir=models_dir) }}</span></label>
+  <label class="check"><input type="checkbox" name="ertem" required><span>{{ _("Értem: a beállítások és a kulcsok törlődnek") }}</span></label>
+  <div class="actions"><button class="danger">{{ _("Alaphelyzet") }}</button></div>
 </form>
 {% endblock %}

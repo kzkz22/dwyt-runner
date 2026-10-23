@@ -13,6 +13,7 @@ from typing import Any
 
 import httpx
 
+from . import i18n
 from .config import Config
 
 REFRESH_S = 3600
@@ -75,7 +76,7 @@ def fetch(cfg: Config, timeout: float = 5.0) -> tuple[dict[str, dict[str, Any]],
             block = {"where": "cloud", "target_label": name, "provider": "AssemblyAI"}
             if name == gateway.TRIAL_MODEL:
                 block.update(context=gateway.TRIAL_CONTEXT, trial=True, thinking=False,
-                             description=gateway.TRIAL_NOTE[:200])
+                             description=i18n.gettext(gateway.TRIAL_NOTE)[:200])
             info[name] = block
         server = "AssemblyAI LLM Gateway"
     elif cfg.llm_url and wanted:

@@ -1,34 +1,34 @@
 {% extends "telepites.html" %}
 {% block step %}
-<h1>Kössük össze a Skipwise-fiókoddal</h1>
+<h1>{{ _("Kössük össze a Skipwise-fiókoddal") }}</h1>
 {% if error %}<div class="note warn">{{ error }}</div>{% endif %}
 {% if paired %}
-<div class="note"><span class="dot green"></span><div><strong>Párosítva.</strong>
-  <p>Ez a gép „{{ cfg.name }}” néven dolgozik a(z) {{ cfg.server }} címen.</p></div></div>
+<div class="note"><span class="dot green"></span><div><strong>{{ _("Párosítva.") }}</strong>
+  <p>{{ _("Ez a gép „%(name)s” néven dolgozik a(z) %(server)s címen.", name=cfg.name, server=cfg.server) }}</p></div></div>
 {% elif pairing.state == "waiting" %}
 <div data-watch="pairing" data-running>
-  <p class="lead">Megnyitottuk a böngészőben a Skipwise <strong>Futtatók</strong> oldalát, a kód már ki van töltve. Nézd meg,
-    hogy ott is ez a kód látszik-e, és nyomd meg a <strong>Jóváhagyás</strong> gombot.</p>
+  <p class="lead">{{ _("Megnyitottuk a böngészőben a Skipwise") }} <strong>{{ _("Futtatók") }}</strong> {{ _("oldalát, a kód már ki van töltve. Nézd meg,
+    hogy ott is ez a kód látszik-e, és nyomd meg a") }} <strong>{{ _("Jóváhagyás") }}</strong> {{ _("gombot.") }}</p>
   <div class="paircode">{{ pairing.code }}</div>
-  <p class="center"><span class="spinner"></span> Várjuk a jóváhagyást … (10 percig érvényes)</p>
-  <p class="center muted">Nem nyílt meg a böngésző? <a href="{{ approve_url }}" target="_blank" rel="noopener">Kattints ide</a>,
-    vagy nyisd meg: {{ pairing.server }}/futtatok</p>
+  <p class="center"><span class="spinner"></span> {{ _("Várjuk a jóváhagyást … (10 percig érvényes)") }}</p>
+  <p class="center muted">{{ _("Nem nyílt meg a böngésző?") }} <a href="{{ approve_url }}" target="_blank" rel="noopener">{{ _("Kattints ide") }}</a>{{ _(",
+    vagy nyisd meg: %(server)s/futtatok", server=pairing.server) }}</p>
 </div>
 {% else %}
-{% if pairing.state == "expired" %}<div class="note warn">A kód lejárt; kérj újat.</div>{% endif %}
+{% if pairing.state == "expired" %}<div class="note warn">{{ _("A kód lejárt; kérj újat.") }}</div>{% endif %}
 {% if pairing.state == "error" %}<div class="note warn">{{ pairing.error }}</div>{% endif %}
-<p class="lead">Add meg a Skipwise címét (amit a böngészőben is használsz). A futtató kér egy kódot, és megnyitja a Skipwise
-  Futtatók oldalát, ahol egy gombbal jóváhagyod.</p>
+<p class="lead">{{ _("Add meg a Skipwise címét (amit a böngészőben is használsz). A futtató kér egy kódot, és megnyitja a Skipwise
+  Futtatók oldalát, ahol egy gombbal jóváhagyod.") }}</p>
 <form method="post" action="/telepites/5" class="form">
   <input type="hidden" name="csrf" value="{{ csrf }}">
-  <label>A Skipwise címe<input name="server" required placeholder="https://skipwise.app" value="{{ cfg.server }}"></label>
-  <label>A gép neve (így látszik a Skipwise-ban)<input name="name" value="{{ default_name }}" maxlength="80"></label>
-  <button class="primary">Párosítás</button>
+  <label>{{ _("A Skipwise címe") }}<input name="server" required placeholder="{{ _("https://skipwise.app") }}" value="{{ cfg.server }}"></label>
+  <label>{{ _("A gép neve (így látszik a Skipwise-ban)") }}<input name="name" value="{{ default_name }}" maxlength="80"></label>
+  <button class="primary">{{ _("Párosítás") }}</button>
 </form>
 {% endif %}
 <div class="actions">
-  <a class="button" href="/telepites/4">Vissza</a>
-  {% if paired %}<a class="button primary" href="/telepites/6">Tovább</a>
-  {% else %}<button class="primary" disabled>Tovább</button>{% endif %}
+  <a class="button" href="/telepites/4">{{ _("Vissza") }}</a>
+  {% if paired %}<a class="button primary" href="/telepites/6">{{ _("Tovább") }}</a>
+  {% else %}<button class="primary" disabled>{{ _("Tovább") }}</button>{% endif %}
 </div>
 {% endblock %}

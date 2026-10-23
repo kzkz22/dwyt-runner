@@ -1,24 +1,24 @@
 {% extends "telepites.html" %}
 {% block step %}
-{% if reset_said %}<div class="note"><div><strong>Alaphelyzet kész.</strong><ul>{% for line in reset_said %}<li>{{ line }}</li>{% endfor %}</ul></div></div>{% endif %}
-<h1>Üdvözöl a Skipwise futtató</h1>
-<p class="lead">Ez a kis program a <strong>te gépeden</strong> végzi el a munkát a Skipwise-nak: letölti a videót, átírja
-  szöveggé, és összefoglalót készít belőle. Az eredményt a Skipwise-ban látod, telefonról is.</p>
+{% if reset_said %}<div class="note"><div><strong>{{ _("Alaphelyzet kész.") }}</strong><ul>{% for line in reset_said %}<li>{{ line }}</li>{% endfor %}</ul></div></div>{% endif %}
+<h1>{{ _("Üdvözöl a Skipwise futtató") }}</h1>
+<p class="lead">{{ _("Ez a kis program a") }} <strong>{{ _("te gépeden") }}</strong> {{ _("végzi el a munkát a Skipwise-nak: letölti a videót, átírja
+  szöveggé, és összefoglalót készít belőle. Az eredményt a Skipwise-ban látod, telefonról is.") }}</p>
 <div class="trio">
-  <div class="box local"><strong>Ez a gép</strong><span class="muted">Skipwise futtató<br>itt vannak a kulcsaid</span></div>
-  <div class="arrows muted"><span>munkát kér →</span><span>← eredményt küld</span></div>
-  <div class="box cloud"><strong>Skipwise</strong><span class="muted">könyvtár, keresés<br>a kulcsaidat nem látja</span></div>
-  <div class="arrows muted"><span>← olvasod</span></div>
-  <div class="box"><strong>Te</strong><span class="muted">böngészőben,<br>gépen vagy telefonon</span></div>
+  <div class="box local"><strong>{{ _("Ez a gép") }}</strong><span class="muted">{{ _("Skipwise futtató") }}<br>{{ _("itt vannak a kulcsaid") }}</span></div>
+  <div class="arrows muted"><span>{{ _("munkát kér →") }}</span><span>{{ _("← eredményt küld") }}</span></div>
+  <div class="box cloud"><strong>{{ _("Skipwise") }}</strong><span class="muted">{{ _("könyvtár, keresés") }}<br>{{ _("a kulcsaidat nem látja") }}</span></div>
+  <div class="arrows muted"><span>{{ _("← olvasod") }}</span></div>
+  <div class="box"><strong>{{ _("Te") }}</strong><span class="muted">{{ _("böngészőben,") }}<br>{{ _("gépen vagy telefonon") }}</span></div>
 </div>
 <ul>
-  <li>Rendszergazdai jog nem kell, a program csak a saját fiókodban fut.</li>
-  <li>A futtató csak kifelé kapcsolódik; a gépedet kívülről senki nem éri el.</li>
-  <li><strong>A munka csak akkor halad, ha ez a gép be van kapcsolva.</strong></li>
+  <li>{{ _("Rendszergazdai jog nem kell, a program csak a saját fiókodban fut.") }}</li>
+  <li>{{ _("A futtató csak kifelé kapcsolódik; a gépedet kívülről senki nem éri el.") }}</li>
+  <li><strong>{{ _("A munka csak akkor halad, ha ez a gép be van kapcsolva.") }}</strong></li>
 </ul>
 <div class="actions">
   <form method="post" action="/telepites/kihagyas"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <button title="A beállításokat később az ablak fülein is megadhatod">Mégse</button></form>
-  <a class="button primary" href="/telepites/2">Tovább</a>
+    <button title="{{ _("A beállításokat később az ablak fülein is megadhatod") }}">{{ _("Mégse") }}</button></form>
+  <a class="button primary" href="/telepites/2">{{ _("Tovább") }}</a>
 </div>
 {% endblock %}

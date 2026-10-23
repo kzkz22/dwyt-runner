@@ -8,16 +8,20 @@ import time
 from typing import Any
 
 from . import config
+from .i18n import gettext as _
+from .i18n import N_, labels
 
-KIND_LABELS = {"transcribe": "Átírás", "summarize": "Összefoglaló", "translate": "Fordítás", "ask": "Kérdés",
-               "categorize": "Kategorizálás", "chapters": "Fejezetek"}
-STAGE_LABELS = {
-    "starting": "indul", "download": "letöltés", "captions": "felirat letöltése", "prepare-audio": "hang előkészítése",
-    "upload": "feltöltés a felhőbe", "transcribe": "átírás", "diarize": "beszélők szétválasztása",
-    "waiting-for-gpu": "vár a videókártyára", "download-model": "modell letöltése (első használat)",
-    "summarize": "összefoglaló írása", "translate": "fordítás", "ask": "válasz írása", "write": "mentés",
-    "page": "felvétel keresése az oldalon", "categorize": "kategória választása", "chapters": "fejezetek írása",
-}
+KIND_LABELS = labels({"transcribe": N_("Átírás"), "summarize": N_("Összefoglaló"), "translate": N_("Fordítás"),
+                      "ask": N_("Kérdés"), "categorize": N_("Kategorizálás"), "chapters": N_("Fejezetek")})
+STAGE_LABELS = labels({
+    "starting": N_("indul"), "download": N_("letöltés"), "captions": N_("felirat letöltése"),
+    "prepare-audio": N_("hang előkészítése"), "upload": N_("feltöltés a felhőbe"), "transcribe": N_("átírás"),
+    "diarize": N_("beszélők szétválasztása"), "waiting-for-gpu": N_("vár a videókártyára"),
+    "download-model": N_("modell letöltése (első használat)"), "summarize": N_("összefoglaló írása"),
+    "translate": N_("fordítás"), "ask": N_("válasz írása"), "write": N_("mentés"),
+    "page": N_("felvétel keresése az oldalon"), "categorize": N_("kategória választása"),
+    "chapters": N_("fejezetek írása"),
+})
 HISTORY_MAX = 200
 _lock = threading.Lock()
 CURRENT: dict[str, Any] = {}
@@ -39,12 +43,12 @@ def where_of(job: dict[str, Any], cfg: config.Config) -> str:
     if kind == "transcribe":
         mode = (inp.get("options") or {}).get("mode")
         if mode == "cloud":
-            return "felhőben"
+            return _("felhőben")
         if mode == "local":
-            return "a GPU-gépen" if cfg.whisper_url else "ezen a gépen"
+            return _("a GPU-gépen") if cfg.whisper_url else _("ezen a gépen")
         return "YouTube-felirat"
     from . import localllm
-    return "ezen a gépen" if localllm.uses_local(cfg) else "felhőben"
+    return _("ezen a gépen") if localllm.uses_local(cfg) else _("felhőben")
 
 
 def start(job: dict[str, Any], cfg: config.Config) -> None:

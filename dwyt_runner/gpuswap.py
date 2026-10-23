@@ -21,6 +21,7 @@ from typing import Any
 from . import localllm, machine
 from .config import Config
 from .errors import WorkError
+from .i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 POLL_S = 10
@@ -54,11 +55,11 @@ def wait_until_idle(server: localllm.LocalServer, max_s: float, stage: Callable[
                     cancelled: Callable[[], bool]) -> bool:
     """True when the models were idle for IDLE_S; False when max_s ran out first."""
     deadline = _now() + max_s
-    last, _ = _activity(server)
+    last, _x = _activity(server)
     quiet_since = _now()
     while _now() < deadline:
         if cancelled():
-            raise WorkError("megszakítva")
+            raise WorkError(_("megszakítva"))
         stage("waiting-for-gpu")
         _sleep(POLL_S)
         now, util = _activity(server)

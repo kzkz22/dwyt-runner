@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block main %}
 {% for line in said %}<div class="note info">{{ line }}</div>{% endfor %}
-{% if last and not same_card %}<div class="note info">A legutóbbi próbafuttatás még {{ last.gpu or "videókártya nélkül" }} futott. Futtass újat: lehet, hogy most más mód is jól menne.</div>{% endif %}
-<div class="row"><h1>Gépem</h1>
+{% if last and not same_card %}<div class="note info">{{ _("A legutóbbi próbafuttatás még ezzel futott: %(card)s. Futtass újat: lehet, hogy most más mód is jól menne.", card=last.gpu or _("videókártya nélkül")) }}</div>{% endif %}
+<div class="row"><h1>{{ _("Gépem") }}</h1>
   <form method="post" action="/gepem/ujra" class="right inline"{% if scanning %} data-machine-scanning{% endif %}>
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <span class="muted">{% if scanning %}<span class="spinner"></span> vizsgálat …{% else %}vizsgálva {{ scanned }}{% endif %}</span>
-    <button{% if scanning %} disabled{% endif %}>Újravizsgálat</button>
+    <span class="muted">{% if scanning %}<span class="spinner"></span> {{ _("vizsgálat …") }}{% else %}{{ _("vizsgálva %(scanned)s", scanned=scanned) }}{% endif %}</span>
+    <button{% if scanning %} disabled{% endif %}>{{ _("Újravizsgálat") }}</button>
   </form></div>
 <div class="card table">
   {% for r in a.rows %}
@@ -15,22 +15,22 @@
   {% endfor %}
 </div>
 <div class="card trial" {% if trial_state.running %}data-trial-running{% endif %}>
-  <div class="trial-head"><div><h2>{% if last %}Utolsó próbafuttatás{% else %}Próbafuttatás{% endif %}</h2>
+  <div class="trial-head"><div><h2>{% if last %}{{ _("Utolsó próbafuttatás") }}{% else %}{{ _("Próbafuttatás") }}{% endif %}</h2>
     {% if last %}<span class="muted">{{ last_when }}{% if last.gpu %} · {{ last.gpu }}{% endif %}</span>{% endif %}</div>
     <form method="post" action="/gepem/proba" class="inline">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       {% if local_models %}
       {% set chosen = (last.llm_model if last and last.llm_model in local_models else "") or cfg.llm_private_model or cfg.llm_public_model %}
-      <select name="llm" title="Ezzel a helyi modellel próbálja az összefoglalót" aria-label="Helyi modell a próbához">
+      <select name="llm" title="{{ _("Ezzel a helyi modellel próbálja az összefoglalót") }}" aria-label="{{ _("Helyi modell a próbához") }}">
         {% for name in local_models %}<option value="{{ name }}"{% if name == chosen %} selected{% endif %}>{{ name }}</option>{% endfor %}
       </select>
       {% endif %}
-      <button class="primary"{% if trial_state.running %} disabled{% endif %}>Próbafuttatás (kb. 1 perc)</button>
+      <button class="primary"{% if trial_state.running %} disabled{% endif %}>{{ _("Próbafuttatás (kb. 1 perc)") }}</button>
     </form></div>
 {% set swap = card_swap(m) %}
-  {% if swap %}<p class="note warn swap-note">Amíg a próba fut, a videókártyát a beszédfelismerő kapja: az {{ swap|join(" és az ") }}
+  {% if swap %}<p class="note warn swap-note">{{ _("Amíg a próba fut, a videókártyát a beszédfelismerő kapja: az %(swap)s
     éppen betöltött nyelvi modelljét erre az időre kiveszem a memóriából. Ha közben épp beszélgetsz vele, a válasza
-    megszakadhat. A modellt a következő kérésnél az {{ swap|join(" és az ") }} magától visszatölti.</p>{% endif %}
+    megszakadhat. A modellt a következő kérésnél az %(swap2)s magától visszatölti.", swap=swap|join(" és az "), swap2=swap|join(" és az ")) }}</p>{% endif %}
   {% if trial_state.running %}
   <p><span class="spinner"></span> <span data-trial-stage>{{ trial_state.stage }}</span> …</p>
   {% elif trial_state.error %}
@@ -41,11 +41,11 @@
   <p class="lampline"><span class="dot {{ x.level }}"></span><span><strong>{{ x.label }}: {{ x.value }}</strong>{% if x.note %}<small>{{ x.note }}</small>{% endif %}</span></p>
   {% endfor %}
   {% else %}
-  <p class="muted">Átír egy 33 másodperces mintát, és egy rövid összefoglalót íratja a helyi modellel. Megmondja, mennyi idő alatt készülne el egy 1 órás videó.</p>
+  <p class="muted">{{ _("Átír egy 33 másodperces mintát, és egy rövid összefoglalót íratja a helyi modellel. Megmondja, mennyi idő alatt készülne el egy 1 órás videó.") }}</p>
   {% endif %}
 </div>
 {% if not same_card %}
-<h2>Mire képes (becslés)</h2>
+<h2>{{ _("Mire képes (becslés)") }}</h2>
 <div class="card table">
   {% for r in a.abilities %}
   <div class="tr"><span class="th">{{ r.label }}</span><span>{{ r.value }}{% if r.note %}<small class="muted block">{{ r.note }}</small>{% endif %}</span>
@@ -55,50 +55,50 @@
 {% endif %}
 <div class="note info">{{ (last.mode_reason if same_card else a.mode_reason)|replace("**", "") }}</div>
 <div class="card">
-  <div class="trial-head"><div><h2>A YouTube-letöltő (yt-dlp)</h2></div>
-    <form method="post" action="/gepem/ytdlp" class="inline" data-busy="Keresem …">
+  <div class="trial-head"><div><h2>{{ _("A YouTube-letöltő (yt-dlp)") }}</h2></div>
+    <form method="post" action="/gepem/ytdlp" class="inline" data-busy="{{ _("Keresem …") }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button{% if ytdlp.running %} disabled{% endif %}>Újabb keresése</button></form></div>
+      <button{% if ytdlp.running %} disabled{% endif %}>{{ _("Újabb keresése") }}</button></form></div>
   <div{% if ytdlp.running %} data-watch="ytdlp" data-running{% endif %}>
   <p class="lampline"><span class="dot {{ 'yellow' if ytdlp.newer else 'green' if ytdlp.latest else 'grey' }}"></span><span>
-    <strong>Telepítve: {{ ytdlp.installed or "ismeretlen" }}</strong>
-    {% if ytdlp.running %}<small><span class="spinner"></span> keresem, és ha van, telepítem …</small>
-    {% elif ytdlp.newer %}<small>Újabb van: {{ ytdlp.latest }}. {% if cfg.ytdlp_auto_update %}A futtató a következő két munka között telepíti.{% else %}A magától frissítés ki van kapcsolva (Működés lap).{% endif %}</small>
-    {% elif ytdlp.latest %}<small>Ez a legújabb ({{ ytdlp.checked_text }}).{% if ytdlp.updated %} Frissítve: {{ ytdlp.updated }}.{% endif %}</small>
-    {% else %}<small>Még nem néztem meg, van-e újabb.</small>{% endif %}
-    {% if ytdlp.error %}<small class="bad">A keresés nem sikerült: {{ ytdlp.error }}</small>{% endif %}
+    <strong>{{ _("Telepítve: %(installedorismeretlen)s", installedorismeretlen=ytdlp.installed or "ismeretlen") }}</strong>
+    {% if ytdlp.running %}<small><span class="spinner"></span> {{ _("keresem, és ha van, telepítem …") }}</small>
+    {% elif ytdlp.newer %}<small>{{ _("Újabb van: %(latest)s.", latest=ytdlp.latest) }} {% if cfg.ytdlp_auto_update %}{{ _("A futtató a következő két munka között telepíti.") }}{% else %}{{ _("A magától frissítés ki van kapcsolva (Működés lap).") }}{% endif %}</small>
+    {% elif ytdlp.latest %}<small>{{ _("Ez a legújabb (%(checked_text)s).", checked_text=ytdlp.checked_text) }}{% if ytdlp.updated %} {{ _("Frissítve: %(updated)s.", updated=ytdlp.updated) }}{% endif %}</small>
+    {% else %}<small>{{ _("Még nem néztem meg, van-e újabb.") }}</small>{% endif %}
+    {% if ytdlp.error %}<small class="bad">{{ _("A keresés nem sikerült: %(error)s", error=ytdlp.error) }}</small>{% endif %}
   </span></p>
   </div>
-  <p class="muted">A YouTube gyakran változik; ha egy videó letöltése „HTTP 403” hibával akad el, többnyire egy újabb
-    yt-dlp segít. A futtató ezt naponta magától megnézi, és egy ilyen hiba után is.</p>
+  <p class="muted">{{ _("A YouTube gyakran változik; ha egy videó letöltése „HTTP 403” hibával akad el, többnyire egy újabb
+    yt-dlp segít. A futtató ezt naponta magától megnézi, és egy ilyen hiba után is.") }}</p>
 </div>
 <div class="card">
-  <div class="trial-head"><div><h2>A futtató változata</h2></div>
-    {% if upd.signed %}<form method="post" action="/gepem/frissites" class="inline" data-busy="Keresem …">
+  <div class="trial-head"><div><h2>{{ _("A futtató változata") }}</h2></div>
+    {% if upd.signed %}<form method="post" action="/gepem/frissites" class="inline" data-busy="{{ _("Keresem …") }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button name="action" value="keres"{% if upd.running %} disabled{% endif %}>Újabb keresése</button></form>{% endif %}</div>
+      <button name="action" value="keres"{% if upd.running %} disabled{% endif %}>{{ _("Újabb keresése") }}</button></form>{% endif %}</div>
   <div{% if upd.running %} data-watch="update" data-running{% endif %}>
   <p class="lampline"><span class="dot {{ 'yellow' if upd.newer else 'green' if upd.latest else 'grey' }}"></span><span>
-    <strong>Telepítve: {{ upd.version }}</strong>
-    {% if not upd.signed %}<small>Ebben a változatban még nincs aláírt frissítés; az újabbat kézzel kell telepíteni.</small>
-    {% elif upd.running %}<small><span class="spinner"></span> letöltöm és ellenőrzöm …</small>
-    {% elif upd.newer %}<small>Újabb van: {{ upd.latest }}. {% if upd.auto %}A futtató a következő két munka között telepíti.{% else %}A magától frissítés ki van kapcsolva (Működés lap, részletes beállítások).{% endif %}</small>
-    {% elif upd.latest %}<small>Ez a legújabb ({{ upd.checked_text }}).</small>
-    {% else %}<small>Még nem néztem meg, van-e újabb.</small>{% endif %}
+    <strong>{{ _("Telepítve: %(version)s", version=upd.version) }}</strong>
+    {% if not upd.signed %}<small>{{ _("Ebben a változatban még nincs aláírt frissítés; az újabbat kézzel kell telepíteni.") }}</small>
+    {% elif upd.running %}<small><span class="spinner"></span> {{ _("letöltöm és ellenőrzöm …") }}</small>
+    {% elif upd.newer %}<small>{{ _("Újabb van: %(latest)s.", latest=upd.latest) }} {% if upd.auto %}{{ _("A futtató a következő két munka között telepíti.") }}{% else %}{{ _("A magától frissítés ki van kapcsolva (Működés lap, részletes beállítások).") }}{% endif %}</small>
+    {% elif upd.latest %}<small>{{ _("Ez a legújabb (%(checked_text)s).", checked_text=upd.checked_text) }}</small>
+    {% else %}<small>{{ _("Még nem néztem meg, van-e újabb.") }}</small>{% endif %}
     {% if upd.message %}<small>{{ upd.message }}</small>{% endif %}
     {% if upd.error %}<small class="bad">{{ upd.error }}</small>{% endif %}
   </span></p>
   </div>
   {% if upd.signed and (upd.newer or upd.can_go_back) and not upd.running %}
   <div class="actions">
-    {% if upd.newer %}<form method="post" action="/gepem/frissites" class="inline" data-busy="Frissítés …"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="primary" name="action" value="most">Frissítés most</button></form>{% endif %}
-    {% if upd.can_go_back %}<form method="post" action="/gepem/frissites" class="inline" data-busy="Visszaállítás …"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <button name="action" value="vissza">Vissza az előzőre ({{ upd.previous }})</button></form>{% endif %}
+    {% if upd.newer %}<form method="post" action="/gepem/frissites" class="inline" data-busy="{{ _("Frissítés …") }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="primary" name="action" value="most">{{ _("Frissítés most") }}</button></form>{% endif %}
+    {% if upd.can_go_back %}<form method="post" action="/gepem/frissites" class="inline" data-busy="{{ _("Visszaállítás …") }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button name="action" value="vissza">{{ _("Vissza az előzőre (%(previous)s)", previous=upd.previous) }}</button></form>{% endif %}
   </div>
   {% endif %}
-  <p class="muted">Csak a Skipwise kiadói kulcsával aláírt kiadást telepít, és csak akkor, amikor nincs munka. Utána a
-    futtató újraindul; a beállítások, kulcsok és modellek megmaradnak.</p>
+  <p class="muted">{{ _("Csak a Skipwise kiadói kulcsával aláírt kiadást telepít, és csak akkor, amikor nincs munka. Utána a
+    futtató újraindul; a beállítások, kulcsok és modellek megmaradnak.") }}</p>
 </div>
-<p class="muted foot">A program minden indításkor csendben megnézi, változott-e a hardver, és szól, ha igen. Csak ajánl: a működési módot mindig te választod.</p>
+<p class="muted foot">{{ _("A program minden indításkor csendben megnézi, változott-e a hardver, és szól, ha igen. Csak ajánl: a működési módot mindig te választod.") }}</p>
 {% endblock %}

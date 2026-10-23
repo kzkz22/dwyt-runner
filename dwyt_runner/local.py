@@ -24,6 +24,7 @@ import httpx
 from . import formatting, media, whispercpp
 from .config import Config
 from .errors import WorkError
+from .i18n import gettext as _
 
 FIRST_BYTE_S = 900      # llama-swap answers only after the worker container is up (wake-up included)
 
@@ -53,12 +54,15 @@ def _refusal(resp: httpx.Response) -> WorkError:
     except ValueError:
         detail = text
     if resp.status_code in (502, 503, 504):
-        return WorkError(f"A GPU-gép most nem indítható (HTTP {resp.status_code}: {str(detail)[:300]}); "
-                         "később újrapróbálom.", "later")
+        return WorkError(_("A GPU-gép most nem indítható (HTTP {status_code}: {str}); később "
+                            "újrapróbálom.").format(
+                           status_code=resp.status_code, str=str(detail)[:300]), "later")
     if resp.status_code == 404:
-        return WorkError(f"A Whisper-cím nem jó (HTTP 404): {str(detail)[:200]}. Ellenőrizd: "
-                         "skipwise-runner config set whisper_url http://AI-ROUTER:8080/upstream/whisper")
-    return WorkError(f"A Whisper-worker elutasította a munkát (HTTP {resp.status_code}): {str(detail)[:400]}")
+        return WorkError(_("A Whisper-cím nem jó (HTTP 404): {str}. Ellenőrizd: skipwise-runner "
+                            "config set whisper_url http://AI-ROUTER:8080/upstream/whisper").format(
+                           str=str(detail)[:200]))
+    return WorkError(_("A Whisper-worker elutasította a munkát (HTTP {status_code}): {str}").format(
+        status_code=resp.status_code, str=str(detail)[:400]))
 
 
 def transcribe_on_worker(flac: str, options: dict[str, Any], model: str, cfg: Config,
@@ -76,10 +80,11 @@ def transcribe_on_worker(flac: str, options: dict[str, Any], model: str, cfg: Co
             result = None
             for raw in resp.iter_lines():  # read to the end: the worker closes the stream after the result
                 if cancelled():
-                    raise WorkError("megszakítva")
+                    raise WorkError(_("megszakítva"))
                 if time.monotonic() > deadline:
-                    raise WorkError(f"A Whisper-worker {limit_s // 60} perc alatt sem végzett; a munka leállt "
-                                    "(whisper_timeout_min).")
+                    raise WorkError(_("A Whisper-worker {limit_s60} perc alatt sem végzett; a munka "
+                                       "leállt (whisper_timeout_min).").format(
+                                      limit_s60=limit_s // 60))
                 if not raw.strip():
                     continue
                 msg = json.loads(raw)
@@ -88,22 +93,26 @@ def transcribe_on_worker(flac: str, options: dict[str, Any], model: str, cfg: Co
                     continue
                 if "error" in msg:
                     error = str(msg["error"])
-                    raise WorkError(f"A Whisper-worker hibát jelzett: {error[:600]}")
+                    raise WorkError(_("A Whisper-worker hibát jelzett: {error}").format(error=error[:600]))
                 if msg.get("stage"):
                     stage(str(msg["stage"]))
             if result is not None:
                 return result
     except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
-        raise WorkError(f"A Whisper-worker nem érhető el ({cfg.whisper_url}): {exc}. Be van kapcsolva az AI-router? "
-                        "Később újrapróbálom.", "later") from exc
+        raise WorkError(_("A Whisper-worker nem érhető el ({whisper_url}): {exc}. Be van kapcsolva "
+                           "az AI-router? Később újrapróbálom.").format(
+                          whisper_url=cfg.whisper_url, exc=exc), "later") from exc
     except httpx.ReadTimeout as exc:
-        raise WorkError(f"A Whisper-worker {FIRST_BYTE_S // 60} percig nem válaszolt; később újrapróbálom.",
+        raise WorkError(_("A Whisper-worker {FIRST_BYTE_S60} percig nem válaszolt; később "
+                           "újrapróbálom.").format(
+                          FIRST_BYTE_S60=FIRST_BYTE_S // 60),
                         "later") from exc
     except (httpx.HTTPError, ValueError) as exc:
-        raise WorkError(f"Megszakadt a kapcsolat a Whisper-workerrel ({exc}); később újrapróbálom "
-                        "(a kész átírási lépés megmarad a workeren).", "later") from exc
-    raise WorkError("A Whisper-worker eredmény nélkül zárta le a kapcsolatot (leállították vagy újraindult); "
-                    "később újrapróbálom.", "later")
+        raise WorkError(_("Megszakadt a kapcsolat a Whisper-workerrel ({exc}); később újrapróbálom "
+                           "(a kész átírási lépés megmarad a workeren).").format(
+                          exc=exc), "later") from exc
+    raise WorkError(_("A Whisper-worker eredmény nélkül zárta le a kapcsolatot (leállították vagy újraindult); "
+                    "később újrapróbálom."), "later")
 
 
 def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: Callable[[str], None],
@@ -112,12 +121,13 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
     if isinstance(fetch, str):
         fetch = media.from_url(fetch, cfg)
     if not cfg.whisper_url and not cfg.whisper_builtin:
-        raise WorkError("Ennek a futtatónak nincs helyi Whispere (skipwise-runner config set whisper_url ..., vagy "
-                        "ezen a gépen: skipwise-runner config set whisper_builtin igen).")
+        raise WorkError(_("Ennek a futtatónak nincs helyi Whispere (skipwise-runner config set whisper_url ..., vagy "
+                        "ezen a gépen: skipwise-runner config set whisper_builtin igen)."))
     model = str(options.get("model") or (cfg.whisper_models or ["large-v3"])[0])
     if model not in cfg.whisper_models or (not cfg.whisper_url and model not in whispercpp.MODELS):
-        raise WorkError(f"Ezt a Whisper-modellt a futtató nem ismeri: {model} (whisper_models: "
-                        f"{', '.join(cfg.whisper_models)}).")
+        raise WorkError(_("Ezt a Whisper-modellt a futtató nem ismeri: {model} (whisper_models: "
+                           "{join}).").format(
+                          model=model, join=', '.join(cfg.whisper_models)))
     started = time.monotonic()
     stage("download")
     info = fetch.info()
@@ -126,7 +136,7 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
         source = fetch.get(workdir)
         info = fetch.info()
         if cancelled():
-            raise WorkError("megszakítva")
+            raise WorkError(_("megszakítva"))
         limit = deadline_s(cfg, float(info.get("duration") or 0))
         if cfg.whisper_url:  # the GPU host through llama-swap
             stage("prepare-audio")
@@ -141,7 +151,7 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
     language = (raw.get("language") or options.get("language") or "en").split("-")[0].lower()
     segments = formatting.clean_segments(raw.get("segments") or [])
     if not segments:
-        raise WorkError("A hangban nem volt felismerhető beszéd.")
+        raise WorkError(_("A hangban nem volt felismerhető beszéd."))
     diarized = bool(raw.get("diarized")) and any(seg.get("speaker") for seg in segments)
     warnings = [str(w) for w in raw.get("warnings") or []][:20]
     speakers: list[dict] = []
@@ -152,8 +162,8 @@ def run(fetch: media.Fetch | str, options: dict[str, Any], cfg: Config, stage: C
         for seg in segments:
             seg["speaker"] = None
     if raw.get("device") == "cpu" and not any("CPU" in w for w in warnings):
-        warnings.append("A worker CPU-n futott (nem látott GPU-t)." if cfg.whisper_url
-                        else "Az átírás a processzoron futott.")
+        warnings.append(_("A worker CPU-n futott (nem látott GPU-t).") if cfg.whisper_url
+                        else _("Az átírás a processzoron futott."))
     return {"video": media.video_meta(info),
             "transcript": {"mode": "local", "model": model, "language": language, "diarized": diarized,
                            "speakers": speakers, "warnings": warnings, "segments": segments,

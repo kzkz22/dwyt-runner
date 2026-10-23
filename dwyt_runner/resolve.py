@@ -21,6 +21,8 @@ from urllib.parse import parse_qs, urljoin, urlsplit
 import httpx
 
 from .errors import WorkError
+from .i18n import gettext as _
+from .i18n import N_, labels
 
 MAX_BYTES = 5 * 1024 * 1024
 TEXT_CHARS = 4000
@@ -32,8 +34,9 @@ _IFRAME = re.compile(r"<iframe[^>]+src=[\"']([^\"']+)", re.I)
 _LINK = re.compile(r"https?://[^\"'\s<>\\]+")
 _DATE_IN_URL = re.compile(r"/(20\d\d)/(\d\d)/(\d\d)/|[_-](20\d\d)(\d\d)(\d\d)(?:[_-]|$)")
 PRIORITY = {"youtube": 0, "player": 1, "dayfile": 2, "podcast": 3, "file": 4}
-LABELS = {"youtube": "YouTube-videó", "player": "Beágyazott lejátszó", "dayfile": "Hangfájl a cikk napjáról",
-          "podcast": "Podcast-epizód", "file": "Hang- vagy videófájl"}
+LABELS = labels({"youtube": N_("YouTube-videó"), "player": N_("Beágyazott lejátszó"),
+                 "dayfile": N_("Hangfájl a cikk napjáról"), "podcast": N_("Podcast-epizód"),
+                 "file": N_("Hang- vagy videófájl")})
 
 
 @dataclass
@@ -91,7 +94,7 @@ def fetch(url: str, timeout: float = 20) -> str:
         with httpx.stream("GET", url, follow_redirects=True, timeout=timeout,
                           headers={"User-Agent": UA, "Accept-Language": "hu,en;q=0.8"}) as resp:
             if resp.status_code >= 400:
-                raise WorkError(f"Az oldal nem érhető el (HTTP {resp.status_code}).",
+                raise WorkError(_("Az oldal nem érhető el (HTTP {status_code}).").format(status_code=resp.status_code),
                                 "later" if resp.status_code >= 500 or resp.status_code == 429 else "never")
             body = b""
             for chunk in resp.iter_bytes():
@@ -100,7 +103,7 @@ def fetch(url: str, timeout: float = 20) -> str:
                     break
             return body.decode(resp.encoding or "utf-8", "replace")
     except httpx.HTTPError as exc:
-        raise WorkError(f"Az oldal nem érhető el ({exc}); később újrapróbálom.", "later") from exc
+        raise WorkError(_("Az oldal nem érhető el ({exc}); később újrapróbálom.").format(exc=exc), "later") from exc
 
 
 def _meta(html: str, name: str) -> str | None:
@@ -220,15 +223,16 @@ def choose(page: Page, mode: str | None, pick: str | None = None) -> Candidate:
     """The recording to transcribe: the user's pick (one of the page's candidates), else the best one. YouTube
     captions need a YouTube video on the page."""
     if not page.candidates:
-        raise WorkError("Az oldalon nem találtam videót vagy hangot. Ha a felvétel a YouTube-on is fent van, küldd "
-                        "be annak a linkjét.")
+        raise WorkError(_("Az oldalon nem találtam videót vagy hangot. Ha a felvétel a YouTube-on is fent van, küldd "
+                        "be annak a linkjét."))
     if pick:
         chosen = next((c for c in page.candidates if c.url == pick), None)
         if chosen is None:
-            raise WorkError("A választott felvétel már nincs az oldalon.")
+            raise WorkError(_("A választott felvétel már nincs az oldalon."))
     else:
         chosen = page.candidates[0]
     if mode == "captions" and chosen.kind != "youtube":
-        raise WorkError("Az oldalon nincs YouTube-videó, így felirat sincs hozzá; válassz helyi vagy felhős átírást.",
+        raise WorkError(_("Az oldalon nincs YouTube-videó, így felirat sincs hozzá; "
+                          "válassz helyi vagy felhős átírást."),
                         "next_step")
     return chosen

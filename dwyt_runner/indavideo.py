@@ -16,6 +16,7 @@ import time
 import httpx
 
 from .errors import WorkError
+from .i18n import gettext as _
 
 DATA = "https://amfphp.indavideo.hu/SYm0json.php/player.playerHandler.getVideoData"
 ORIGIN = "https://embed.indavideo.hu/"
@@ -46,14 +47,15 @@ def direct(url: str, data_url: str | None = None, timeout: float = 20) -> str | 
     try:
         resp = httpx.get(ask, timeout=timeout, headers={"User-Agent": UA, "Referer": ORIGIN})
     except httpx.HTTPError as exc:
-        raise WorkError(f"Az Indavideo nem érhető el ({exc}); később újrapróbálom.", "later") from exc
+        raise WorkError(_("Az Indavideo nem érhető el ({exc}); később újrapróbálom.").format(exc=exc), "later") from exc
     if resp.status_code >= 400:
-        raise WorkError(f"Az Indavideo nem adta meg a videó adatait (HTTP {resp.status_code}).",
+        raise WorkError(_("Az Indavideo nem adta meg a videó adatait (HTTP {status_code}).").format(
+            status_code=resp.status_code),
                         "later" if resp.status_code >= 500 or resp.status_code == 429 else "never")
     try:
         data = _jsonp(resp.text)["data"]
     except (ValueError, KeyError, TypeError) as exc:
-        raise WorkError("Az Indavideo válasza nem olvasható; lehet, hogy a lejátszója megváltozott.") from exc
+        raise WorkError(_("Az Indavideo válasza nem olvasható; lehet, hogy a lejátszója megváltozott.")) from exc
     files = data.get("video_files") or []
     if isinstance(files, dict):
         files = list(files.values())
@@ -65,5 +67,5 @@ def direct(url: str, data_url: str | None = None, timeout: float = 20) -> str | 
         if height and tokens.get(height):
             found.append((int(height), f"{raw}&token={tokens[height]}"))
     if not found:
-        raise WorkError("Az Indavideo nem adott letölthető fájlt ehhez a videóhoz (lehet, hogy privát vagy törölt).")
+        raise WorkError(_("Az Indavideo nem adott letölthető fájlt ehhez a videóhoz (lehet, hogy privát vagy törölt)."))
     return min(found)[1]

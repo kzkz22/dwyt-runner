@@ -14,6 +14,7 @@ from . import activity, modelinfo, tools, watch, work
 from .config import Config
 from .errors import WorkError
 from .protocol import Central, CentralError, JobGone
+from .i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 HEARTBEAT_S = 30  # the lease, and how soon a cancel on the dwyt page is noticed
@@ -138,7 +139,7 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
             outcome = "gone"
             return "gone"
         if job.cancel.is_set():
-            raise WorkError("megszakítva")
+            raise WorkError(_("megszakítva"))
         job.stage("write")
         deliver(central, central.result, job.id, result, stop=stop)
         outcome = "done"
@@ -152,7 +153,8 @@ def run_job(central: Central, cfg: Config, job_data: dict[str, Any], stop: threa
     except Exception as exc:  # noqa: BLE001 - report every crash instead of dying
         log.exception("job %s crashed", job.id)
         if not job.gone.is_set():
-            deliver(central, central.fail, job.id, f"A futtató hibára futott: {type(exc).__name__}: {exc}", "later",
+            deliver(central, central.fail, job.id, _("A futtató hibára futott: {type}: {exc}").format(
+                type=type(exc).__name__, exc=exc), "later",
                     stop=stop)
         return "failed"
     finally:
@@ -188,7 +190,8 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
     wait = 2
     last_scan = 0.0
     last_caps = time.monotonic()
-    from . import remote
+    from . import config, i18n, remote
+    i18n.apply(cfg)
     cfg = sync_settings(cfg, central)
     last_report = time.monotonic()
     while not stop.is_set():
@@ -196,6 +199,7 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
             RELOAD.clear()
             from . import config
             cfg = config.load()
+            i18n.apply(cfg)
             caps = work.capabilities(cfg)
             last_caps = time.monotonic()
             log.info("settings reloaded; capabilities: %s", caps)
@@ -228,9 +232,13 @@ def loop(cfg: Config, stop: threading.Event, central: Central | None = None, onc
             stop.wait(wait)
             wait = min(wait * 2, 60)
             continue
+        if i18n.remember_account(config.home(), getattr(central, "languages", None)):
+            i18n.apply(cfg)  # the owner chose another language: the window, messages and the settings page follow
+            cfg = sync_settings(cfg, central)
+            last_report = time.monotonic()
         if job is not None and stop.is_set():  # stopped while asking (quit, reset): hand it back at once
             try:
-                central.fail(job["job_id"], "A futtató leállt, mielőtt elkezdte; később újra kiadható.", "later")
+                central.fail(job["job_id"], _("A futtató leállt, mielőtt elkezdte; később újra kiadható."), "later")
             except CentralError as exc:
                 log.warning("job %s not handed back: %s", job.get("job_id"), exc)
             return

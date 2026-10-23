@@ -9,6 +9,7 @@ from typing import Any
 
 from .. import activity, config, gpuswap, trial, worker
 from ..protocol import Central, CentralError, Outdated, Unauthorized
+from ..i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 
@@ -45,12 +46,12 @@ class Runtime:
         try:
             worker.loop(cfg, stop)
         except Unauthorized:
-            self.error = "A Skipwise nem fogadja el a párosítást (visszavonták?). Párosítsd újra."
+            self.error = _("A Skipwise nem fogadja el a párosítást (visszavonták?). Párosítsd újra.")
         except Outdated as exc:
-            self.error = f"{exc} Frissítsd a futtatót."
+            self.error = _("{exc} Frissítsd a futtatót.").format(exc=exc)
         except Exception as exc:  # noqa: BLE001 - the window must say it, not die with it
             log.exception("worker stopped")
-            self.error = f"A futtató leállt: {exc}"
+            self.error = _("A futtató leállt: {exc}").format(exc=exc)
 
     def running(self) -> bool:
         return bool(self.thread and self.thread.is_alive())
@@ -257,7 +258,8 @@ class Runtime:
             cur["kind_label"] = activity.KIND_LABELS.get(cur.get("kind"), cur.get("kind") or "")
             cur["stage_label"] = activity.STAGE_LABELS.get(cur.get("stage"), cur.get("stage") or "")
             p = cur.get("progress") or {}
-            cur["part"] = f"{p.get('part')}/{p.get('parts')}. rész" if p.get("parts") else ""
+            cur["part"] = _("{get}/{get2}. rész").format(
+                get=p.get('part'), get2=p.get('parts')) if p.get("parts") else ""
             cur["minutes"] = int((time.time() - cur.get("started", time.time())) // 60)
         recent = [dict(e, kind_label=activity.KIND_LABELS.get(e.get("kind"), e.get("kind") or ""))
                   for e in reversed(activity.history()[-8:])]

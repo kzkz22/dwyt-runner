@@ -18,6 +18,7 @@ from typing import Any
 
 from . import formatting, tools
 from .errors import WorkError
+from .i18n import gettext as _
 
 TEXT_CODECS = {"subrip", "srt", "ass", "ssa", "webvtt", "mov_text", "text"}
 ISO3 = {"eng": "en", "hun": "hu", "ger": "de", "deu": "de", "fre": "fr", "fra": "fr", "spa": "es", "ita": "it",
@@ -80,7 +81,7 @@ def parse(banner: str) -> Tracks:
             continue
         m = _STREAM.match(line)
         if m:
-            _, lang, kind, codec, rest = m.groups()
+            _n, lang, kind, codec, rest = m.groups()
             current = None
             flags = rest.lower()
             if kind == "Audio":
@@ -104,7 +105,7 @@ def read(path: str) -> Tracks:
         proc = subprocess.run([tools.ffmpeg(), "-nostdin", "-hide_banner", "-i", path], capture_output=True,
                               timeout=120, check=False, **tools.no_window())
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise WorkError(f"Az ffmpeg nem tudta beolvasni a fájlt: {exc}") from exc
+        raise WorkError(_("Az ffmpeg nem tudta beolvasni a fájlt: {exc}").format(exc=exc)) from exc
     return parse(proc.stderr.decode("utf-8", "replace"))
 
 
@@ -113,15 +114,15 @@ def describe(tracks: Tracks) -> str:
     def name(t: Track, sub: bool) -> str:
         parts = [t.language or "ismeretlen nyelv"]
         if sub and not t.text:
-            parts.append("képként")
+            parts.append(_("képként"))
         if t.forced:
-            parts.append("kényszerített")
+            parts.append(_("kényszerített"))
         if t.default and not sub:
-            parts.append("alapértelmezett")
+            parts.append(_("alapértelmezett"))
         return parts[0] + (f" ({', '.join(parts[1:])})" if parts[1:] else "")
-    audio = ", ".join(name(t, False) for t in tracks.audio) or "nincs"
-    subs = ", ".join(name(t, True) for t in tracks.subtitles) or "nincs"
-    return f"A fájlban: hangsáv: {audio}; felirat: {subs}."
+    audio = ", ".join(name(t, False) for t in tracks.audio) or _("nincs")
+    subs = ", ".join(name(t, True) for t in tracks.subtitles) or _("nincs")
+    return _("A fájlban: hangsáv: {audio}; felirat: {subs}.").format(audio=audio, subs=subs)
 
 
 def _picked(options: dict[str, Any], key: str, count: int, what: str) -> int | None:
@@ -131,9 +132,9 @@ def _picked(options: dict[str, Any], key: str, count: int, what: str) -> int | N
     try:
         n = int(value)
     except (TypeError, ValueError):
-        raise WorkError(f"Hibás {what}-sorszám a munkában.") from None
+        raise WorkError(_("Hibás {what}-sorszám a munkában.").format(what=what)) from None
     if not 0 <= n < count:
-        raise WorkError(f"A választott {what} nincs a fájlban.")
+        raise WorkError(_("A választott {what} nincs a fájlban.").format(what=what))
     return n
 
 
@@ -141,7 +142,7 @@ def choose_audio(tracks: Tracks, options: dict[str, Any]) -> int | None:
     """The audio track to use (None: the file has no audio track)."""
     if not tracks.audio:
         return None
-    picked = _picked(options, "audio_track", len(tracks.audio), "hangsáv")
+    picked = _picked(options, "audio_track", len(tracks.audio), _("hangsáv"))
     if picked is not None:
         return picked
     wanted = language(options.get("language"))
@@ -153,12 +154,13 @@ def choose_audio(tracks: Tracks, options: dict[str, Any]) -> int | None:
 
 
 def choose_subtitle(tracks: Tracks, options: dict[str, Any], audio: int | None) -> Track:
-    picked = _picked(options, "subtitle_track", len(tracks.subtitles), "felirat")
+    picked = _picked(options, "subtitle_track", len(tracks.subtitles), _("felirat"))
     if picked is not None:
         track = tracks.subtitles[picked]
         if not track.text:
-            raise WorkError("Ez a felirat képként van tárolva, szövegként nem olvasható ki. Válassz helyi vagy felhős "
-                            "átírást.")
+            raise WorkError(_(
+                "Ez a felirat képként van tárolva, szövegként nem olvasható ki. Válassz helyi vagy felhős "
+                            "átírást."))
         return track
     usable = [t for t in tracks.subtitles if t.text]
     wanted = language(options.get("language"))
@@ -169,10 +171,11 @@ def choose_subtitle(tracks: Tracks, options: dict[str, Any], audio: int | None) 
     else:
         found = usable
     if not found:
-        what = f" {wanted} nyelvű" if wanted else ""
-        pictures = " (csak képként tárolt felirat van benne)" if tracks.subtitles and not usable else ""
-        raise WorkError(f"A fájlban nincs{what} szöveges felirat{pictures}. Válassz helyi vagy felhős átírást; az elem "
-                        "oldalán látszik, milyen sávok vannak benne.", "next_step")
+        what = _(" {wanted} nyelvű").format(wanted=wanted) if wanted else ""
+        pictures = _(" (csak képként tárolt felirat van benne)") if tracks.subtitles and not usable else ""
+        raise WorkError(_("A fájlban nincs{what} szöveges felirat{pictures}. Válassz helyi vagy "
+                           "felhős átírást; az elem oldalán látszik, milyen sávok vannak benne.").format(
+                          what=what, pictures=pictures), "next_step")
     # full subtitles before forced ones (those only translate the foreign bits), the default first
     found.sort(key=lambda t: (t.forced, not t.default, t.index))
     return found[0]
@@ -186,10 +189,10 @@ def audio_only(path: str, index: int, workdir: str) -> str:
                         "-c", "copy", "-vn", "-sn", dst], check=True, capture_output=True, timeout=3600,
                        **tools.no_window())
     except subprocess.CalledProcessError as exc:
-        raise WorkError("Az ffmpeg nem tudta kivenni a hangsávot: "
+        raise WorkError(_("Az ffmpeg nem tudta kivenni a hangsávot: ")
                         + exc.stderr.decode("utf-8", "replace")[-300:]) from exc
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise WorkError(f"Az ffmpeg nem indult el vagy nem végzett: {exc}") from exc
+        raise WorkError(_("Az ffmpeg nem indult el vagy nem végzett: {exc}").format(exc=exc)) from exc
     return dst
 
 
@@ -226,22 +229,22 @@ def subtitle_text(path: str, index: int) -> str:
         proc = subprocess.run([tools.ffmpeg(), "-nostdin", "-loglevel", "error", "-i", path, "-map", f"0:s:{index}",
                                "-f", "srt", "-"], check=True, capture_output=True, timeout=600, **tools.no_window())
     except subprocess.CalledProcessError as exc:
-        raise WorkError("Az ffmpeg nem tudta kiolvasni a feliratot: "
+        raise WorkError(_("Az ffmpeg nem tudta kiolvasni a feliratot: ")
                         + exc.stderr.decode("utf-8", "replace")[-300:]) from exc
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise WorkError(f"Az ffmpeg nem indult el vagy nem végzett: {exc}") from exc
+        raise WorkError(_("Az ffmpeg nem indult el vagy nem végzett: {exc}").format(exc=exc)) from exc
     return proc.stdout.decode("utf-8", "replace")
 
 
 def transcript(path: str, track: Tracks, sub: Track, audio: int | None) -> dict[str, Any]:
     segments = formatting.clean_segments(formatting.segments_from_words(parse_srt(subtitle_text(path, sub.index))))
     if not segments:
-        raise WorkError("A felirat üres.", "next_step")
+        raise WorkError(_("A felirat üres."), "next_step")
     for seg in segments:
         seg["speaker"] = None
     lang = sub.language or (track.audio[audio].language if audio is not None else None)
-    warnings = ["A fájlba ágyazott feliratból készült: nincsenek benne beszélők."]
+    warnings = [_("A fájlba ágyazott feliratból készült: nincsenek benne beszélők.")]
     if sub.forced:
-        warnings.append("Kényszerített felirat: csak az idegen nyelvű részeket tartalmazza.")
+        warnings.append(_("Kényszerített felirat: csak az idegen nyelvű részeket tartalmazza."))
     return {"mode": "captions", "model": f"embedded-{sub.codec.lower()}", "caption_kind": "embedded",
             "language": lang, "diarized": False, "speakers": [], "warnings": warnings, "segments": segments}

@@ -27,10 +27,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from . import config, tools
+from .i18n import gettext as _
+from .i18n import N_, labels
 
 log = logging.getLogger("dwyt-runner")
 GREEN, YELLOW, RED = "green", "yellow", "red"
-LAMP_TEXT = {GREEN: "jó", YELLOW: "figyelem", RED: "kevés"}
+LAMP_TEXT = labels({GREEN: N_("jó"), YELLOW: N_("figyelem"), RED: N_("kevés")})
 VENDORS = {"10de": "nvidia", "1002": "amd", "8086": "intel", "106b": "apple"}
 OLLAMA_URL = "http://127.0.0.1:11434"
 LMSTUDIO_URL = "http://127.0.0.1:1234"
@@ -260,7 +262,7 @@ def scan_gpus() -> list[Gpu]:
     if gpus:  # nvidia-smi is better for NVIDIA cards
         others = [g for g in others if g.vendor != "nvidia"]
     if sys.platform == "darwin" and platform.machine() == "arm64":
-        others.append(Gpu("apple", "Apple Silicon (közös memória)", None))
+        others.append(Gpu("apple", _("Apple Silicon (közös memória)"), None))
     return gpus + others
 
 
@@ -448,88 +450,96 @@ def assess(m: Machine) -> Assessment:
     # what is in the machine
     if g:
         level = GREEN if vram >= SMALL_LLM_VRAM_GB else YELLOW
-        driver = f" · illesztőprogram {g.driver}" if g.driver and g.vendor == "nvidia" else ""
-        note = "" if level == GREEN else "kevés saját memória: csak a kisebb beszédfelismerő modell fér el"
+        driver = _(" · illesztőprogram {driver}").format(driver=g.driver) if g.driver and g.vendor == "nvidia" else ""
+        note = "" if level == GREEN else _("kevés saját memória: csak a kisebb beszédfelismerő modell fér el")
         if g.vendor != "nvidia" and g.vendor != "apple":
-            note = (note + "; " if note else "") + "nem NVIDIA: Vulkannal működik, ez lassabb lehet a CUDA-nál"
-        rows.append(Lamp("gpu", "Videókártya", f"{g.name} · {_num(g.vram_gb)} GB{driver}", level, note))
+            note = (note + "; " if note else "") + _("nem NVIDIA: Vulkannal működik, ez lassabb lehet a CUDA-nál")
+        rows.append(Lamp("gpu", _("Videókártya"), f"{g.name} · {_num(g.vram_gb)} GB{driver}", level, note))
     else:
         built_in = next((x.name for x in m.gpus if x.integrated), "")
-        rows.append(Lamp("gpu", "Videókártya", f"nincs külön videókártya{f' ({built_in})' if built_in else ''}",
-                         YELLOW, "a helyi átírás a processzoron fut, lassan"))
+        rows.append(Lamp("gpu", _("Videókártya"), _("nincs külön videókártya{f}").format(
+            f=f' ({built_in})' if built_in else ''),
+                         YELLOW, _("a helyi átírás a processzoron fut, lassan")))
     ram = m.ram_gb or 0
     # "16 GB" machines report a little less (memory kept by the firmware or the built-in graphics)
     level = GREEN if ram >= 15 and m.threads >= 8 else YELLOW if ram >= 7.5 else RED
-    rows.append(Lamp("cpu", "Processzor, memória", f"{m.cpu} · {m.threads} szál · {_num(m.ram_gb)} GB", level,
-                     "" if level != RED else "8 GB-nál kevesebb memória: a helyi munka nem ajánlott"))
+    rows.append(Lamp("cpu", _("Processzor, memória"), _("{cpu} · {threads} szál · {_num} GB").format(
+        cpu=m.cpu, threads=m.threads, _num=_num(m.ram_gb)), level,
+                     "" if level != RED else _("8 GB-nál kevesebb memória: a helyi munka nem ajánlott")))
     free = m.disk_free_gb
     if free is None:
-        rows.append(Lamp("disk", "Szabad hely", "nem sikerült megnézni", YELLOW))
+        rows.append(Lamp("disk", _("Szabad hely"), _("nem sikerült megnézni"), YELLOW))
     else:
         level = GREEN if free >= WHISPER_DISK_GB + LOCAL_LLM_DISK_GB else YELLOW if free >= WHISPER_DISK_GB else RED
-        have = f" · a futtató modelljei {_num(m.models_gb)} GB" if m.models_gb else ""
-        rows.append(Lamp("disk", "Szabad hely", f"{_num(free)} GB{have}", level,
-                         f"kell: kb. {WHISPER_DISK_GB} GB, saját összefoglalóhoz +{LOCAL_LLM_DISK_GB} GB"))
+        have = _(" · a futtató modelljei {_num} GB").format(_num=_num(m.models_gb)) if m.models_gb else ""
+        rows.append(Lamp("disk", _("Szabad hely"), f"{_num(free)} GB{have}", level,
+                         _("kell: kb. {WHISPER_DISK_GB} GB, saját összefoglalóhoz "
+                            "+{LOCAL_LLM_DISK_GB} GB").format(
+                           WHISPER_DISK_GB=WHISPER_DISK_GB, LOCAL_LLM_DISK_GB=LOCAL_LLM_DISK_GB)))
     running = [s for s in m.servers if s.running]
     installed = [s for s in m.servers if s.installed and not s.running]
     if running:
         s = running[0]
         names = ", ".join(s.models[:3]) + (" …" if len(s.models) > 3 else "")
-        value = f"{s.title}{' ' + s.version if s.version else ''} · fut · {len(s.models)} modell" + \
-            (f" ({names})" if names else "")
-        rows.append(Lamp("server", "Helyi modellszerver", value, GREEN if s.models else YELLOW,
-                         "" if s.models else "még nincs letöltött modell"))
+        value = (f"{s.title}{' ' + s.version if s.version else ''} · "
+                 + _("fut · {n} modell").format(n=len(s.models)) + (f" ({names})" if names else ""))
+        rows.append(Lamp("server", _("Helyi modellszerver"), value, GREEN if s.models else YELLOW,
+                         "" if s.models else _("még nincs letöltött modell")))
     elif installed:
-        rows.append(Lamp("server", "Helyi modellszerver", f"{installed[0].title} telepítve, de nem fut", YELLOW,
-                         "a futtató el tudja indítani"))
+        rows.append(Lamp("server", _("Helyi modellszerver"), _("{installed} telepítve, de nem fut").format(
+            installed=installed[0].title), YELLOW,
+                         _("a futtató el tudja indítani")))
     else:
-        rows.append(Lamp("server", "Helyi modellszerver", "nincs (Ollama és LM Studio nem található)", YELLOW,
-                         "saját összefoglalóhoz a telepítő felajánlja az Ollamát"))
+        rows.append(Lamp("server", _("Helyi modellszerver"), _("nincs (Ollama és LM Studio nem található)"), YELLOW,
+                         _("saját összefoglalóhoz a telepítő felajánlja az Ollamát")))
 
     # what it can do
     if g and vram >= WHISPER_VRAM_GB:
-        abilities.append(Lamp("whisper", "Helyi átírás", "gyors", GREEN,
-                              f"large-v3, beszélőkkel, a videókártyán ({g.backend})"))
+        abilities.append(Lamp("whisper", _("Helyi átírás"), _("gyors"), GREEN,
+                              _("large-v3, beszélőkkel, a videókártyán ({backend})").format(backend=g.backend)))
     elif g and vram >= WHISPER_TURBO_VRAM_GB:
-        abilities.append(Lamp("whisper", "Helyi átírás", "működik", YELLOW,
-                              "a kisebb (turbo) modellel; a magyar szöveg kicsit pontatlanabb"))
+        abilities.append(Lamp("whisper", _("Helyi átírás"), _("működik"), YELLOW,
+                              _("a kisebb (turbo) modellel; a magyar szöveg kicsit pontatlanabb")))
     elif m.threads >= 8 and ram >= 7.5:
-        abilities.append(Lamp("whisper", "Helyi átírás", "lassú", YELLOW,
-                              "a processzoron: egy 1 órás videó nagyjából 1 óra vagy több"))
+        abilities.append(Lamp("whisper", _("Helyi átírás"), _("lassú"), YELLOW,
+                              _("a processzoron: egy 1 órás videó nagyjából 1 óra vagy több")))
     else:
-        abilities.append(Lamp("whisper", "Helyi átírás", "nem ajánlott", RED,
-                              "ezen a gépen nagyon lassú lenne; az átírás felhőben ajánlott"))
+        abilities.append(Lamp("whisper", _("Helyi átírás"), _("nem ajánlott"), RED,
+                              _("ezen a gépen nagyon lassú lenne; az átírás felhőben ajánlott")))
     if vram >= LARGE_LLM_VRAM_GB:
-        abilities.append(Lamp("llm_small", "Helyi összefoglaló", "jó", GREEN,
-                              "egy nagy (30B körüli) modell is elfér; a magyar szöveg közelít a felhőshöz"))
+        abilities.append(Lamp("llm_small", _("Helyi összefoglaló"), _("jó"), GREEN,
+                              _("egy nagy (30B körüli) modell is elfér; a magyar szöveg közelít a felhőshöz")))
     elif vram >= SMALL_LLM_VRAM_GB:
-        abilities.append(Lamp("llm_small", "Helyi összefoglaló", "működik, de gyengébb", YELLOW,
-                              "egy kisebb (8B körüli) modell fér el; a magyar összefoglalók érezhetően gyengébbek "
-                              "lesznek, mint egy felhős modellé"))
+        abilities.append(Lamp("llm_small", _("Helyi összefoglaló"), _("működik, de gyengébb"), YELLOW,
+                              _("egy kisebb (8B körüli) modell fér el; a magyar összefoglalók érezhetően gyengébbek "
+                              "lesznek, mint egy felhős modellé")))
     else:
-        abilities.append(Lamp("llm_small", "Helyi összefoglaló", "nem fér el", RED,
-                              f"legalább {SMALL_LLM_VRAM_GB} GB videómemória kellene"))
+        abilities.append(Lamp("llm_small", _("Helyi összefoglaló"), _("nem fér el"), RED,
+                              _("legalább {SMALL_LLM_VRAM_GB} GB videómemória kellene").format(
+                                  SMALL_LLM_VRAM_GB=SMALL_LLM_VRAM_GB)))
     if vram < LARGE_LLM_VRAM_GB:
         if vram >= MOE_VRAM_GB and ram >= MOE_RAM_GB:
             # a mixture-of-experts model (e.g. 30B-A3B) keeps its experts in system memory and stays usable
-            abilities.append(Lamp("llm_large", "Nagy helyi modell (30B+)", "MoE-modellel működik", YELLOW,
-                                  "egy MoE-modell (például Qwen3 30B-A3B) a rendszermemória segítségével elfut, "
-                                  "lassabban; egy sűrű 30B-s modellhez legalább "
-                                  f"{LARGE_LLM_VRAM_GB} GB videómemória kellene"))
+            abilities.append(Lamp("llm_large", _("Nagy helyi modell (30B+)"), _("MoE-modellel működik"), YELLOW,
+                                  _("egy MoE-modell (például Qwen3 30B-A3B) a rendszermemória "
+                                     "segítségével elfut, lassabban; egy sűrű 30B-s modellhez "
+                                     "legalább {LARGE_LLM_VRAM_GB} GB videómemória kellene").format(
+                                    LARGE_LLM_VRAM_GB=LARGE_LLM_VRAM_GB)))
         else:
-            abilities.append(Lamp("llm_large", "Nagy helyi modell (30B+)", "nem fér el", RED,
-                                  f"ehhez legalább {LARGE_LLM_VRAM_GB} GB videómemória kellene"))
+            abilities.append(Lamp("llm_large", _("Nagy helyi modell (30B+)"), _("nem fér el"), RED,
+                                  _("ehhez legalább {LARGE_LLM_VRAM_GB} GB videómemória kellene").format(
+                                      LARGE_LLM_VRAM_GB=LARGE_LLM_VRAM_GB)))
 
     if vram >= LARGE_LLM_VRAM_GB:
-        mode, reason = "sajat", ("a **Saját gép** módot ajánljuk: az átírás és az összefoglaló is itt készül, "
-                                 "ingyen, és semmi nem megy a felhőbe")
+        mode, reason = "sajat", (_("a **Saját gép** módot ajánljuk: az átírás és az összefoglaló is itt készül, "
+                                 "ingyen, és semmi nem megy a felhőbe"))
     elif g and vram >= WHISPER_TURBO_VRAM_GB:
-        mode, reason = "vegyes", ("a **Vegyes** módot ajánljuk: az átírás itt, ingyen készül, az összefoglaló a "
-                                  "felhőben, jó minőségben")
+        mode, reason = "vegyes", (_("a **Vegyes** módot ajánljuk: az átírás itt, ingyen készül, az összefoglaló a "
+                                  "felhőben, jó minőségben"))
     else:
-        mode, reason = "felho", ("a **Felhő** módot ajánljuk: ezen a gépen a helyi átírás lassú lenne; a felhő "
-                                 "fizetős, de gyors")
-    return Assessment(rows, abilities, mode, "A géped alapján " + reason + ". Bármelyiket választhatod.")
+        mode, reason = "felho", (_("a **Felhő** módot ajánljuk: ezen a gépen a helyi átírás lassú lenne; a felhő "
+                                 "fizetős, de gyors"))
+    return Assessment(rows, abilities, mode, _("A géped alapján ") + reason + _(". Bármelyiket választhatod."))
 
 
 def snapshot_path() -> Path:
@@ -566,13 +576,16 @@ def changes(before: Machine | None, now: Machine) -> list[str]:
         return f"{gpu.name}, {_num(gpu.vram_gb)} GB"
     if new and (not old or (old.name, old.vram_gb) != (new.name, new.vram_gb)):
         was = f" (eddig: {card(old)})" if old else ""
-        out.append(f"Új videókártyát találtam: {card(new)}{was}. Futtassunk próbát? Lehet, hogy most más mód is jól "
-                   "menne.")
+        out.append(_("Új videókártyát találtam: {card}{was}. Futtassunk próbát? Lehet, hogy most "
+                      "más mód is jól menne.").format(
+                     card=card(new), was=was))
     elif old and not new:
-        out.append(f"Nem találom a videókártyát (eddig: {card(old)}). Ha kivetted, a helyi átírás a processzoron "
-                   "lassú lesz; ha nem, nézd meg az illesztőprogramot.")
+        out.append(_("Nem találom a videókártyát (eddig: {card}). Ha kivetted, a helyi átírás a "
+                      "processzoron lassú lesz; ha nem, nézd meg az illesztőprogramot.").format(
+                     card=card(old)))
     if before.ram_gb and now.ram_gb and abs(before.ram_gb - now.ram_gb) >= 1:
-        out.append(f"Változott a memória: {_num(now.ram_gb)} GB (eddig {_num(before.ram_gb)} GB).")
+        out.append(_("Változott a memória: {_num} GB (eddig {_num2} GB).").format(
+            _num=_num(now.ram_gb), _num2=_num(before.ram_gb)))
     return out
 
 
@@ -586,13 +599,13 @@ def watch_at_start(cfg: config.Config) -> list[str]:
 
 def report(m: Machine, a: Assessment, measured: str = "") -> str:
     """The scan as plain text (the command line; the window draws the same data)."""
-    lines = ["Gépem", ""]
+    lines = [_("Gépem"), ""]
     width = max(len(r.label) for r in a.rows + a.abilities) + 2
     for r in a.rows:
         lines.append(f"  {r.label:<{width}}{r.value}  [{LAMP_TEXT[r.level]}]")
         if r.note:
             lines.append(f"  {'':<{width}}{r.note}")
-    lines += ["", "Mire képes"]
+    lines += ["", _("Mire képes")]
     for r in a.abilities:
         lines.append(f"  {r.label:<{width}}{r.value}  [{LAMP_TEXT[r.level]}]")
         if r.note:
@@ -601,5 +614,5 @@ def report(m: Machine, a: Assessment, measured: str = "") -> str:
         lines += ["", measured.replace("**", "")]
     else:
         lines += ["", a.mode_reason.replace("**", ""),
-                  "Ez csak becslés; a próbafuttatás méri meg, mennyire gyors ez a gép."]
+                  _("Ez csak becslés; a próbafuttatás méri meg, mennyire gyors ez a gép.")]
     return "\n".join(lines)

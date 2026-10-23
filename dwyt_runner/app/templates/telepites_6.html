@@ -1,22 +1,22 @@
 {% extends "telepites.html" %}
 {% block step %}
-<h1>Kész!</h1>
-<p class="lead">A Skipwise futtató mostantól a tálcán fut (jobb alul, a kék Skipwise-ikon, sarkában az állapotot mutató színes pöttyel). Az ablak bezárása csak elrejti;
-  kilépni az ikon menüjéből lehet.</p>
+<h1>{{ _("Kész!") }}</h1>
+<p class="lead">{{ _("A Skipwise futtató mostantól a tálcán fut (jobb alul, a kék Skipwise-ikon, sarkában az állapotot mutató színes pöttyel). Az ablak bezárása csak elrejti;
+  kilépni az ikon menüjéből lehet.") }}</p>
 <div class="card">
-  <p class="lampline"><span class="dot green"></span><span><strong>Zöld:</strong> rendben, várja a munkát</span></p>
-  <p class="lampline"><span class="dot blue"></span><span><strong>Kék:</strong> dolgozik</span></p>
-  <p class="lampline"><span class="dot orange"></span><span><strong>Narancs:</strong> modellcsere, közben ne használd a helyi modelleket</span></p>
-  <p class="lampline"><span class="dot red"></span><span><strong>Piros:</strong> baj van, kattints rá a részletekért</span></p>
+  <p class="lampline"><span class="dot green"></span><span><strong>{{ _("Zöld:") }}</strong> {{ _("rendben, várja a munkát") }}</span></p>
+  <p class="lampline"><span class="dot blue"></span><span><strong>{{ _("Kék:") }}</strong> {{ _("dolgozik") }}</span></p>
+  <p class="lampline"><span class="dot orange"></span><span><strong>{{ _("Narancs:") }}</strong> {{ _("modellcsere, közben ne használd a helyi modelleket") }}</span></p>
+  <p class="lampline"><span class="dot red"></span><span><strong>{{ _("Piros:") }}</strong> {{ _("baj van, kattints rá a részletekért") }}</span></p>
 </div>
 <form method="post" action="/telepites/6">
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <label class="check"><input type="checkbox" name="login_start"{% if login_start %} checked{% endif %}>
-    <span>Induljon a gép bekapcsolásakor</span></label>
+    <span>{{ _("Induljon a gép bekapcsolásakor") }}</span></label>
   {% if cfg.server %}
   <label class="check"><input type="checkbox" name="open_dwyt" checked>
-    <span>Nyissuk meg a Skipwise-t, és küldjünk be egy első videót</span></label>
+    <span>{{ _("Nyissuk meg a Skipwise-t, és küldjünk be egy első videót") }}</span></label>
   {% endif %}
-  <div class="actions"><button class="primary">Befejezés</button></div>
+  <div class="actions"><button class="primary">{{ _("Befejezés") }}</button></div>
 </form>
 {% endblock %}

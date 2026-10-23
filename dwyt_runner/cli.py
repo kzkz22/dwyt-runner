@@ -40,6 +40,7 @@ import time
 from . import __version__, config, localllm, machine, tools, work, worker
 from .errors import WorkError
 from .protocol import Central, CentralError, JobGone, Outdated, Unauthorized
+from .i18n import gettext as _
 
 
 def _out(text: str) -> None:
@@ -53,27 +54,28 @@ def pair(server: str, name: str | None) -> int:
     try:
         start = central.pair_start()
     except (CentralError, Outdated) as exc:
-        _out(f"Hiba: {exc}")
+        _out(_("Hiba: {exc}").format(exc=exc))
         return 1
-    _out(f"\nPárosítókód: {start['code']}\n")
-    _out(f"Nyisd meg a {server.rstrip('/')}/futtatok oldalt, és írd be ezt a kódot"
-         f" ({start['expires_in'] // 60} percig érvényes). Várakozás a jóváhagyásra…")
+    _out(_("\nPárosítókód: {start}\n").format(start=start['code']))
+    _out(_("Nyisd meg a {rstrip}/futtatok oldalt, és írd be ezt a kódot ({start} percig érvényes). "
+            "Várakozás a jóváhagyásra…").format(
+           rstrip=server.rstrip('/'), start=start['expires_in'] // 60))
     deadline = time.monotonic() + start["expires_in"]
     while time.monotonic() < deadline:
         time.sleep(3)
         try:
             done = central.pair_poll(start["poll_id"])
         except CentralError as exc:
-            _out(f"Hiba: {exc}")
+            _out(_("Hiba: {exc}").format(exc=exc))
             return 1
         if done:
             cfg.server, cfg.token, cfg.runner_id = server.rstrip("/"), done["token"], done["runner_id"]
             cfg.name = name or done.get("name") or socket.gethostname()
             config.save(cfg)
-            _out(f"Párosítva: {done.get('name')}. Beállítások: {config.path()}")
-            _out("Indítás: skipwise-runner run")
+            _out(_("Párosítva: {get}. Beállítások: {path}").format(get=done.get('name'), path=config.path()))
+            _out(_("Indítás: skipwise-runner run"))
             return 0
-    _out("A kód lejárt; indítsd újra a párosítást.")
+    _out(_("A kód lejárt; indítsd újra a párosítást."))
     return 1
 
 
@@ -81,54 +83,57 @@ def adopt(server: str, runner_id: int, name: str | None, token: str) -> int:
     """The one-line installer redeemed its install code; keep the token (from stdin, never argv)."""
     token = token.strip()
     if not token or len(token) > 200:
-        _out("Hiba: nincs token a bemeneten.")
+        _out(_("Hiba: nincs token a bemeneten."))
         return 1
     cfg = config.load()
     if cfg.paired and (cfg.server.rstrip("/") != server.rstrip("/") or cfg.runner_id != runner_id):
-        _out(f"Ez a gép eddig a(z) {cfg.runner_id}. futtató volt itt: {cfg.server}; mostantól az új párosítás érvényes "
-             "(a régit a Skipwise Futtatók oldalán vond vissza).")
+        _out(_("Ez a gép eddig a(z) {runner_id}. futtató volt itt: {server}; mostantól az új "
+                "párosítás érvényes (a régit a Skipwise Futtatók oldalán vond vissza).").format(
+               runner_id=cfg.runner_id, server=cfg.server))
     cfg.server, cfg.token, cfg.runner_id = server.rstrip("/"), token, runner_id
     cfg.name = name or cfg.name or socket.gethostname()
     config.save(cfg)
-    _out(f"Párosítva: {cfg.name}. Beállítások: {config.path()}")
+    _out(_("Párosítva: {name}. Beállítások: {path}").format(name=cfg.name, path=config.path()))
     return 0
 
 
 def update_cmd(only_check: bool, back: bool) -> int:
     from . import release, updater
     if not updater.signed():
-        _out("Ebben a változatban még nincs aláírt frissítés. Kézi frissítés: uv tool install --force --refresh "
-             "--python 3.13 https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip")
+        _out(_("Ebben a változatban még nincs aláírt frissítés. Kézi frissítés: uv tool install --force --refresh "
+             "--python 3.13 https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip"))
         return 1
     if only_check:
         rel = updater.check()
         if rel is None:
             _out(updater.STATE["error"])
             return 1
-        _out(f"Telepítve: {__version__}; legújabb: {rel.version}" + (" (újabb)" if release.newer(rel.version) else ""))
+        _out(_("Telepítve: {__version__}; legújabb: {version}").format(
+            __version__=__version__, version=rel.version) + (_(" (újabb)") if release.newer(rel.version) else ""))
         return 0
     target = updater.history().get("previous") if back else None
     if back and not target:
-        _out("Nincs előző változat, amire visszaállhatnék.")
+        _out(_("Nincs előző változat, amire visszaállhatnék."))
         return 1
     ok, message, action = updater.update_now(target=target)
     _out(message)
     if ok and action:
-        _out("Ha szolgáltatásként fut, indítsd újra (systemctl restart dwyt-runner); az ablakos futtatót zárd be és "
-             "nyisd meg újra.")
+        _out(_("Ha szolgáltatásként fut, indítsd újra (systemctl restart dwyt-runner); az ablakos futtatót zárd be és "
+             "nyisd meg újra."))
     return 0 if ok else 1
 
 
 def run() -> int:
     cfg = config.load()
     if not cfg.paired:
-        _out("Előbb párosítsd: skipwise-runner pair https://KÖZPONT-CÍME")
+        _out(_("Előbb párosítsd: skipwise-runner pair https://KÖZPONT-CÍME"))
         return 1
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     if hasattr(signal, "SIGTERM"):
         signal.signal(signal.SIGTERM, lambda *_: stop.set())
-    _out(f"Skipwise futtató {__version__}: munkát kérek innen: {cfg.server} (leállítás: Ctrl+C)")
+    _out(_("Skipwise futtató {__version__}: munkát kérek innen: {server} (leállítás: Ctrl+C)").format(
+        __version__=__version__, server=cfg.server))
     try:
         for line in machine.watch_at_start(cfg):
             _out(line)
@@ -137,10 +142,12 @@ def run() -> int:
     try:
         worker.loop(cfg, stop)
     except Unauthorized as exc:
-        _out(f"A központ nem fogadja el a tokent ({exc}). Párosítsd újra: skipwise-runner pair {cfg.server}")
+        _out(_("A központ nem fogadja el a tokent ({exc}). Párosítsd újra: skipwise-runner pair "
+                "{server}").format(
+               exc=exc, server=cfg.server))
         return 2
     except Outdated as exc:
-        _out(f"{exc} Frissítés: uv tool upgrade dwyt-runner")
+        _out(_("{exc} Frissítés: uv tool upgrade dwyt-runner").format(exc=exc))
         return 3
     return 0
 
@@ -157,63 +164,66 @@ def app_running() -> bool:
 def reset_cmd(models: bool, yes: bool) -> int:
     from . import machine, reset
     if app_running():
-        _out("A futtató ablaka fut: az alaphelyzetet ott kérd (Működés lap), vagy előbb lépj ki belőle.")
+        _out(_("A futtató ablaka fut: az alaphelyzetet ott kérd (Működés lap), vagy előbb lépj ki belőle."))
         return 1
     if not yes:
-        what = "a beállítások, a kulcsok" + (" és a letöltött modellek" if models else "")
-        answer = input(f"Törlődnek {what}; a modellek helye: {machine.models_dir()}. Mehet? (igen/nem) ")
+        what = _("a beállítások, a kulcsok") + (_(" és a letöltött modellek") if models else "")
+        answer = input(_("Törlődnek {what}; a modellek helye: {models_dir}. Mehet? (igen/nem) ").format(
+            what=what, models_dir=machine.models_dir()))
         if answer.strip().lower() not in ("igen", "i", "yes", "y"):
-            _out("Nem töröltem semmit.")
+            _out(_("Nem töröltem semmit."))
             return 1
     server = config.load().server
     for line in reset.run(models):
         _out(line)
     if server:
-        _out(f"A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza.")
+        _out(_("A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza.").format(server=server))
     return 0
 
 
 def check() -> int:
     cfg = config.load()
     ok = True
-    _out(f"Skipwise futtató {__version__}, beállítások: {config.path()}")
-    _out(f"eszközök: {json.dumps(tools.versions())}")
+    _out(_("Skipwise futtató {__version__}, beállítások: {path}").format(__version__=__version__, path=config.path()))
+    _out(_("eszközök: {dumps}").format(dumps=json.dumps(tools.versions())))
     _out(f"ffmpeg: {tools.ffmpeg()}")
-    _out(f"deno: {tools.deno() or 'NINCS (a YouTube-letöltéshez kellhet)'}")
+    _out(f"deno: {tools.deno() or _('NINCS (a YouTube-letöltéshez kellhet)')}")
     caps = work.capabilities(cfg)
-    _out(f"képességek: átírás {', '.join(caps['transcribe_modes'])}; összefoglaló: "
-         f"{', '.join(caps['llm_roles']) or 'nincs beállítva (llm_url, llm_public_model)'}")
+    _out(_("képességek: átírás {join}; összefoglaló: {join2}").format(
+           join=', '.join(caps['transcribe_modes']),
+           join2=', '.join(caps['llm_roles']) or _(_('nincs beállítva (llm_url, llm_public_model)'))))
     if cfg.whisper_url:
-        _out(f"helyi Whisper: {cfg.whisper_url} ({', '.join(cfg.whisper_models)}); nem hívom meg, mert "
-             "a GPU-t elvenné az LLM-től")
+        _out(_("helyi Whisper: {whisper_url} ({join}); nem hívom meg, mert a GPU-t elvenné az "
+                "LLM-től").format(
+               whisper_url=cfg.whisper_url, join=', '.join(cfg.whisper_models)))
     if cfg.watch_dirs:
         from . import watch
-        _out(f"figyelt mappák: {', '.join(cfg.watch_dirs)} ({watch.options(cfg)})")
+        _out(_("figyelt mappák: {join} ({options})").format(join=', '.join(cfg.watch_dirs), options=watch.options(cfg)))
     local = localllm.server(cfg)
     if local:
-        state = "fut" if local.running() else ("telepítve, nem fut (a futtató elindítja)" if local.installed()
-                                               else "NINCS TELEPÍTVE")
-        _out(f"helyi modellszerver: {local.title} ({local.url}): {state}")
-    _out(f"engedélyezett tartományok: {', '.join(cfg.allowed_domains)}")
+        state = _("fut") if local.running() else (_("telepítve, nem fut (a futtató elindítja)") if local.installed()
+                                               else _("NINCS TELEPÍTVE"))
+        _out(_("helyi modellszerver: {title} ({url}): {state}").format(title=local.title, url=local.url, state=state))
+    _out(_("engedélyezett tartományok: {join}").format(join=', '.join(cfg.allowed_domains)))
     if not cfg.paired:
-        _out("párosítás: még nincs (skipwise-runner pair SERVER)")
+        _out(_("párosítás: még nincs (skipwise-runner pair SERVER)"))
         return 1
     try:
         central = Central(cfg.server, cfg.token)
         central.heartbeat(0)
     except Unauthorized:
         ok = False
-        _out("központ: a token érvénytelen vagy visszavonták")
+        _out(_("központ: a token érvénytelen vagy visszavonták"))
     except Outdated as exc:
         ok = False
-        _out(f"központ: {exc}")
+        _out(_("központ: {exc}").format(exc=exc))
     except CentralError as exc:
         ok = False
-        _out(f"központ: {exc}")
+        _out(_("központ: {exc}").format(exc=exc))
     except JobGone:  # job 0 does not exist: the token was accepted
-        _out(f"központ: rendben ({cfg.server})")
+        _out(_("központ: rendben ({server})").format(server=cfg.server))
     else:
-        _out(f"központ: rendben ({cfg.server})")
+        _out(_("központ: rendben ({server})").format(server=cfg.server))
     return 0 if ok else 1
 
 
@@ -236,30 +246,32 @@ def show_machine(as_json: bool) -> int:
     same_card = last is not None and last.gpu == card
     _out(machine.report(m, a, last.mode_reason if same_card else ""))
     if last:
-        old = "" if same_card else f" · még a régi kártyával ({last.gpu or 'videókártya nélkül'})"
-        _out("\nUtolsó p" + trial.report(last).split("\n", 1)[0][1:] + old)
+        old = "" if same_card else _(" · még a régi kártyával ({card})").format(
+            card=last.gpu or _("videókártya nélkül"))
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(last.at))
+        _out(_("\nUtolsó próbafuttatás · {when}").format(when=when) + (f" · {last.gpu}" if last.gpu else "") + old)
         for x in last.lamps:
             _out(f"  {x.label}: {x.value}" + (f" · {x.note}" if x.note else ""))
     else:
-        _out("\nPróbafuttatás még nem volt: skipwise-runner trial")
+        _out(_("\nPróbafuttatás még nem volt: skipwise-runner trial"))
     return 0
 
 
 def show_keys() -> int:
     from . import keystore
     cfg = config.load()
-    _out(f"A kulcsok helye: {keystore.name()}")
+    _out(_("A kulcsok helye: {where}").format(where=keystore.name()))
     ok = True
-    for label, present, check in (("AssemblyAI (felhős átírás)", cfg.assemblyai_key, keystore.check_assemblyai),
-                                  ("LLM (összefoglaló)", cfg.llm_key or cfg.llm_url or cfg.local_llm,
+    for label, present, check in ((_("AssemblyAI (felhős átírás)"), cfg.assemblyai_key, keystore.check_assemblyai),
+                                  (_("LLM (összefoglaló)"), cfg.llm_key or cfg.llm_url or cfg.local_llm,
                                    keystore.check_llm)):
         if not present:
-            _out(f"  {label}: nincs beállítva")
+            _out(_("  {label}: nincs beállítva").format(label=label))
             continue
         good, text = check(cfg)
         ok = ok and good
         _out(f"  {label}: {text}")
-    _out(f"  Párosítás a központtal: {'megvan' if cfg.token else 'nincs'}")
+    _out(_("  Párosítás a központtal: {state}").format(state=_('megvan') if cfg.token else _('nincs')))
     return 0 if ok else 1
 
 
@@ -271,7 +283,7 @@ def run_trial(model: str, llm_model: str = "") -> int:
         if name != last[0]:
             last[0] = name
             _out(f"  {name} …")
-    _out("Próbafuttatás (az első alkalommal a modellek letöltése hosszabb) …")
+    _out(_("Próbafuttatás (az első alkalommal a modellek letöltése hosszabb) …"))
     r = trial.run(config.load(), model, stage, llm_model)
     _out("\n" + trial.report(r))
     return 0 if not r.errors else 1
@@ -281,30 +293,33 @@ def local_llm(action: str, name: str | None) -> int:
     cfg = config.load()
     s = localllm.server(cfg)
     if s is None:
-        _out("Nincs beállítva helyi modellszerver: skipwise-runner config set local_llm ollama (vagy lmstudio)")
+        _out(_("Nincs beállítva helyi modellszerver: skipwise-runner config set local_llm ollama (vagy lmstudio)"))
         return 1
     try:
         if action == "status":
             if not s.running():
-                _out(f"{s.title}: nem fut ({'telepítve' if s.installed() else 'nincs telepítve'}); "
-                     "indítás: skipwise-runner llm start")
+                _out(_("{title}: nem fut ({installed}); indítás: skipwise-runner llm start").format(
+                       title=s.title, installed=_('telepítve') if s.installed() else _('nincs telepítve')))
                 return 1
             version = s.version()
-            _out(f"{s.title}{' ' + version if version else ''}: fut ({s.url}); az összefoglalókhoz: {s.openai_url}")
+            _out(_("{title}{versionifversionelse}: fut ({url}); az összefoglalókhoz: {openai_url}").format(
+                   title=s.title, versionifversionelse=' ' + version if version else '', url=s.url,
+                   openai_url=s.openai_url))
             for m in s.models():
                 size = f"{m.size_gb:.1f} GB".replace(".", ",") if m.size_gb else ""
-                state = "betöltve" + (f", {m.vram_gb:.1f} GB a videókártyán".replace(".", ",") if m.vram_gb else "") \
-                    if m.loaded else ""
+                gb = f"{m.vram_gb:.1f}".replace(".", ",") if m.vram_gb else ""
+                on_card = _(", {gb} GB a videókártyán").format(gb=gb) if gb else ""
+                state = _("betöltve") + on_card if m.loaded else ""
                 _out(f"  {m.name}  {size}  {state}".rstrip())
             return 0
         if action == "start":
             if s.ensure_running():
-                _out(f"{s.title}: fut ({s.url})")
+                _out(_("{title}: fut ({url})").format(title=s.title, url=s.url))
                 return 0
-            _out(f"{s.title} nincs telepítve ezen a gépen.")
+            _out(_("{title} nincs telepítve ezen a gépen.").format(title=s.title))
             return 1
         if not s.ensure_running():
-            _out(f"{s.title} nincs telepítve ezen a gépen.")
+            _out(_("{title} nincs telepítve ezen a gépen.").format(title=s.title))
             return 1
         if action == "pull":
             last = [-1]
@@ -316,19 +331,19 @@ def local_llm(action: str, name: str | None) -> int:
                 if pct >= last[0] + 5 or pct == 100:
                     last[0] = pct
                     _out(f"  {pct}%")
-            _out(f"Letöltés: {name}")
+            _out(_("Letöltés: {name}").format(name=name))
             s.pull(name, show)
-            _out("Kész.")
+            _out(_("Kész."))
         elif action == "load":
             s.load(name)
-            _out(f"Betöltve: {name}")
+            _out(_("Betöltve: {name}").format(name=name))
         elif action == "unload":
             done = [name] if name else s.unload_all()
             if name:
                 s.unload(name)
-            _out("Kiürítve: " + (", ".join(done) or "nem volt betöltött modell"))
+            _out(_("Kiürítve: ") + (", ".join(done) or _("nem volt betöltött modell")))
     except localllm.LocalLlmError as exc:
-        _out(f"Hiba: {exc}")
+        _out(_("Hiba: {exc}").format(exc=exc))
         return 1
     return 0
 
@@ -345,11 +360,11 @@ def whisper_cmd(action: str, model: str, path: str | None, language: str | None,
     try:
         if action == "prepare":
             _out(f"whisper.cpp: {whispercpp.whisper_cli(cfg, stage)}")
-            _out(f"modell: {whispercpp.whisper_model(model, stage)}")
-            _out(f"beszédfelismerés: {whispercpp.vad_model(stage)}")
+            _out(_("modell: {path}").format(path=whispercpp.whisper_model(model, stage)))
+            _out(_("beszédfelismerés: {vad_model}").format(vad_model=whispercpp.vad_model(stage)))
             seg, emb = whispercpp.speaker_models(stage)
-            _out(f"beszélők: {seg.name}, {emb.name}")
-            _out("Kész. Bekapcsolás: skipwise-runner config set whisper_builtin igen")
+            _out(_("beszélők: {name}, {name2}").format(name=seg.name, name2=emb.name))
+            _out(_("Kész. Bekapcsolás: skipwise-runner config set whisper_builtin igen"))
             return 0
         cfg.whisper_builtin, cfg.whisper_url = True, ""
         if model not in cfg.whisper_models:
@@ -365,15 +380,15 @@ def whisper_cmd(action: str, model: str, path: str | None, language: str | None,
         out = local.run(File(), {"model": model, "language": language, "diarize": True, "num_speakers": speakers},
                         cfg, stage)
         t = out["transcript"]
-        _out(f"\n{t['model']} · {t['language']} · {len(t['speakers'])} beszélő · "
-             f"{time.monotonic() - started:.0f} mp\n")
+        _out(_("\n{t} · {t2} · {len} beszélő · {monotonic:.0f} mp\n").format(
+               t=t['model'], t2=t['language'], len=len(t['speakers']), monotonic=time.monotonic() - started))
         for w in t["warnings"]:
-            _out(f"Figyelem: {w}")
+            _out(_("Figyelem: {warning}").format(warning=w))
         for turn in formatting.turns(t["segments"]):
             _out(f"[{formatting.hms(turn['start'])}] {turn['speaker'] or ''}: {turn['text']}\n")
         return 0
     except WorkError as exc:
-        _out(f"Hiba: {exc}")
+        _out(_("Hiba: {exc}").format(exc=exc))
         return 1
 
 
@@ -381,6 +396,11 @@ def main() -> None:
     try:
         sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles
     except (AttributeError, ValueError):
+        pass
+    try:
+        from . import i18n
+        i18n.apply(config.load())  # the command line's messages too (round 9)
+    except Exception:  # noqa: BLE001 - no settings yet
         pass
     parser = argparse.ArgumentParser(prog="skipwise-runner")
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -396,17 +416,17 @@ def main() -> None:
     adp.add_argument("--token-stdin", action="store_true", required=True)
     sub.add_parser("run")
     ap = sub.add_parser("app")
-    ap.add_argument("--browser", action="store_true", help="a böngészőben, saját ablak helyett")
-    ap.add_argument("--hidden", action="store_true", help="csak a tálcaikon indul, az ablak nem nyílik meg")
+    ap.add_argument("--browser", action="store_true", help=_("a böngészőben, saját ablak helyett"))
+    ap.add_argument("--hidden", action="store_true", help=_("csak a tálcaikon indul, az ablak nem nyílik meg"))
     ap.add_argument("--after", type=int, default=0, help=argparse.SUPPRESS)  # restart after an update
     sub.add_parser("check")
     sub.add_parser("app-quit", help=argparse.SUPPRESS)  # the uninstaller closes the running app
     up = sub.add_parser("update")
-    up.add_argument("--check", action="store_true", help="csak megnézi, van-e újabb")
-    up.add_argument("--back", action="store_true", help="vissza az előző változatra")
+    up.add_argument("--check", action="store_true", help=_("csak megnézi, van-e újabb"))
+    up.add_argument("--back", action="store_true", help=_("vissza az előző változatra"))
     rp = sub.add_parser("reset")
-    rp.add_argument("--models", action="store_true", help="a letöltött modelleket is")
-    rp.add_argument("--yes", action="store_true", help="kérdés nélkül")
+    rp.add_argument("--models", action="store_true", help=_("a letöltött modelleket is"))
+    rp.add_argument("--yes", action="store_true", help=_("kérdés nélkül"))
     asp = sub.add_parser("autostart")
     asp.add_argument("action", choices=["on", "off", "status"])
     mp = sub.add_parser("machine")
@@ -414,7 +434,7 @@ def main() -> None:
     sub.add_parser("keys")
     tp = sub.add_parser("trial")
     tp.add_argument("--model", default="large-v3")
-    tp.add_argument("--llm", default="", help="a helyi modellszerver ezen modelljével (alapból llm_private_model)")
+    tp.add_argument("--llm", default="", help=_("a helyi modellszerver ezen modelljével (alapból llm_private_model)"))
     wp = sub.add_parser("whisper")
     wp.add_argument("action", choices=["prepare", "try"])
     wp.add_argument("file", nargs="?")
@@ -447,9 +467,9 @@ def main() -> None:
         try:
             from .app import main as app_main
         except ImportError:
-            _out("Az ablakhoz telepítsd a futtatót a desktop kiegészítővel: "
+            _out(_("Az ablakhoz telepítsd a futtatót a desktop kiegészítővel: "
                  "uv tool install --force --python 3.13 \"dwyt-runner[desktop,local] @ "
-                 "https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\"")
+                 "https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\""))
             sys.exit(1)
         sys.exit(app_main.run(args.browser, args.hidden, args.after))
     if args.cmd == "reset":
@@ -459,14 +479,14 @@ def main() -> None:
         if args.action != "status":
             autostart.set_enabled(args.action == "on")
         on = autostart.enabled()
-        _out(("Bejelentkezéskor elindul: " + " ".join(autostart.command())) if on
-             else "Bejelentkezéskor nem indul el.")
+        _out((_("Bejelentkezéskor elindul: ") + " ".join(autostart.command())) if on
+             else _("Bejelentkezéskor nem indul el."))
         sys.exit(0)
     if args.cmd == "check":
         sys.exit(check())
     if args.cmd == "app-quit":
         from .app.main import quit_running
-        _out("A futtató ablakát bezártam." if quit_running() else "Nem futott a futtató ablaka.")
+        _out(_("A futtató ablakát bezártam.") if quit_running() else _("Nem futott a futtató ablaka."))
         sys.exit(0)
     if args.cmd == "update":
         sys.exit(update_cmd(args.check, args.back))
@@ -478,11 +498,11 @@ def main() -> None:
         sys.exit(run_trial(args.model, args.llm))
     if args.cmd == "whisper":
         if args.action == "try" and not args.file:
-            parser.error("whisper try: add meg a fájlt")
+            parser.error(_("whisper try: add meg a fájlt"))
         sys.exit(whisper_cmd(args.action, args.model, args.file, args.language, args.speakers))
     if args.cmd == "llm":
         if args.action in ("pull", "load") and not args.name:
-            parser.error(f"llm {args.action}: add meg a modell nevét")
+            parser.error(_("llm {action}: add meg a modell nevét").format(action=args.action))
         sys.exit(local_llm(args.action, args.name))
     cfg = config.load()
     if args.action == "show":
@@ -495,14 +515,14 @@ def main() -> None:
     try:
         config.set_value(cfg, args.key, args.value)
     except ValueError as exc:
-        _out(f"Nem mentettem: {exc}")
+        _out(_("Nem mentettem: {exc}").format(exc=exc))
         sys.exit(1)
     config.save(cfg)
     _out("Mentve.")
     if args.key in ("assemblyai_key", "llm_key") and args.value.strip():  # a test request right away
         from . import keystore
         good, text = (keystore.check_assemblyai if args.key == "assemblyai_key" else keystore.check_llm)(cfg)
-        _out(f"Próba: {text}" + ("" if good else " (a kulcs mentve, de nézd meg)"))
+        _out(_("Próba: {text}").format(text=text) + ("" if good else _(" (a kulcs mentve, de nézd meg)")))
 
 
 if __name__ == "__main__":

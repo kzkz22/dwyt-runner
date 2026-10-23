@@ -22,17 +22,19 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .. import (__version__, autostart, config, gateway, keystore, localllm, machine, modes, release, remote,
+from .. import (__version__, autostart, config, gateway, i18n, keystore, localllm, machine, modes, release, remote,
                settings, trial, updater, whispercpp)
 from . import wizard
 from .runtime import Runtime
+from ..i18n import gettext as _
+from ..i18n import N_, labels
 
 HERE = Path(__file__).parent
 COOKIE = "dwyt_runner_session"
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; "
        "frame-ancestors 'none'; form-action 'self'; base-uri 'none'")
-SECRET_LABELS = {"assemblyai_key": "AssemblyAI-kulcs (felhős átírás)", "llm_key": "LLM-kulcs (felhős összefoglaló)",
-                 "lmstudio_token": "LM Studio API-token"}
+SECRET_LABELS = labels({"assemblyai_key": N_("AssemblyAI-kulcs (felhős átírás)"),
+                        "llm_key": N_("LLM-kulcs (felhős összefoglaló)"), "lmstudio_token": N_("LM Studio API-token")})
 
 
 class App:
@@ -45,7 +47,12 @@ class App:
         self.on_quit = lambda: None
         self.reset_said: list[str] = []   # what the last Alaphelyzet did, shown on the first setup step
         self.sessions: dict[str, str] = {}     # session id -> CSRF token
-        self.env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
+        self.env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape(),
+                               extensions=["jinja2.ext.i18n"])
+        # the window's texts in the chosen language (round 9); newstyle: the message is markup, %-formatted
+        self.env.install_gettext_callables(i18n.gettext, lambda s, p, n: i18n.gettext(s if n == 1 else p),
+                                           newstyle=True)
+        self.env.globals.update(ui_lang=i18n.current)
         self.env.globals.update(version=__version__, lamp_text=machine.LAMP_TEXT,
                                 card_swap=machine.card_swap_servers)
 
@@ -63,10 +70,14 @@ class App:
         form = await request.form()
         expected = self.sessions.get(request.cookies.get(COOKIE, ""), "")
         if not expected or not secrets.compare_digest(str(form.get("csrf", "")), expected):
-            raise HTTPException(403, "Lejárt űrlap; töltsd újra az oldalt.")
+            raise HTTPException(403, _("Lejárt űrlap; töltsd újra az oldalt."))
         return form
 
     def render(self, request: Request, name: str, **ctx: Any) -> HTMLResponse:
+        try:
+            i18n.apply(config.load())  # the setting may have just changed (round 9)
+        except Exception:  # noqa: BLE001 - an unreadable settings file: keep the language as it is
+            pass
         sid = request.cookies.get(COOKIE, "")
         ctx.update(csrf=self.sessions.get(sid, ""), tab=name.split(".")[0], cfg=config.load())
         return HTMLResponse(self.env.get_template(name).render(**ctx))
@@ -82,12 +93,12 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     @api.middleware("http")
     async def guard(request: Request, call_next):
         if request.headers.get("host") != state.host:
-            return Response("Ismeretlen cím.", status_code=403)
+            return Response(_("Ismeretlen cím."), status_code=403)
         path = request.url.path
         if not (path in ("/belepes", "/ablak", "/ablak/kilepes") or path.startswith("/static/")):
             sid = request.cookies.get(COOKIE, "")
             if sid not in state.sessions:
-                return Response("Ezt az oldalt a Skipwise futtató ablaka nyitja meg.", status_code=403)
+                return Response(_("Ezt az oldalt a Skipwise futtató ablaka nyitja meg."), status_code=403)
         response = await call_next(request)
         response.headers.update({"Content-Security-Policy": CSP, "X-Content-Type-Options": "nosniff",
                                  "Referrer-Policy": "no-referrer", "Cache-Control": "no-store"})
@@ -96,7 +107,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     @api.get("/belepes")
     def enter(t: str = ""):
         if not state.launch_code or not secrets.compare_digest(t, state.launch_code):
-            return Response("Ez a belépő már nem érvényes; nyisd meg az ablakot újra.", status_code=403)
+            return Response(_("Ez a belépő már nem érvényes; nyisd meg az ablakot újra."), status_code=403)
         state.launch_code = ""  # one time only
         sid = secrets.token_urlsafe(24)
         state.sessions[sid] = secrets.token_urlsafe(24)
@@ -130,11 +141,11 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     async def quit_app(request: Request):
         await state.form(request)
         threading.Timer(0.5, state.on_quit).start()  # the goodbye page gets out first
-        return HTMLResponse("<!doctype html><html lang=\"hu\"><head><meta charset=\"utf-8\">"
+        return HTMLResponse(_("<!doctype html><html lang=\"hu\"><head><meta charset=\"utf-8\">"
                             "<title>Skipwise futtató</title>"
                             "<link rel=\"stylesheet\" href=\"/static/style.css\"></head><body><main>"
                             "<h1>A futtató leállt</h1><p class=\"muted\">Nem vesz fel munkát, amíg újra nem indítod."
-                            "</p></main></body></html>")
+                            "</p></main></body></html>"))
 
     # -- Állapot --
     @api.get("/allapot")
@@ -166,7 +177,9 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
                             remote_on=remote.enabled(cfg), paired=cfg.paired, server=cfg.server,
                             models_dir=str(machine.models_dir()),
                             trial_llm=gateway.is_trial(cfg.llm_url, cfg.llm_public_model)
-                            and not localllm.uses_local(cfg))
+                            and not localllm.uses_local(cfg),
+                            weak_language=i18n.weak_local_language(config.home()) if localllm.uses_local(cfg)
+                            else None)
 
     @api.post("/mukodes/osszefoglalo")
     async def summary_provider(request: Request):
@@ -202,7 +215,9 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         try:
             autostart.set_enabled(form.get("on") == "on")
         except OSError as exc:
-            return RedirectResponse("/mukodes?hiany=" + f"Az indítást nem sikerült beállítani: {exc}", status_code=303)
+            return RedirectResponse("/mukodes?hiany=" + _("Az indítást nem sikerült beállítani: "
+                                                           "{exc}").format(
+                                                          exc=exc), status_code=303)
         return RedirectResponse("/mukodes", status_code=303)
 
     @api.post("/mukodes/tavoli")
@@ -219,14 +234,15 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
     async def reset_all(request: Request):
         form = await state.form(request)
         if form.get("ertem") != "on":
-            return RedirectResponse("/mukodes?hiany=" + "Az alaphelyzethez pipáld be, hogy érted, mi törlődik.",
+            return RedirectResponse("/mukodes?hiany=" + _("Az alaphelyzethez pipáld be, hogy érted, mi törlődik."),
                                     status_code=303)
         server = config.load().server
         from starlette.concurrency import run_in_threadpool
         said = await run_in_threadpool(runtime.reset, form.get("models") == "on")
         if server:
-            said.append(f"A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza: onnan ez a gép nem tudja "
-                        "törölni magát.")
+            said.append(_("A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza: onnan ez "
+                           "a gép nem tudja törölni magát.").format(
+                          server=server))
         state.reset_said = said
         return RedirectResponse("/telepites/1", status_code=303)
 
@@ -308,14 +324,14 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         form = await state.form(request)
         target = updater.history().get("previous") if form.get("action") == "vissza" else None
         if activity.current():
-            updater.STATE["error"] = "Most munka fut; a frissítés utána indítható (vagy magától megtörténik)."
+            updater.STATE["error"] = _("Most munka fut; a frissítés utána indítható (vagy magától megtörténik).")
             return RedirectResponse("/gepem", status_code=303)
 
         def work() -> None:
             if form.get("action") == "keres":
                 updater.check()
                 return
-            ok, _, action = updater.update_now(target=target)
+            ok, _said, action = updater.update_now(target=target)
             if ok and action:
                 updater.finish(action)
         threading.Thread(target=work, daemon=True, name="update").start()
@@ -559,7 +575,7 @@ def create(runtime: Runtime, host: str) -> tuple[FastAPI, App]:
         form = await state.form(request)
         key = str(form.get("key", ""))
         if key not in SECRET_LABELS:
-            return Response("Ismeretlen kulcs.", status_code=400)
+            return Response(_("Ismeretlen kulcs."), status_code=400)
         cfg = config.load()
         setattr(cfg, key, str(form.get("value", "")).strip())
         config.save(cfg)

@@ -181,8 +181,18 @@ def bundle_libs(lib_dir: Path) -> None:
 
 DESKTOP = """[Desktop Entry]
 Type=Application
-Name=Skipwise futtató
-Comment=Átírás és összefoglaló a Skipwise-nak, ezen a gépen
+Name=Skipwise runner
+Name[hu]=Skipwise futtató
+Name[de]=Skipwise-Runner
+Name[it]=Runner Skipwise
+Name[es]=Runner de Skipwise
+Name[fr]=Runner Skipwise
+Comment=Transcription and summaries for Skipwise, on this computer
+Comment[hu]=Átírás és összefoglaló a Skipwise-nak, ezen a gépen
+Comment[de]=Transkription und Zusammenfassungen für Skipwise, auf diesem Rechner
+Comment[it]=Trascrizione e riassunti per Skipwise, su questo computer
+Comment[es]=Transcripción y resúmenes para Skipwise, en este equipo
+Comment[fr]=Transcription et résumés pour Skipwise, sur cet ordinateur
 Exec=skipwise-runner
 Icon=dwyt-runner
 Categories=AudioVideo;Utility;

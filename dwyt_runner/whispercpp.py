@@ -39,6 +39,7 @@ import httpx
 from . import machine, tools
 from .config import Config
 from .errors import WorkError
+from .i18n import gettext as _
 
 HF = "https://huggingface.co"
 RELEASES_API = "https://api.github.com/repos/ggml-org/whisper.cpp/releases?per_page=30"
@@ -102,11 +103,13 @@ def download(urls: str | list[str], dest: Path, stage: Callable[[str], None] | N
             continue
         if sha256 and digest.hexdigest() != sha256.lower():
             tmp.unlink(missing_ok=True)
-            raise WorkError(f"A letöltött fájl ellenőrzőösszege nem egyezik: {dest.name}. Nem használom.")
+            raise WorkError(_("A letöltött fájl ellenőrzőösszege nem egyezik: {name}. Nem használom.").format(
+                name=dest.name))
         tmp.replace(dest)
         return dest
     tmp.unlink(missing_ok=True)
-    raise WorkError(f"Nem sikerült letölteni: {dest.name} ({'; '.join(errors)[:400]}); később újrapróbálom.",
+    raise WorkError(_("Nem sikerült letölteni: {name} ({join}); később újrapróbálom.").format(
+        name=dest.name, join='; '.join(errors)[:400]),
                     "later")
 
 
@@ -120,7 +123,7 @@ def _unpack_tar(archive: Path, into: Path) -> None:
 
 def whisper_model(name: str, stage: Callable[[str], None] | None = None) -> Path:
     if name not in MODELS:
-        raise WorkError(f"Ismeretlen Whisper-modell: {name} ({', '.join(MODELS)}).")
+        raise WorkError(_("Ismeretlen Whisper-modell: {name} ({known}).").format(name=name, known=", ".join(MODELS)))
     return download(MODELS[name], models_dir() / "whisper" / Path(MODELS[name]).name, stage)
 
 
@@ -138,7 +141,7 @@ def speaker_models(stage: Callable[[str], None] | None = None) -> tuple[Path, Pa
         except WorkError:
             download(SEGMENTATION[1], seg, stage)
         if not seg.exists():
-            raise WorkError("A beszélő-szétválasztó modell csomagjában nincs model.onnx.")
+            raise WorkError(_("A beszélő-szétválasztó modell csomagjában nincs model.onnx."))
     emb = download(list(EMBEDDING), folder / Path(EMBEDDING[0]).name, stage)
     return seg, emb
 
@@ -163,9 +166,9 @@ def prepared(cfg: Config, model: str) -> bool:
 def prepare(cfg: Config, model: str, step: Callable[[str], None] | None = None) -> None:
     """Fetch what the built-in Whisper needs (the setup window's Hozzávalók step, `whisper prepare`)."""
     for label, get in (("whisper.cpp program", lambda: whisper_cli(cfg)),
-                       ("beszédfelismerő modell", lambda: whisper_model(model)),
-                       ("beszédérzékelő (VAD)", vad_model),
-                       ("beszélő-szétválasztó modellek", speaker_models)):
+                       (_("beszédfelismerő modell"), lambda: whisper_model(model)),
+                       (_("beszédérzékelő (VAD)"), vad_model),
+                       (_("beszélő-szétválasztó modellek"), speaker_models)):
         if step:
             step(label)
         get()
@@ -206,10 +209,10 @@ def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
         if path.is_dir():
             hits = sorted(path.rglob("whisper-cli.exe")) + sorted(path.rglob("whisper-cli"))
             if not hits:
-                raise WorkError(f"Nincs whisper-cli ebben a mappában: {path} (whisper_cli).")
+                raise WorkError(_("Nincs whisper-cli ebben a mappában: {path} (whisper_cli).").format(path=path))
             path = hits[0]
         if not path.exists():
-            raise WorkError(f"Nem található: {path} (whisper_cli).")
+            raise WorkError(_("Nem található: {path} (whisper_cli).").format(path=path))
         return str(path)
     folder = models_dir() / "whisper.cpp"
     if sys.platform == "win32":
@@ -220,12 +223,14 @@ def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
             r = httpx.get(RELEASES_API, timeout=30, headers={"User-Agent": "dwyt-runner"})
             releases = r.json() if r.status_code == 200 else []
         except (httpx.HTTPError, ValueError) as exc:
-            raise WorkError(f"Nem érem el a whisper.cpp kiadásait a GitHubon ({exc}); később újrapróbálom.",
+            raise WorkError(_("Nem érem el a whisper.cpp kiadásait a GitHubon ({exc}); később "
+                               "újrapróbálom.").format(
+                              exc=exc),
                             "later") from exc
         tag, asset = pick_release(releases if isinstance(releases, list) else [], bool(machine.nvidia_smi()))
         if asset is None:
-            raise WorkError("A whisper.cpp legutóbbi kiadásaiban nem találok Windowsos csomagot. Töltsd le kézzel, "
-                            "és add meg a mappáját: skipwise-runner config set whisper_cli MAPPA")
+            raise WorkError(_("A whisper.cpp legutóbbi kiadásaiban nem találok Windowsos csomagot. Töltsd le kézzel, "
+                            "és add meg a mappáját: skipwise-runner config set whisper_cli MAPPA"))
         name = asset["name"]
         digest = str(asset.get("digest") or "")
         target = folder / f"{tag}-{name[:-4]}"
@@ -237,12 +242,12 @@ def whisper_cli(cfg: Config, stage: Callable[[str], None] | None = None) -> str:
         hits = sorted(target.rglob("whisper-cli.exe"))
         if hits:
             return str(hits[0])
-        raise WorkError(f"A whisper.cpp csomagjában nincs whisper-cli.exe ({name}).")
+        raise WorkError(_("A whisper.cpp csomagjában nincs whisper-cli.exe ({name}).").format(name=name))
     found = shutil.which("whisper-cli")
     if found:
         return found
-    raise WorkError("Ezen a gépen nincs whisper-cli. Telepítsd (például a whisper.cpp csomagjából), vagy add meg a "
-                    "helyét: skipwise-runner config set whisper_cli /út/whisper-cli")
+    raise WorkError(_("Ezen a gépen nincs whisper-cli. Telepítsd (például a whisper.cpp csomagjából), vagy add meg a "
+                    "helyét: skipwise-runner config set whisper_cli /út/whisper-cli"))
 
 
 # ---- running ------------------------------------------------------------------------------------
@@ -254,10 +259,10 @@ def to_wav(src: str, workdir: str) -> str:
         subprocess.run([tools.ffmpeg(), "-nostdin", "-loglevel", "error", "-y", "-i", src, "-vn", "-ac", "1",
                         "-ar", "16000", "-c:a", "pcm_s16le", dst], check=True, capture_output=True, timeout=3600)
     except subprocess.CalledProcessError as exc:
-        raise WorkError("Az ffmpeg nem tudta kinyerni a hangot: " + exc.stderr.decode("utf-8", "replace")[-300:]) \
+        raise WorkError(_("Az ffmpeg nem tudta kinyerni a hangot: ") + exc.stderr.decode("utf-8", "replace")[-300:]) \
             from exc
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise WorkError(f"Az ffmpeg nem indult el vagy nem végzett: {exc}") from exc
+        raise WorkError(_("Az ffmpeg nem indult el vagy nem végzett: {exc}").format(exc=exc)) from exc
     return dst
 
 
@@ -273,10 +278,10 @@ def run_cli(args: list[str], stage: Callable[[str], None], cancelled: Callable[[
                                 encoding="utf-8", errors="replace", **_no_window())
     except OSError as exc:
         if getattr(exc, "winerror", None) in BLOCKED:
-            raise WorkError("A Windows alkalmazásvezérlése (Intelligens alkalmazásvezérlés vagy céges házirend) "
+            raise WorkError(_("A Windows alkalmazásvezérlése (Intelligens alkalmazásvezérlés vagy céges házirend) "
                             "nem engedi futtatni a whisper.cpp programját. Ezen a gépen a helyi átírás így nem megy; "
-                            "kérj felhős átírást, vagy használd egy másik gépen.") from exc
-        raise WorkError(f"A whisper.cpp nem indult el: {exc}") from exc
+                            "kérj felhős átírást, vagy használd egy másik gépen.")) from exc
+        raise WorkError(_("A whisper.cpp nem indult el: {exc}").format(exc=exc)) from exc
     tail: list[str] = []
     notes: list[str] = []  # the backend lines come first and would scroll out of the tail
     last = -1
@@ -290,9 +295,9 @@ def run_cli(args: list[str], stage: Callable[[str], None], cancelled: Callable[[
                 last = int(m.group(1))
                 stage("transcribe")
             if cancelled():
-                raise WorkError("megszakítva")
+                raise WorkError(_("megszakítva"))
             if time.monotonic() > deadline:
-                raise WorkError("A helyi átírás túl sokáig tartott; a munka leállt (whisper_timeout_min).")
+                raise WorkError(_("A helyi átírás túl sokáig tartott; a munka leállt (whisper_timeout_min)."))
         proc.wait()
     finally:
         if proc.poll() is None:
@@ -320,11 +325,11 @@ def transcribe_text(wav: str, model: Path, vad: Path, language: str | None, cfg:
     code, log = run_cli(args, stage, cancelled, deadline)
     device = device_of(log)
     if code != 0 and re.search(r"CUDA|Vulkan|Metal", log):  # the video card failed: once more on the processor
-        warnings.append("A videókártyán nem sikerült, ezért a processzoron futott (lassabb).")
+        warnings.append(_("A videókártyán nem sikerült, ezért a processzoron futott (lassabb)."))
         code, log = run_cli(args + ["-ng"], stage, cancelled, deadline)
         device = "cpu"
     if code != 0:
-        raise WorkError(f"A whisper.cpp hibával állt le ({code}): {log[-600:]}")
+        raise WorkError(_("A whisper.cpp hibával állt le ({code}): {log}").format(code=code, log=log[-600:]))
     data = json.loads(Path(base + ".json").read_text(encoding="utf-8", errors="replace"))
     found = str((data.get("result") or {}).get("language") or language or "").lower()
     words = []
@@ -344,9 +349,9 @@ def diarize(wav: str, speakers: int | None, threshold: float, stage: Callable[[s
         import numpy as np
         import sherpa_onnx
     except ImportError as exc:
-        raise WorkError("A beszélők szétválasztásához hiányzik a sherpa-onnx. Telepítsd a futtatót a helyi "
+        raise WorkError(_("A beszélők szétválasztásához hiányzik a sherpa-onnx. Telepítsd a futtatót a helyi "
                         "kiegészítővel: uv tool install --force --python 3.13 \"dwyt-runner[local] @ "
-                        "https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\"") from exc
+                        "https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\"")) from exc
     seg, emb = speaker_models(stage)
     stage("diarize")
     threads = max(1, (os.cpu_count() or 2) - 1)
@@ -357,7 +362,7 @@ def diarize(wav: str, speakers: int | None, threshold: float, stage: Callable[[s
         clustering=sherpa_onnx.FastClusteringConfig(num_clusters=speakers or -1, threshold=threshold),
         min_duration_on=0.3, min_duration_off=0.5)
     if not config.validate():
-        raise WorkError("A beszélő-szétválasztás beállítása hibás.")
+        raise WorkError(_("A beszélő-szétválasztás beállítása hibás."))
     sd = sherpa_onnx.OfflineSpeakerDiarization(config)
     with wave.open(wav, "rb") as w:
         samples = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768.0

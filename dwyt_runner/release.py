@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 import httpx
 
 from . import __version__
+from .i18n import gettext as _
 
 REPO = "kzkz22/skipwise-runner"
 BASE = f"https://github.com/{REPO}/releases"
@@ -36,7 +37,7 @@ def _b64(text: str) -> bytes:
     try:
         return base64.b64decode(text.strip(), validate=True)
     except ValueError as exc:
-        raise BadSignature("hibás base64") from exc
+        raise BadSignature(_("hibás base64")) from exc
 
 
 def verify(message: bytes, signature_file: str, public_key: str) -> str:
@@ -44,18 +45,18 @@ def verify(message: bytes, signature_file: str, public_key: str) -> str:
     from cryptography.exceptions import InvalidSignature
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     if not public_key:
-        raise BadSignature("nincs aláíró kulcs a futtatóban")
+        raise BadSignature(_("nincs aláíró kulcs a futtatóban"))
     pk = _b64(public_key)
     if len(pk) != 42 or pk[:2] != b"Ed":
-        raise BadSignature("hibás nyilvános kulcs")
+        raise BadSignature(_("hibás nyilvános kulcs"))
     lines = [line.strip() for line in signature_file.strip().splitlines()]
     if len(lines) < 4 or not lines[2].startswith("trusted comment: "):
-        raise BadSignature("hibás aláírásfájl")
+        raise BadSignature(_("hibás aláírásfájl"))
     sig = _b64(lines[1])
     if len(sig) != 74 or sig[:2] not in (b"Ed", b"ED"):
-        raise BadSignature("ismeretlen aláírás-fajta")
+        raise BadSignature(_("ismeretlen aláírás-fajta"))
     if sig[2:10] != pk[2:10]:
-        raise BadSignature("más kulccsal írták alá")
+        raise BadSignature(_("más kulccsal írták alá"))
     key = Ed25519PublicKey.from_public_bytes(pk[10:])
     signed = hashlib.blake2b(message, digest_size=64).digest() if sig[:2] == b"ED" else message
     trusted = lines[2][len("trusted comment: "):]
@@ -63,7 +64,7 @@ def verify(message: bytes, signature_file: str, public_key: str) -> str:
         key.verify(sig[10:], signed)
         key.verify(_b64(lines[3]), sig[10:] + trusted.encode("utf-8"))
     except InvalidSignature as exc:
-        raise BadSignature("az aláírás nem egyezik") from exc
+        raise BadSignature(_("az aláírás nem egyezik")) from exc
     return trusted
 
 
@@ -88,12 +89,12 @@ def parse(data: bytes) -> Release:
     raw = json.loads(data.decode("utf-8"))
     version = str(raw.get("version") or "")
     if not version or any(c not in "0123456789." for c in version):
-        raise BadSignature("hibás változatszám a listában")
+        raise BadSignature(_("hibás változatszám a listában"))
     assets = {}
     for kind, a in (raw.get("assets") or {}).items():
         name, digest = str(a.get("name") or ""), str(a.get("sha256") or "").lower()
         if not name or "/" in name or "\\" in name or len(digest) != 64:
-            raise BadSignature(f"hibás fájlbejegyzés: {kind}")
+            raise BadSignature(_("hibás fájlbejegyzés: {kind}").format(kind=kind))
         assets[str(kind)] = Asset(name=name, sha256=digest, size=int(a.get("size") or 0))
     return Release(version=version, assets=assets, notes=str(raw.get("notes") or "")[:2000])
 
@@ -118,10 +119,10 @@ def latest(public_key: str | None = None, timeout: float = 20) -> Release:
 def for_version(version: str, public_key: str | None = None, timeout: float = 20) -> Release:
     """A given release (going back to the previous version), signature checked."""
     if not version or any(c not in "0123456789." for c in version):
-        raise BadSignature("hibás változatszám")
+        raise BadSignature(_("hibás változatszám"))
     rel = _fetch(f"download/v{version}", public_key, timeout)
     if rel.version != version:
-        raise BadSignature("a kiadás listája más változatot nevez meg")
+        raise BadSignature(_("a kiadás listája más változatot nevez meg"))
     return rel
 
 

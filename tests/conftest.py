@@ -2,6 +2,7 @@
 OpenAI-compatible LLM server. Everything runs on localhost; no network, any OS."""
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import sys
@@ -15,6 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 HERE = Path(__file__).resolve().parent
+os.environ.setdefault("DWYT_RUNNER_LANG", "hu")  # the tests read the Hungarian texts (round 9)
 sys.path.insert(0, str(HERE / "fake_modules"))  # the fake yt_dlp shadows the real one
 sys.path.insert(0, str(HERE.parent))
 
@@ -75,6 +77,8 @@ class FakeCentral:
             body = await request.json()
             fake.claims.append(body)
             headers = {"Dwyt-Settings": "pending"} if fake.changes else {}
+            if fake.languages:
+                headers["Dwyt-Languages"] = fake.languages
             if not fake.queue:
                 return Response(status_code=204, headers=headers)
             return JSONResponse(fake.queue.pop(0), headers=headers)
@@ -195,6 +199,7 @@ class FakeCentral:
         self.files, self.registered, self.cut_once = {}, [], False
         self.reports, self.changes, self.change_results, self.no_settings = [], [], {}, False
         self.partials, self.no_partial, self.stop_on_partial = [], False, set()
+        self.languages = None  # the Dwyt-Languages claim header (round 9)
 
     def add_job(self, job_id: int, kind: str, data: dict) -> None:
         self.known.add(job_id)
@@ -528,3 +533,11 @@ def setup_window(opened):
             break
         time.sleep(0.05)
     return client, runtime, r.headers["location"]
+
+
+@pytest.fixture(autouse=True)
+def _hungarian_again():
+    """A test that renders another language must not leave it set for the next one."""
+    yield
+    from dwyt_runner import i18n
+    i18n.set_language("hu")

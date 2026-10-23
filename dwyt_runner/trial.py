@@ -23,6 +23,7 @@ from .config import Config
 from .errors import WorkError
 from .llm import Llm
 from .machine import GREEN, RED, YELLOW, Lamp
+from .i18n import gettext as _
 
 SAMPLE = Path(__file__).parent / "data" / "sample-jfk.mp3"
 SAMPLE_REPEAT = 3
@@ -86,33 +87,39 @@ def _minutes(seconds: float) -> str:
     m = seconds / 60
     if m < 1:
         return "kevesebb mint 1 perc"
-    return f"kb. {m:.0f} perc" if m < 90 else "kb. " + f"{m / 60:.1f}".replace(".", ",") + " óra"
+    if m < 90:
+        return _("kb. {n} perc").format(n=f"{m:.0f}")
+    return _("kb. {n} óra").format(n=f"{m / 60:.1f}".replace(".", ","))
 
 
 def whisper_lamp(speed: float, device: str, model: str) -> Lamp:
     hour = 3600 / speed
-    where = "a videókártyán" if device == "gpu" else "a processzoron"
-    note = f"{model}, {where} · egy 1 órás videó {_minutes(hour)} alatt kész, beszélőkkel"
+    where = _("a videókártyán") if device == "gpu" else _("a processzoron")
+    note = _("{model}, {where} · egy 1 órás videó {_minutes} alatt kész, beszélőkkel").format(
+        model=model, where=where, _minutes=_minutes(hour))
     if speed >= 6:
-        return Lamp("whisper", "Helyi átírás", "gyors", GREEN, note)
+        return Lamp("whisper", _("Helyi átírás"), _("gyors"), GREEN, note)
     if speed >= 1:
-        return Lamp("whisper", "Helyi átírás", "működik, lassabban", YELLOW, note)
-    return Lamp("whisper", "Helyi átírás", "nagyon lassú", RED, note + "; az átírás felhőben ajánlott")
+        return Lamp("whisper", _("Helyi átírás"), _("működik, lassabban"), YELLOW, note)
+    return Lamp("whisper", _("Helyi átírás"), _("nagyon lassú"), RED, note + _("; az átírás felhőben ajánlott"))
 
 
 def llm_lamp(model: str, tokens_s: float, size_gb: float | None) -> Lamp:
     per = SUMMARY_TOKENS / tokens_s if tokens_s else 0
-    note = f"{model} · {tokens_s:.0f} token/mp · egy összefoglaló {_minutes(per) if per >= 60 else f'kb. {per:.0f} mp'}"
+    note = _("{model} · {tokens_s:.0f} token/mp · egy összefoglaló {_minutes}").format(
+             model=model, tokens_s=tokens_s, _minutes=_minutes(per) if per >= 60 else f'kb. {per:.0f} mp')
     if tokens_s < 5:
-        return Lamp("llm", "Helyi összefoglaló", "túl lassú", RED, note + "; az összefoglaló felhőben ajánlott")
+        return Lamp("llm", _("Helyi összefoglaló"), _("túl lassú"), RED,
+                    note + _("; az összefoglaló felhőben ajánlott"))
     if size_gb and size_gb >= BIG_MODEL_GB:
         if tokens_s < FAST_TOKENS_S:  # good text, but a long video's summary (several parts) takes many minutes
-            return Lamp("llm", "Helyi összefoglaló", "jó, de lassú", YELLOW, note + "; nagy modell, a magyar szöveg "
-                        "közelít a felhőshöz, de egy hosszú videó összefoglalója több percig tart")
-        return Lamp("llm", "Helyi összefoglaló", "jó", GREEN, note + "; nagy modell, a magyar szöveg közelít a "
-                    "felhőshöz")
-    return Lamp("llm", "Helyi összefoglaló", "működik, de gyengébb", YELLOW,
-                note + ", a magyar szöveg gyengébb a felhősnél")
+            return Lamp("llm", _("Helyi összefoglaló"), _("jó, de lassú"), YELLOW,
+                        note + _("; nagy modell, a magyar szöveg közelít a felhőshöz, de egy hosszú videó "
+                                 "összefoglalója több percig tart"))
+        return Lamp("llm", _("Helyi összefoglaló"), _("jó"), GREEN, note + _("; nagy modell, a magyar szöveg közelít a "
+                    "felhőshöz"))
+    return Lamp("llm", _("Helyi összefoglaló"), _("működik, de gyengébb"), YELLOW,
+                note + _(", a magyar szöveg gyengébb a felhősnél"))
 
 
 def measure_whisper(cfg: Config, model: str, stage) -> tuple[float, str]:
@@ -134,7 +141,7 @@ def measure_whisper(cfg: Config, model: str, stage) -> tuple[float, str]:
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     if not raw.get("segments"):
-        raise WorkError("A próbafelvételből nem lett szöveg; a whisper.cpp nem működik rendesen.")
+        raise WorkError(_("A próbafelvételből nem lett szöveg; a whisper.cpp nem működik rendesen."))
     return seconds / took, raw.get("device") or "cpu"
 
 
@@ -162,8 +169,8 @@ def run(cfg: Config | None = None, whisper_model: str = "large-v3", stage=lambda
         r.whisper_speed, r.whisper_device = measure_whisper(tried, whisper_model, stage)
         r.lamps.append(whisper_lamp(r.whisper_speed, r.whisper_device, whisper_model))
     except WorkError as exc:
-        r.errors.append(f"Helyi átírás: {exc}")
-        r.lamps.append(Lamp("whisper", "Helyi átírás", "nem sikerült", RED, str(exc)[:300]))
+        r.errors.append(_("Helyi átírás: {exc}").format(exc=exc))
+        r.lamps.append(Lamp("whisper", _("Helyi átírás"), _("nem sikerült"), RED, str(exc)[:300]))
     model = llm_model or cfg.llm_private_model or cfg.llm_public_model
     if localllm.server(cfg) and model:
         try:
@@ -172,27 +179,29 @@ def run(cfg: Config | None = None, whisper_model: str = "large-v3", stage=lambda
             r.llm_tokens_s, size = measure_llm(cfg, model)
             r.lamps.append(llm_lamp(model, r.llm_tokens_s, size))
         except WorkError as exc:
-            r.errors.append(f"Helyi összefoglaló: {exc}")
-            r.lamps.append(Lamp("llm", "Helyi összefoglaló", "nem sikerült", RED, str(exc)[:300]))
+            r.errors.append(_("Helyi összefoglaló: {exc}").format(exc=exc))
+            r.lamps.append(Lamp("llm", _("Helyi összefoglaló"), _("nem sikerült"), RED, str(exc)[:300]))
     else:
-        r.lamps.append(Lamp("llm", "Helyi összefoglaló", "nincs beállítva", YELLOW,
-                            "nincs helyi modellszerver vagy modell (local_llm, llm_private_model)"))
+        r.lamps.append(Lamp("llm", _("Helyi összefoglaló"), _("nincs beállítva"), YELLOW,
+                            _("nincs helyi modellszerver vagy modell (local_llm, llm_private_model)")))
     whisper = next(x for x in r.lamps if x.key == "whisper")
     llm = next(x for x in r.lamps if x.key == "llm")
     if whisper.level == GREEN and llm.level == GREEN:
-        r.mode, reason = "sajat", "a **Saját gép** módot ajánljuk: az átírás és az összefoglaló is itt készül, ingyen"
+        r.mode, reason = "sajat", _("a **Saját gép** módot ajánljuk: az átírás és az összefoglaló is itt "
+                                    "készül, ingyen")
     elif whisper.level in (GREEN, YELLOW):
-        r.mode, reason = "vegyes", ("a **Vegyes** módot ajánljuk: az átírás itt, ingyen készül, az összefoglaló a "
-                                    "felhőben, jó minőségben")
+        r.mode, reason = "vegyes", (_("a **Vegyes** módot ajánljuk: az átírás itt, ingyen készül, az összefoglaló a "
+                                    "felhőben, jó minőségben"))
     else:
-        r.mode, reason = "felho", "a **Felhő** módot ajánljuk: ezen a gépen a helyi átírás túl lassú"
-    r.mode_reason = "A próba alapján " + reason + ". Bármelyiket választhatod."
+        r.mode, reason = "felho", _("a **Felhő** módot ajánljuk: ezen a gépen a helyi átírás túl lassú")
+    r.mode_reason = _("A próba alapján ") + reason + _(". Bármelyiket választhatod.")
     save(r)
     return r
 
 
 def report(r: TrialResult) -> str:
-    lines = [f"Próbafuttatás · {time.strftime('%Y-%m-%d %H:%M', time.localtime(r.at))}"
+    lines = [_("Próbafuttatás · {strftime}").format(
+               strftime=time.strftime('%Y-%m-%d %H:%M', time.localtime(r.at)))
              + (f" · {r.gpu}" if r.gpu else ""), ""]
     for x in r.lamps:
         lines.append(f"  {x.label}: {x.value}  [{machine.LAMP_TEXT[x.level]}]")

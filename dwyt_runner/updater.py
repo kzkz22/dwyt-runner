@@ -30,6 +30,7 @@ from typing import Any, Callable
 import httpx
 
 from . import __version__, config, release, tools
+from .i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 ASSET_FOR = {"uv": "wheel", "inno": "windows", "appimage": "appimage"}
@@ -103,7 +104,7 @@ def check(timeout: float = 20) -> release.Release | None:
     try:
         rel = release.latest(timeout=timeout)
     except (release.BadSignature, httpx.HTTPError, ValueError) as exc:
-        STATE["error"] = f"A frissítések nem ellenőrizhetők: {exc}"[:300]
+        STATE["error"] = _("A frissítések nem ellenőrizhetők: {exc}").format(exc=exc)[:300]
         log.warning("update check: %s", exc)
         return None
     STATE.update(latest=rel.version, error="")
@@ -114,7 +115,8 @@ def download(rel: release.Release, asset_kind: str, timeout: float = 60) -> Path
     """The release's file for this package kind, checked against the signed SHA-256."""
     asset = rel.assets.get(asset_kind)
     if asset is None:
-        raise UpdateError(f"A(z) {rel.version} kiadásban nincs ilyen csomag ({asset_kind}).")
+        raise UpdateError(_("A(z) {version} kiadásban nincs ilyen csomag ({asset_kind}).").format(
+            version=rel.version, asset_kind=asset_kind))
     folder().mkdir(parents=True, exist_ok=True)
     final = folder() / asset.name
     part = final.with_name(final.name + ".part")
@@ -130,15 +132,15 @@ def download(rel: release.Release, asset_kind: str, timeout: float = 60) -> Path
                 for chunk in resp.iter_bytes(1024 * 1024):
                     done += len(chunk)
                     if done > limit:
-                        raise UpdateError("A letöltött fájl nagyobb, mint az aláírt listában.")
+                        raise UpdateError(_("A letöltött fájl nagyobb, mint az aláírt listában."))
                     digest.update(chunk)
                     fh.write(chunk)
     except httpx.HTTPError as exc:
         part.unlink(missing_ok=True)
-        raise UpdateError(f"A frissítés letöltése nem sikerült: {exc}") from exc
+        raise UpdateError(_("A frissítés letöltése nem sikerült: {exc}").format(exc=exc)) from exc
     if digest.hexdigest() != asset.sha256:
         part.unlink(missing_ok=True)
-        raise UpdateError("A letöltött fájl nem egyezik az aláírt listával; nem telepítem.")
+        raise UpdateError(_("A letöltött fájl nem egyezik az aláírt listával; nem telepítem."))
     os.replace(part, final)
     return final
 
@@ -154,14 +156,16 @@ def _install_uv(path: Path) -> str:
     from .ytdlp_update import find_uv
     uv = find_uv()
     if uv is None:
-        raise UpdateError("Nincs uv ezen a gépen, amivel frissíthetnék.")
+        raise UpdateError(_("Nincs uv ezen a gépen, amivel frissíthetnék."))
     ext = extras()
     spec = f"dwyt-runner{'[' + ','.join(ext) + ']' if ext else ''} @ {path.resolve().as_uri()}"
     proc = subprocess.run([uv, "tool", "install", "--force", "--python", "3.13", spec], capture_output=True,
                           text=True, encoding="utf-8", errors="replace", timeout=1200, check=False,
                           **tools.no_window())
     if proc.returncode != 0:
-        raise UpdateError(((proc.stderr or proc.stdout).strip()[-300:]) or f"uv: kilépési kód {proc.returncode}")
+        raise UpdateError(((proc.stderr or proc.stdout).strip()[-300:]) or _("uv: kilépési kód "
+                                                                              "{returncode}").format(
+                                                                             returncode=proc.returncode))
     return "restart"
 
 
@@ -199,10 +203,10 @@ def install(rel: release.Release, how: str | None = None) -> str:
 def update_now(target: str | None = None) -> tuple[bool, str, str]:
     """(ok, message, action). target: a version to go back to (its own signed release), else the newest."""
     if not signed():
-        return False, "Ebben a változatban még nincs aláírt frissítés.", ""
+        return False, _("Ebben a változatban még nincs aláírt frissítés."), ""
     with _lock:
         if STATE["running"]:
-            return False, "A frissítés már folyamatban van.", ""
+            return False, _("A frissítés már folyamatban van."), ""
         STATE.update(running=True, message="")
     try:
         if target:
@@ -210,12 +214,13 @@ def update_now(target: str | None = None) -> tuple[bool, str, str]:
         else:
             rel = check()
             if rel is None:
-                raise UpdateError(STATE["error"] or "A frissítés nem ellenőrizhető.")
+                raise UpdateError(STATE["error"] or _("A frissítés nem ellenőrizhető."))
             if not release.newer(rel.version):
-                return True, f"A legújabb változat fut ({__version__}).", ""
+                return True, _("A legújabb változat fut ({__version__}).").format(__version__=__version__), ""
         action = install(rel)
-        message = f"{__version__} → {rel.version} telepítve; " + ("újraindulok." if action == "restart" else
-                                                               "a telepítő újraindítja a futtatót.")
+        message = _("{__version__} → {version} telepítve; ").format(
+            __version__=__version__, version=rel.version) + (_("újraindulok.") if action == "restart" else
+                                                               _("a telepítő újraindítja a futtatót."))
         STATE["message"] = message
         return True, message, action
     except (UpdateError, release.BadSignature, httpx.HTTPError, OSError, subprocess.SubprocessError) as exc:

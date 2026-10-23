@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="hu">
+<html lang="{{ ui_lang() }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skipwise futtató</title>
+<title>{{ _("Skipwise futtató") }}</title>
 <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/style.css">
 <script src="/static/app.js" defer></script>
@@ -11,18 +11,18 @@
 <body>
 <header class="tabs">
   <img class="app-logo" src="/static/logo.svg" width="26" height="26" alt="">
-  {% set tabs = [("allapot", "Állapot", "M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11"),
-                 ("mukodes", "Működés", "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"),
-                 ("gepem", "Gépem", "M3 4h18v7H3zM3 13h18v7H3zM7 7.5h.01M7 16.5h.01"),
-                 ("kulcsok", "Kulcsok", "M12 2l8 3v6c0 5-3.5 9-8 11c-4.5-2-8-6-8-11V5z")] %}
+  {% set tabs = [("allapot", _("Állapot"), "M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11"),
+                 ("mukodes", _("Működés"), "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"),
+                 ("gepem", _("Gépem"), "M3 4h18v7H3zM3 13h18v7H3zM7 7.5h.01M7 16.5h.01"),
+                 ("kulcsok", _("Kulcsok"), "M12 2l8 3v6c0 5-3.5 9-8 11c-4.5-2-8-6-8-11V5z")] %}
   {% for id, label, d in tabs %}
   <a href="/{{ id }}" class="tab{% if tab == id %} active{% endif %}">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="{{ d }}"/></svg>{{ label }}</a>
   {% endfor %}
-  <span class="version">Skipwise futtató {{ version }}</span>
+  <span class="version">{{ _("Skipwise futtató %(version)s", version=version) }}</span>
   {% if csrf %}<form method="post" action="/kilepes" class="quit">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <button title="A futtató leáll; amíg nem indítod el újra, nem vesz fel munkát">Kilépés</button></form>{% endif %}
+    <button title="{{ _("A futtató leáll; amíg nem indítod el újra, nem vesz fel munkát") }}">{{ _("Kilépés") }}</button></form>{% endif %}
 </header>
 <main>
 {% block main %}{% endblock %}

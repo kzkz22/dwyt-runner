@@ -1,0 +1,3728 @@
+# Italian translations for dwyt-runner.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the dwyt-runner project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: dwyt-runner VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-23 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: it\n"
+"Language-Team: it <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: cli.py:256
+msgid ""
+"\n"
+"Próbafuttatás még nem volt: skipwise-runner trial"
+msgstr ""
+"\n"
+"Nessuna prova eseguita: skipwise-runner trial"
+
+#: cli.py:59
+#, python-brace-format
+msgid ""
+"\n"
+"Párosítókód: {start}\n"
+msgstr ""
+"\n"
+"Codice di abbinamento: {start}\n"
+
+#: cli.py:252
+#, python-brace-format
+msgid ""
+"\n"
+"Utolsó próbafuttatás · {when}"
+msgstr ""
+"\n"
+"Ultima prova · {when}"
+
+#: cli.py:383
+#, python-brace-format
+msgid ""
+"\n"
+"{t} · {t2} · {len} beszélő · {monotonic:.0f} mp\n"
+msgstr ""
+"\n"
+"{t} · {t2} · {len} interlocutori · {monotonic:.0f} s\n"
+
+#: cli.py:274
+#, python-brace-format
+msgid "  Párosítás a központtal: {state}"
+msgstr "  Abbinamento con il servizio centrale: {state}"
+
+#: cli.py:269
+#, python-brace-format
+msgid "  {label}: nincs beállítva"
+msgstr "  {label}: non impostato"
+
+#: cli.py:525
+msgid " (a kulcs mentve, de nézd meg)"
+msgstr " (chiave salvata, ma controllala)"
+
+#: tracks.py:175
+msgid " (csak képként tárolt felirat van benne)"
+msgstr " (contiene solo sottotitoli salvati come immagini)"
+
+#: cli.py:112
+msgid " (újabb)"
+msgstr " (più recente)"
+
+#: localllm.py:165
+#, python-brace-format
+msgid " A szerver utolsó üzenete: {why}"
+msgstr " Ultimo messaggio del server: {why}"
+
+#: tracks.py:174
+#, python-brace-format
+msgid " {wanted} nyelvű"
+msgstr " in {wanted}"
+
+#: machine.py:474
+#, python-brace-format
+msgid " · a futtató modelljei {_num} GB"
+msgstr " · modelli del runner: {_num} GB"
+
+#: machine.py:453
+#, python-brace-format
+msgid " · illesztőprogram {driver}"
+msgstr " · driver {driver}"
+
+#: cli.py:249
+#, python-brace-format
+msgid " · még a régi kártyával ({card})"
+msgstr " · ancora con la scheda precedente ({card})"
+
+#: cli.py:170
+msgid " és a letöltött modellek"
+msgstr " e i modelli scaricati"
+
+#: app/templates/mukodes.html:67
+#, python-format
+msgid "(%(server)s/futtatok)"
+msgstr "(%(server)s/futtatok)"
+
+#: app/templates/mukodes.html:30
+msgid "(AssemblyAI · Qwen3.5 4B)."
+msgstr "(AssemblyAI · Qwen3.5 4B)."
+
+#: app/templates/telepites_4.html:105
+msgid ""
+"(ingyenes, rendszergazdai jog nélkül is\n"
+"    települ), majd kattints az Újravizsgálatra."
+msgstr ""
+"(gratuito, si installa anche senza diritti di amministratore),\n"
+"    poi fai clic su Ricontrolla."
+
+#: app/templates/kulcsok.html:21
+msgid "(kulcsonként egy kérés)"
+msgstr "(una richiesta per chiave)"
+
+#: app/templates/telepites_4.html:115
+msgid "(legfeljebb 1 perc)"
+msgstr "(al massimo 1 minuto)"
+
+#: settings.py:217 settings.py:244
+msgid "(üres)"
+msgstr "(vuoto)"
+
+#: app/templates/telepites_5.html:14
+#, python-format
+msgid ""
+",\n"
+"    vagy nyisd meg: %(server)s/futtatok"
+msgstr ""
+",\n"
+"    oppure apri: %(server)s/futtatok"
+
+#: trial.py:122
+msgid ", a magyar szöveg gyengébb a felhősnél"
+msgstr ", il testo ungherese è più debole che con un modello cloud"
+
+#: app/templates/telepites_3.html:31
+msgid ""
+", azt használjuk (ingyenes, gyors); gépi\n"
+"    feliratnál átírunk. Ezt a Skipwise Beállításaiban módosíthatod. Felhőbe semmi nem kerül magától: ha a gép ki van\n"
+"    kapcsolva, a munkák a Skipwise-ban várnak."
+msgstr ""
+", usiamo quelli (gratis, veloce); con i sottotitoli automatici\n"
+"    trascriviamo. Puoi cambiarlo nelle Impostazioni di Skipwise. Niente va nel cloud da solo: se il computer è\n"
+"    spento, i lavori aspettano in Skipwise."
+
+#: cli.py:311
+#, python-brace-format
+msgid ", {gb} GB a videókártyán"
+msgstr ", {gb} GB sulla scheda video"
+
+#: app/templates/mukodes.html:67
+msgid ""
+". A kulcsokat a böngésző ennek a gépnek a saját\n"
+"      kulcsával titkosítja, a Skipwise nem látja őket; minden változás naplóba kerül, és értesítés megy róla."
+msgstr ""
+". Il browser cifra le chiavi con la chiave propria di questo\n"
+"      computer, Skipwise non le vede; ogni modifica viene registrata e ricevi una notifica."
+
+#: machine.py:542 trial.py:197
+msgid ". Bármelyiket választhatod."
+msgstr ". Puoi sceglierne uno qualsiasi."
+
+#: app/templates/kulcsok.html:4
+msgid ""
+". Innen csak beírni és kipróbálni lehet őket; kiolvasni nem.\n"
+"  Javasolt egy külön kulcs keretkorláttal."
+msgstr ""
+". Qui puoi solo inserirle e provarle, non rileggerle.\n"
+"  Si consiglia una chiave separata con limite di spesa."
+
+#: settings.py:88
+msgid "0: a whisper.cpp dönt."
+msgstr "0: decide whisper.cpp."
+
+#: app/templates/telepites_4.html:53
+msgid "50 $ induló kreditet"
+msgstr "50 $ di credito iniziale"
+
+#: machine.py:468
+msgid "8 GB-nál kevesebb memória: a helyi munka nem ajánlott"
+msgstr "Meno di 8 GB di memoria: il lavoro locale è sconsigliato"
+
+#: trial.py:104
+msgid "; az átírás felhőben ajánlott"
+msgstr "; consigliata la trascrizione nel cloud"
+
+#: trial.py:113
+msgid "; az összefoglaló felhőben ajánlott"
+msgstr "; consigliato il riassunto nel cloud"
+
+#: trial.py:119
+msgid "; nagy modell, a magyar szöveg közelít a felhőshöz"
+msgstr "; modello grande, il testo ungherese si avvicina a quello del cloud"
+
+#: trial.py:117
+msgid "; nagy modell, a magyar szöveg közelít a felhőshöz, de egy hosszú videó összefoglalója több percig tart"
+msgstr "; modello grande, il testo ungherese si avvicina a quello del cloud, ma il riassunto di un video lungo richiede diversi minuti"
+
+#: app/server.py:144
+msgid "<!doctype html><html lang=\"hu\"><head><meta charset=\"utf-8\"><title>Skipwise futtató</title><link rel=\"stylesheet\" href=\"/static/style.css\"></head><body><main><h1>A futtató leállt</h1><p class=\"muted\">Nem vesz fel munkát, amíg újra nem indítod.</p></main></body></html>"
+msgstr "<!doctype html><html lang=\"it\"><head><meta charset=\"utf-8\"><title>Runner Skipwise</title><link rel=\"stylesheet\" href=\"/static/style.css\"></head><body><main><h1>Il runner si è fermato</h1><p class=\"muted\">Non accetta lavori finché non lo riavvii.</p></main></body></html>"
+
+#: local.py:57
+#, python-brace-format
+msgid "A GPU-gép most nem indítható (HTTP {status_code}: {str}); később újrapróbálom."
+msgstr "La macchina GPU non può essere avviata ora (HTTP {status_code}: {str}); riproverò più tardi."
+
+#: app/templates/allapot.html:19 app/templates/telepites_5.html:24
+#: settings.py:48
+msgid "A Skipwise címe"
+msgstr "Indirizzo di Skipwise"
+
+#: app/templates/telepites_6.html:4
+msgid ""
+"A Skipwise futtató mostantól a tálcán fut (jobb alul, a kék Skipwise-ikon, sarkában az állapotot mutató színes pöttyel). Az ablak bezárása csak elrejti;\n"
+"  kilépni az ikon menüjéből lehet."
+msgstr ""
+"Da ora il runner Skipwise resta nell'area di notifica (in basso a destra, l'icona blu di Skipwise con un pallino colorato di stato nell'angolo). Chiudere la finestra la nasconde soltanto;\n"
+"  per uscire usa il menu dell'icona."
+
+#: app/main.py:303
+#, python-brace-format
+msgid ""
+"A Skipwise futtató nem indult el: {exc}\n"
+"\n"
+"Részletek: {log}"
+msgstr ""
+"Il runner Skipwise non si è avviato: {exc}\n"
+"\n"
+"Dettagli: {log}"
+
+#: app/runtime.py:49
+msgid "A Skipwise nem fogadja el a párosítást (visszavonták?). Párosítsd újra."
+msgstr "Skipwise non accetta l'abbinamento (è stato revocato?). Abbina di nuovo."
+
+#: cli.py:180
+#, python-brace-format
+msgid "A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza."
+msgstr "Revoca il vecchio runner in Skipwise ({server}/futtatok)."
+
+#: app/server.py:243
+#, python-brace-format
+msgid "A Skipwise-ban ({server}/futtatok) a régi futtatót vond vissza: onnan ez a gép nem tudja törölni magát."
+msgstr "Revoca il vecchio runner in Skipwise ({server}/futtatok): questo computer non può rimuoversi da lì."
+
+#: app/templates/mukodes.html:41
+msgid "A Skipwise-ban állítod be (alapból csak a feltöltő saját felirata; gépi feliratnál átírás)."
+msgstr "Si imposta in Skipwise (di default solo i sottotitoli dell'autore; con quelli automatici, trascrizione)."
+
+#: settings.py:55
+msgid "A Skipwise-ból is állítható"
+msgstr "Impostabile anche da Skipwise"
+
+#: app/templates/mukodes.html:66
+msgid "A Skipwise-ból is állítható:"
+msgstr "Impostabile anche da Skipwise:"
+
+#: app/templates/telepites_4.html:155
+msgid "A Tovább gomb akkor lesz aktív, ha a „kell” jelű részek megvannak."
+msgstr "Il pulsante Avanti si attiva quando le parti segnate «necessario» sono pronte."
+
+#: local.py:61
+#, python-brace-format
+msgid "A Whisper-cím nem jó (HTTP 404): {str}. Ellenőrizd: skipwise-runner config set whisper_url http://AI-ROUTER:8080/upstream/whisper"
+msgstr "L'indirizzo di Whisper non è corretto (HTTP 404): {str}. Controlla: skipwise-runner config set whisper_url http://AI-ROUTER:8080/upstream/whisper"
+
+#: local.py:64
+#, python-brace-format
+msgid "A Whisper-worker elutasította a munkát (HTTP {status_code}): {str}"
+msgstr "Il worker Whisper ha rifiutato il lavoro (HTTP {status_code}): {str}"
+
+#: local.py:114
+msgid "A Whisper-worker eredmény nélkül zárta le a kapcsolatot (leállították vagy újraindult); később újrapróbálom."
+msgstr "Il worker Whisper ha chiuso la connessione senza risultato (fermato o riavviato); riproverò più tardi."
+
+#: local.py:96
+#, python-brace-format
+msgid "A Whisper-worker hibát jelzett: {error}"
+msgstr "Il worker Whisper ha segnalato un errore: {error}"
+
+#: local.py:102
+#, python-brace-format
+msgid "A Whisper-worker nem érhető el ({whisper_url}): {exc}. Be van kapcsolva az AI-router? Később újrapróbálom."
+msgstr "Il worker Whisper non è raggiungibile ({whisper_url}): {exc}. L'AI router è acceso? Riproverò più tardi."
+
+#: local.py:106
+#, python-brace-format
+msgid "A Whisper-worker {FIRST_BYTE_S60} percig nem válaszolt; később újrapróbálom."
+msgstr "Il worker Whisper non ha risposto per {FIRST_BYTE_S60} minuti; riproverò più tardi."
+
+#: local.py:85
+#, python-brace-format
+msgid "A Whisper-worker {limit_s60} perc alatt sem végzett; a munka leállt (whisper_timeout_min)."
+msgstr "Il worker Whisper non ha finito entro {limit_s60} minuti; il lavoro è stato interrotto (whisper_timeout_min)."
+
+#: whispercpp.py:281
+msgid "A Windows alkalmazásvezérlése (Intelligens alkalmazásvezérlés vagy céges házirend) nem engedi futtatni a whisper.cpp programját. Ezen a gépen a helyi átírás így nem megy; kérj felhős átírást, vagy használd egy másik gépen."
+msgstr "Il controllo delle applicazioni di Windows (Smart App Control o un criterio aziendale) non consente di eseguire whisper.cpp. Su questo computer la trascrizione locale non funziona; chiedi la trascrizione nel cloud o usa un altro computer."
+
+#: settings.py:139
+msgid "A YouTube gyakran változik; a futtató naponta (és egy elutasított letöltés után) megnézi, van-e újabb yt-dlp, és két munka között telepíti."
+msgstr "YouTube cambia spesso; il runner controlla ogni giorno (e dopo un download rifiutato) se c'è un yt-dlp più recente e lo installa tra un lavoro e l'altro."
+
+#: app/templates/gepem.html:72
+msgid ""
+"A YouTube gyakran változik; ha egy videó letöltése „HTTP 403” hibával akad el, többnyire egy újabb\n"
+"    yt-dlp segít. A futtató ezt naponta magától megnézi, és egy ilyen hiba után is."
+msgstr ""
+"YouTube cambia spesso; se il download di un video si blocca con l'errore «HTTP 403», di solito aiuta\n"
+"    un yt-dlp più recente. Il runner lo controlla da solo ogni giorno, e anche dopo un errore del genere."
+
+#: errors.py:37
+#, python-brace-format
+msgid "A YouTube most elutasította a kérést ({what}); később újrapróbálom: {text}"
+msgstr "YouTube ha rifiutato la richiesta ({what}); riproverò più tardi: {text}"
+
+#: app/templates/gepem.html:58
+msgid "A YouTube-letöltő (yt-dlp)"
+msgstr "Il downloader di YouTube (yt-dlp)"
+
+#: reset.py:38
+msgid "A bejelentkezéskori indulást kikapcsoltam."
+msgstr "L'avvio all'accesso è disattivato."
+
+#: reset.py:40
+#, python-brace-format
+msgid "A bejelentkezéskori indulást nem sikerült kikapcsolni: {exc}"
+msgstr "Impossibile disattivare l'avvio all'accesso: {exc}"
+
+#: whispercpp.py:365
+msgid "A beszélő-szétválasztás beállítása hibás."
+msgstr "L'impostazione della separazione degli interlocutori è errata."
+
+#: whispercpp.py:144
+msgid "A beszélő-szétválasztó modell csomagjában nincs model.onnx."
+msgstr "Nel pacchetto del modello di separazione degli interlocutori manca model.onnx."
+
+#: whispercpp.py:352
+msgid "A beszélők szétválasztásához hiányzik a sherpa-onnx. Telepítsd a futtatót a helyi kiegészítővel: uv tool install --force --python 3.13 \"dwyt-runner[local] @ https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\""
+msgstr "Per separare gli interlocutori manca sherpa-onnx. Installa il runner con l'estensione locale: uv tool install --force --python 3.13 \"dwyt-runner[local] @ https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\""
+
+#: protocol.py:151
+#, python-brace-format
+msgid "A beállítás eredménye: HTTP {status_code}: {_message}"
+msgstr "Esito dell'impostazione: HTTP {status_code}: {_message}"
+
+#: protocol.py:144
+#, python-brace-format
+msgid "A beállítás-változások lekérése: HTTP {status_code}: {_message}"
+msgstr "Recupero delle modifiche alle impostazioni: HTTP {status_code}: {_message}"
+
+#: settings.py:56
+msgid "A beállítások a Skipwise Futtatók oldaláról, a Beállítás gombbal is módosíthatók; a kulcsokat a böngésző a futtató saját kulcsával titkosítja. Minden változás naplóba kerül. Automatikusan: szerveren be, az asztali alkalmazásban ki."
+msgstr "Le impostazioni si possono cambiare anche dalla pagina Runner di Skipwise con il pulsante Impostazioni; il browser cifra le chiavi con la chiave propria del runner. Ogni modifica viene registrata. Automatico: attivo sui server, disattivo nell'app desktop."
+
+#: protocol.py:137
+#, python-brace-format
+msgid "A beállítások jelentése: HTTP {status_code}: {_message}"
+msgstr "Invio delle impostazioni: HTTP {status_code}: {_message}"
+
+#: app/templates/telepites_1.html:21
+msgid "A beállításokat később az ablak fülein is megadhatod"
+msgstr "Puoi impostarle anche più tardi nelle schede della finestra"
+
+#: reset.py:54
+msgid "A beállításokat töröltem."
+msgstr "Impostazioni eliminate."
+
+#: captions.py:117 tracks.py:242
+msgid "A felirat üres."
+msgstr "I sottotitoli sono vuoti."
+
+#: captions.py:114
+msgid "A feliratfájl nem olvasható."
+msgstr "Il file dei sottotitoli non è leggibile."
+
+#: work.py:180
+#, python-brace-format
+msgid "A felvétel a(z) {urlsplit} oldalon van, ami nincs az engedélyezett tartományok között (allowed_domains)."
+msgstr "La registrazione si trova su {urlsplit}, che non è tra i domini consentiti (allowed_domains)."
+
+#: app/templates/mukodes.html:27
+#, python-format
+msgid "A fiókod tartalomnyelve: %(language)s. Ezen a nyelven a helyi modellek összefoglalója és fordítása érezhetően gyengébb, mint egy felhős modellé. Jobb eredményhez válaszd a Vegyes módot: az átírás itt marad, az összefoglaló a felhőben készül."
+msgstr "Lingua dei contenuti del tuo account: %(language)s. In questa lingua riassunti e traduzioni dei modelli locali sono sensibilmente più deboli di quelli di un modello cloud. Per risultati migliori scegli la modalità Misto: la trascrizione resta qui, il riassunto si fa nel cloud."
+
+#: updater.py:140
+#, python-brace-format
+msgid "A frissítés letöltése nem sikerült: {exc}"
+msgstr "Download dell'aggiornamento non riuscito: {exc}"
+
+#: updater.py:209
+msgid "A frissítés már folyamatban van."
+msgstr "L'aggiornamento è già in corso."
+
+#: updater.py:217
+msgid "A frissítés nem ellenőrizhető."
+msgstr "Impossibile verificare l'aggiornamento."
+
+#: remote.py:250
+#, python-brace-format
+msgid "A frissítés nem futott le: {exc}"
+msgstr "L'aggiornamento non è stato eseguito: {exc}"
+
+#: updater.py:107
+#, python-brace-format
+msgid "A frissítések nem ellenőrizhetők: {exc}"
+msgstr "Impossibile verificare gli aggiornamenti: {exc}"
+
+#: app/templates/gepem.html:66 app/templates/gepem.html:85
+msgid "A futtató a következő két munka között telepíti."
+msgstr "Il runner lo installa tra i prossimi due lavori."
+
+#: app/main.py:253
+#, python-brace-format
+msgid "A futtató ablaka a böngészőben: {url}"
+msgstr "La finestra del runner nel browser: {url}"
+
+#: cli.py:167
+msgid "A futtató ablaka fut: az alaphelyzetet ott kérd (Működés lap), vagy előbb lépj ki belőle."
+msgstr "La finestra del runner è aperta: chiedi il ripristino da lì (scheda Funzionamento) oppure chiudila prima."
+
+#: cli.py:489
+msgid "A futtató ablakát bezártam."
+msgstr "La finestra del runner è stata chiusa."
+
+#: app/templates/telepites_1.html:16
+msgid "A futtató csak kifelé kapcsolódik; a gépedet kívülről senki nem éri el."
+msgstr "Il runner si collega solo verso l'esterno; nessuno può raggiungere il tuo computer dall'esterno."
+
+#: settings.py:135
+msgid "A futtató frissítése magától"
+msgstr "Aggiorna il runner automaticamente"
+
+#: worker.py:156
+#, python-brace-format
+msgid "A futtató hibára futott: {type}: {exc}"
+msgstr "Il runner ha incontrato un errore: {type}: {exc}"
+
+#: app/templates/base.html:25
+msgid "A futtató leáll; amíg nem indítod el újra, nem vesz fel munkát"
+msgstr "Il runner si ferma; finché non lo riavvii non accetta lavori"
+
+#: worker.py:241
+msgid "A futtató leállt, mielőtt elkezdte; később újra kiadható."
+msgstr "Il runner si è fermato prima di iniziarlo; potrà essere riassegnato più tardi."
+
+#: app/runtime.py:54
+#, python-brace-format
+msgid "A futtató leállt: {exc}"
+msgstr "Il runner si è fermato: {exc}"
+
+#: app/main.py:189
+msgid "A futtató már fut; előhoztam az ablakát."
+msgstr "Il runner è già in esecuzione; ho portato in primo piano la sua finestra."
+
+#: app/templates/allapot.html:42
+msgid "A futtató nem fut."
+msgstr "Il runner non è in esecuzione."
+
+#: settings.py:53
+msgid "A futtató neve"
+msgstr "Nome del runner"
+
+#: app/templates/allapot.html:20
+msgid "A futtató neve (így látszik a Skipwise-ban)"
+msgstr "Nome del runner (come appare in Skipwise)"
+
+#: settings.py:60
+msgid "A futtató nyelve"
+msgstr "Lingua del runner"
+
+#: app/templates/gepem.html:76
+msgid "A futtató változata"
+msgstr "Versione del runner"
+
+#: protocol.py:190
+#, python-brace-format
+msgid "A fájl letöltése megszakadt: {exc}"
+msgstr "Il download del file si è interrotto: {exc}"
+
+#: protocol.py:175
+#, python-brace-format
+msgid "A fájl letöltése: HTTP {status_code}"
+msgstr "Download del file: HTTP {status_code}"
+
+#: work.py:115
+msgid "A fájl már nincs meg a figyelt mappában (áthelyezték vagy törölték)."
+msgstr "Il file non è più nella cartella monitorata (spostato o eliminato)."
+
+#: protocol.py:184
+msgid "A fájl nagyobb, mint amennyit ez a futtató elfogad (max_file_mb)."
+msgstr "Il file è più grande di quanto accetti questo runner (max_file_mb)."
+
+#: media.py:128
+msgid "A fájl tartalma nem egyezik a beküldöttel (megváltozott vagy sérült)."
+msgstr "Il contenuto del file non corrisponde a quello inviato (modificato o danneggiato)."
+
+#: tracks.py:246
+msgid "A fájlba ágyazott feliratból készült: nincsenek benne beszélők."
+msgstr "Creato dai sottotitoli incorporati nel file: senza interlocutori."
+
+#: tracks.py:176
+#, python-brace-format
+msgid "A fájlban nincs{what} szöveges felirat{pictures}. Válassz helyi vagy felhős átírást; az elem oldalán látszik, milyen sávok vannak benne."
+msgstr "Il file non ha sottotitoli testuali{what}{pictures}. Scegli la trascrizione locale o nel cloud; la pagina dell'elemento mostra quali tracce contiene."
+
+#: tracks.py:125
+#, python-brace-format
+msgid "A fájlban: hangsáv: {audio}; felirat: {subs}."
+msgstr "Nel file: traccia audio: {audio}; sottotitoli: {subs}."
+
+#: app/templates/telepites_5.html:25
+msgid "A gép neve (így látszik a Skipwise-ban)"
+msgstr "Nome del computer (come appare in Skipwise)"
+
+#: machine.py:542
+msgid "A géped alapján "
+msgstr "In base al tuo computer, "
+
+#: cloud.py:159 local.py:154
+msgid "A hangban nem volt felismerhető beszéd."
+msgstr "Nell'audio non c'era parlato riconoscibile."
+
+#: settings.py:100
+msgid "A helyi modell kontextusa"
+msgstr "Contesto del modello locale"
+
+#: settings.py:106
+msgid "A helyi modellszerver az elsődleges"
+msgstr "Il server di modelli locale ha la precedenza"
+
+#: settings.py:98
+msgid "A helyi modellszerver címe"
+msgstr "Indirizzo del server di modelli locale"
+
+#: whispercpp.py:300
+msgid "A helyi átírás túl sokáig tartott; a munka leállt (whisper_timeout_min)."
+msgstr "La trascrizione locale ha richiesto troppo tempo; il lavoro è stato interrotto (whisper_timeout_min)."
+
+#: app/templates/telepites_4.html:144
+msgid ""
+"A javasolt modell a videókártyád memóriájához illik. A kis helyi modellek magyar összefoglalója\n"
+"    érezhetően gyengébb, mint egy felhős modellé."
+msgstr ""
+"Il modello proposto si adatta alla memoria della tua scheda video. I piccoli modelli locali scrivono riassunti in ungherese\n"
+"    sensibilmente più deboli di un modello cloud."
+
+#: app/templates/gepem.html:69
+#, python-format
+msgid "A keresés nem sikerült: %(error)s"
+msgstr "Il controllo non è riuscito: %(error)s"
+
+#: settings.py:159
+msgid "A kulcsok helye"
+msgstr "Dove sono conservate le chiavi"
+
+#: app/templates/kulcsok.html:4
+msgid "A kulcsok helye:"
+msgstr "Dove sono conservate le chiavi:"
+
+#: cli.py:263
+#, python-brace-format
+msgid "A kulcsok helye: {where}"
+msgstr "Dove sono conservate le chiavi: {where}"
+
+#: reset.py:44
+msgid "A kulcsokat töröltem a rendszer kulcstárolójából."
+msgstr "Chiavi eliminate dall'archivio chiavi di sistema."
+
+#: app/templates/telepites_4.html:40 app/templates/telepites_4.html:92
+msgid "A kulcsot a gép saját, védett kulcstárolójában őrizzük. A Skipwise sosem látja."
+msgstr "Conserviamo la chiave nell'archivio protetto del computer. Skipwise non la vede mai."
+
+#: cli.py:78
+msgid "A kód lejárt; indítsd újra a párosítást."
+msgstr "Il codice è scaduto; avvia di nuovo l'abbinamento."
+
+#: app/templates/allapot.html:15 app/templates/telepites_5.html:18
+msgid "A kód lejárt; kérj újat."
+msgstr "Il codice è scaduto; chiedine uno nuovo."
+
+#: protocol.py:62
+#, python-brace-format
+msgid "A központ hibát adott (HTTP {status_code})."
+msgstr "Il servizio centrale ha restituito un errore (HTTP {status_code})."
+
+#: cli.py:145
+#, python-brace-format
+msgid "A központ nem fogadja el a tokent ({exc}). Párosítsd újra: skipwise-runner pair {server}"
+msgstr "Il servizio centrale non accetta il token ({exc}). Abbina di nuovo: skipwise-runner pair {server}"
+
+#: protocol.py:53 protocol.py:108
+#, python-brace-format
+msgid "A központ nem érhető el ({server}): {exc}"
+msgstr "Il servizio centrale non è raggiungibile ({server}): {exc}"
+
+#: app/templates/gepem.html:4
+#, python-format
+msgid "A legutóbbi próbafuttatás még ezzel futott: %(card)s. Futtass újat: lehet, hogy most más mód is jól menne."
+msgstr "L'ultima prova era ancora con: %(card)s. Eseguine una nuova: ora potrebbe andare bene anche un'altra modalità."
+
+#: updater.py:219
+#, python-brace-format
+msgid "A legújabb változat fut ({__version__})."
+msgstr "È in esecuzione la versione più recente ({__version__})."
+
+#: whispercpp.py:106
+#, python-brace-format
+msgid "A letöltött fájl ellenőrzőösszege nem egyezik: {name}. Nem használom."
+msgstr "Il checksum del file scaricato non corrisponde: {name}. Non lo uso."
+
+#: updater.py:135
+msgid "A letöltött fájl nagyobb, mint az aláírt listában."
+msgstr "Il file scaricato è più grande che nell'elenco firmato."
+
+#: updater.py:143
+msgid "A letöltött fájl nem egyezik az aláírt listával; nem telepítem."
+msgstr "Il file scaricato non corrisponde all'elenco firmato; non lo installo."
+
+#: reset.py:63
+#, python-brace-format
+msgid "A letöltött modellek megmaradtak: {d}"
+msgstr "I modelli scaricati sono stati mantenuti: {d}"
+
+#: app/templates/mukodes.html:112
+#, python-format
+msgid ""
+"A letöltött modelleket is töröld\n"
+"    (%(models_gb)s GB, %(models_dir)s); különben megmaradnak, és nem kell újra letölteni"
+msgstr ""
+"Elimina anche i modelli scaricati\n"
+"    (%(models_gb)s GB, %(models_dir)s); altrimenti restano e non serve riscaricarli"
+
+#: reset.py:59
+#, python-brace-format
+msgid "A letöltött modelleket töröltem ({d})."
+msgstr "I modelli scaricati sono stati eliminati ({d})."
+
+#: app/templates/gepem.html:66
+msgid "A magától frissítés ki van kapcsolva (Működés lap)."
+msgstr "Gli aggiornamenti automatici sono disattivati (scheda Funzionamento)."
+
+#: app/templates/gepem.html:85
+msgid "A magától frissítés ki van kapcsolva (Működés lap, részletes beállítások)."
+msgstr "Gli aggiornamenti automatici sono disattivati (scheda Funzionamento, impostazioni dettagliate)."
+
+#: llm.py:264
+msgid "A modell üres választ adott."
+msgstr "Il modello ha dato una risposta vuota."
+
+#: reset.py:61
+#, python-brace-format
+msgid "A modelleket nem tudtam törölni: {exc}"
+msgstr "Impossibile eliminare i modelli: {exc}"
+
+#: app/templates/telepites_1.html:17
+msgid "A munka csak akkor halad, ha ez a gép be van kapcsolva."
+msgstr "Il lavoro procede solo mentre questo computer è acceso."
+
+#: app/templates/mukodes.html:43
+msgid "A munkák a Skipwise-ban várnak, és bekapcsoláskor folytatódnak. Felhőbe magától nem kerülnek."
+msgstr "I lavori aspettano in Skipwise e riprendono all'accensione. Non vanno mai nel cloud da soli."
+
+#: app/templates/gepem.html:103
+msgid "A program minden indításkor csendben megnézi, változott-e a hardver, és szól, ha igen. Csak ajánl: a működési módot mindig te választod."
+msgstr "A ogni avvio il programma controlla in silenzio se l'hardware è cambiato e te lo segnala. Si limita a consigliare: la modalità di funzionamento la scegli sempre tu."
+
+#: trial.py:197
+msgid "A próba alapján "
+msgstr "In base alla prova, "
+
+#: trial.py:144
+msgid "A próbafelvételből nem lett szöveg; a whisper.cpp nem működik rendesen."
+msgstr "Dalla registrazione di prova non è uscito testo; whisper.cpp non funziona correttamente."
+
+#: protocol.py:69
+#, python-brace-format
+msgid "A párosítás nem indult el (HTTP {status_code}): {_message}"
+msgstr "L'abbinamento non è partito (HTTP {status_code}): {_message}"
+
+#: settings.py:52
+msgid "A párosítás tölti ki."
+msgstr "Viene compilato dall'abbinamento."
+
+#: settings.py:50
+msgid "A párosításkor kapott belépő; a Skipwise Futtatók oldalán visszavonható."
+msgstr "La credenziale ricevuta con l'abbinamento; si può revocare nella pagina Runner di Skipwise."
+
+#: settings.py:66
+msgid "A saját AssemblyAI-fiókod kulcsa. Felhős átírás csak akkor készül, ha valaki kifejezetten azt kéri; a költség a te fiókodat terheli. Javasolt egy külön kulcs keretkorláttal."
+msgstr "La chiave del tuo account AssemblyAI. La trascrizione nel cloud avviene solo se qualcuno la chiede esplicitamente; il costo è a carico del tuo account. Si consiglia una chiave separata con limite di spesa."
+
+#: settings.py:121
+msgid "A saját felvételek szövege csak ehhez a modellhez kerül; helyi modell javasolt."
+msgstr "Il testo delle tue registrazioni va solo a questo modello; si consiglia un modello locale."
+
+#: cloud.py:164
+msgid "A szolgáltató nem adott beszélőket ehhez a felvételhez."
+msgstr "Il fornitore non ha restituito interlocutori per questa registrazione."
+
+#: app/templates/allapot.html:6
+msgid "A telepítő lépései"
+msgstr "Passaggi di configurazione"
+
+#: cloud.py:40
+#, python-brace-format
+msgid "A universal-3-5-pro nem támogatja ezt a nyelvet: {lang}. Válaszd az auto-t."
+msgstr "universal-3-5-pro non supporta questa lingua: {lang}. Scegli auto."
+
+#: media.py:49
+#, python-brace-format
+msgid "A videó {int} perces, hosszabb a beállított {max_duration_min} percnél (max_duration_min)."
+msgstr "Il video dura {int} minuti, più dei {max_duration_min} minuti impostati (max_duration_min)."
+
+#: app/templates/mukodes.html:47
+msgid "A videókártyán egyszerre csak egy nagy modell fér el. Amikor a futtató átír egy videót, kiveszi a memóriából az éppen betöltött nyelvi modellt; a következő kérésnél a modellszerver magától visszatölti. Ha közben te is beszélgetsz egy modellel, a válaszod lelassulhat vagy megszakadhat."
+msgstr "Sulla scheda video entra un solo modello grande alla volta. Quando il runner trascrive un video, toglie dalla memoria il modello linguistico caricato; il server di modelli lo ricarica alla richiesta successiva. Se nel frattempo stai chattando con un modello, la risposta può rallentare o interrompersi."
+
+#: whispercpp.py:328
+msgid "A videókártyán nem sikerült, ezért a processzoron futott (lassabb)."
+msgstr "Sulla scheda video non è riuscito, quindi è stato eseguito sul processore (più lento)."
+
+#: app/templates/allapot.html:29
+msgid "A videókártyán épp a beszédfelismerő fut; a nyelvi modellt addig kivettem a memóriából."
+msgstr "Sulla scheda video è in corso il riconoscimento vocale; nel frattempo ho tolto dalla memoria il modello linguistico."
+
+#: captions.py:99
+#, python-brace-format
+msgid "A videónak nincs felirata a saját nyelvén ({lang}). Válassz helyi vagy felhős átírást."
+msgstr "Il video non ha sottotitoli nella sua lingua ({lang}). Scegli la trascrizione locale o nel cloud."
+
+#: resolve.py:231
+msgid "A választott felvétel már nincs az oldalon."
+msgstr "La registrazione scelta non è più sulla pagina."
+
+#: tracks.py:137
+#, python-brace-format
+msgid "A választott {what} nincs a fájlban."
+msgstr "La {what} scelta non è nel file."
+
+#: whispercpp.py:245
+#, python-brace-format
+msgid "A whisper.cpp csomagjában nincs whisper-cli.exe ({name})."
+msgstr "Nel pacchetto whisper.cpp manca whisper-cli.exe ({name})."
+
+#: settings.py:86
+msgid "A whisper.cpp helye"
+msgstr "Percorso di whisper.cpp"
+
+#: whispercpp.py:332
+#, python-brace-format
+msgid "A whisper.cpp hibával állt le ({code}): {log}"
+msgstr "whisper.cpp si è fermato con un errore ({code}): {log}"
+
+#: whispercpp.py:232
+msgid "A whisper.cpp legutóbbi kiadásaiban nem találok Windowsos csomagot. Töltsd le kézzel, és add meg a mappáját: skipwise-runner config set whisper_cli MAPPA"
+msgstr "Non trovo un pacchetto per Windows nelle ultime versioni di whisper.cpp. Scaricalo a mano e indica la cartella: skipwise-runner config set whisper_cli CARTELLA"
+
+#: whispercpp.py:284
+#, python-brace-format
+msgid "A whisper.cpp nem indult el: {exc}"
+msgstr "whisper.cpp non si è avviato: {exc}"
+
+#: settings.py:74
+msgid "A whisper.cpp és a beszélők szétválasztása ezen a gépen fut, a modelleket egyszer tölti le (kb. 3,5 GB). Videókártyával gyors, nélküle lassú."
+msgstr "whisper.cpp e la separazione degli interlocutori girano su questo computer; i modelli si scaricano una volta (circa 3,5 GB). Veloce con una scheda video, lento senza."
+
+#: local.py:165
+msgid "A worker CPU-n futott (nem látott GPU-t)."
+msgstr "Il worker è stato eseguito sulla CPU (non ha visto GPU)."
+
+#: settings.py:139
+msgid "A yt-dlp frissítése magától"
+msgstr "Aggiorna yt-dlp automaticamente"
+
+#: media.py:63
+msgid "A yt-dlp nem hozott létre hangfájlt."
+msgstr "yt-dlp non ha creato un file audio."
+
+#: errors.py:53
+#, python-brace-format
+msgid "A yt-dlp nem tudta {what}: {text}"
+msgstr "yt-dlp non è riuscito a {what}: {text}"
+
+#: captions.py:105
+#, python-brace-format
+msgid "A(z) {code} felirat nem érhető el json3 formában."
+msgstr "I sottotitoli {code} non sono disponibili in formato json3."
+
+#: llm.py:181
+#, python-brace-format
+msgid "A(z) {model} modell most nem érhető el (HTTP {status_code})."
+msgstr "Il modello {model} non è disponibile ora (HTTP {status_code})."
+
+#: llm.py:143
+#, python-brace-format
+msgid "A(z) {model} modell percenkénti kerete elfogyott (HTTP 429); később újrapróbálom."
+msgstr "Il modello {model} ha esaurito il limite al minuto (HTTP 429); riproverò più tardi."
+
+#: llm.py:244
+#, python-brace-format
+msgid "A(z) {model} modell válasza félbeszakadt (a kapcsolat megszakadt); később újrapróbálom."
+msgstr "La risposta del modello {model} si è interrotta (connessione persa); riproverò più tardi."
+
+#: llm.py:229
+#, python-brace-format
+msgid "A(z) {model} modell válasza félbeszakadt: {str}"
+msgstr "La risposta del modello {model} si è interrotta: {str}"
+
+#: llm.py:213
+#, python-brace-format
+msgid "A(z) {model} modell {int} perc alatt sem végzett; később újrapróbálom."
+msgstr "Il modello {model} non ha finito entro {int} minuti; riproverò più tardi."
+
+#: llm.py:172
+#, python-brace-format
+msgid "A(z) {model} modell {int} perce nem küldött semmit; a kapcsolat valószínűleg megszakadt. Később újrapróbálom."
+msgstr "Il modello {model} non invia nulla da {int} minuti; la connessione probabilmente si è interrotta. Riproverò più tardi."
+
+#: localllm.py:91
+#, python-brace-format
+msgid "A(z) {title} hibát adott (HTTP {status_code}): {_detail}"
+msgstr "{title} ha restituito un errore (HTTP {status_code}): {_detail}"
+
+#: localllm.py:86
+#, python-brace-format
+msgid "A(z) {title} nem fogadta el a kérést (HTTP {status_code}). Ha bekapcsoltad az API-tokent, add meg: skipwise-runner config set lmstudio_token ..."
+msgstr "{title} non ha accettato la richiesta (HTTP {status_code}). Se hai attivato il token API, indicalo: skipwise-runner config set lmstudio_token ..."
+
+#: localllm.py:163
+#, python-brace-format
+msgid "A(z) {title} nem indult el {int} másodperc alatt. Indítsd el kézzel, és próbáld újra."
+msgstr "{title} non si è avviato entro {int} secondi. Avvialo a mano e riprova."
+
+#: localllm.py:83
+#, python-brace-format
+msgid "A(z) {title} nem érhető el ({url})."
+msgstr "{title} non è raggiungibile ({url})."
+
+#: localllm.py:444
+#, python-brace-format
+msgid "A(z) {title} nincs telepítve ezen a gépen (local_llm = {local_llm})."
+msgstr "{title} non è installato su questo computer (local_llm = {local_llm})."
+
+#: work.py:167
+#, python-brace-format
+msgid "A(z) {urlsplit} oldal nincs az engedélyezett tartományok között (allowed_domains)."
+msgstr "Il sito {urlsplit} non è tra i domini consentiti (allowed_domains)."
+
+#: updater.py:118
+#, python-brace-format
+msgid "A(z) {version} kiadásban nincs ilyen csomag ({asset_kind})."
+msgstr "La versione {version} non contiene questo pacchetto ({asset_kind})."
+
+#: app/tray.py:76
+msgid "Ablak megnyitása"
+msgstr "Apri finestra"
+
+#: app/templates/telepites_5.html:20
+msgid ""
+"Add meg a Skipwise címét (amit a böngészőben is használsz). A futtató kér egy kódot, és megnyitja a Skipwise\n"
+"  Futtatók oldalát, ahol egy gombbal jóváhagyod."
+msgstr ""
+"Inserisci l'indirizzo di Skipwise (quello che usi nel browser). Il runner chiede un codice e apre la pagina\n"
+"  Runner di Skipwise, dove lo approvi con un pulsante."
+
+#: modes.py:55
+msgid "Add meg a felhős LLM címét és kulcsát (például OpenRouter) a Kulcsok lapon."
+msgstr "Inserisci indirizzo e chiave dell'LLM cloud (per esempio OpenRouter) nella scheda Chiavi."
+
+#: modes.py:59
+msgid "Add meg az OpenRouter-kulcsot a Kulcsok lapon."
+msgstr "Inserisci la chiave OpenRouter nella scheda Chiavi."
+
+#: modes.py:61
+msgid "Add meg, melyik felhős modell írja az összefoglalókat."
+msgstr "Indica quale modello cloud scrive i riassunti."
+
+#: modes.py:52
+msgid "Add meg, melyik helyi modell írja az összefoglalókat."
+msgstr "Indica quale modello locale scrive i riassunti."
+
+#: settings.py:48
+msgid "Ahová a futtató munkáért fordul. A párosítás tölti ki."
+msgstr "Dove il runner chiede lavoro. Viene compilato dall'abbinamento."
+
+#: settings.py:106
+msgid "Akkor is a helyi modellszerver dolgozik, ha felhős cím is meg van adva (a Saját gép mód ezt állítja)."
+msgstr "Lavora il server di modelli locale anche se è indicato un indirizzo cloud (la modalità Il tuo computer imposta questo)."
+
+#: settings.py:159
+msgid "Alapból a rendszer kulcstárolója, ha van."
+msgstr "Di default l'archivio chiavi di sistema, se c'è."
+
+#: app/templates/mukodes.html:108 app/templates/mukodes.html:115
+msgid "Alaphelyzet"
+msgstr "Ripristino"
+
+#: app/templates/mukodes.html:106
+msgid "Alaphelyzet folyamatban …"
+msgstr "Ripristino in corso …"
+
+#: app/templates/telepites_1.html:3
+msgid "Alaphelyzet kész."
+msgstr "Ripristino completato."
+
+#: app/templates/telepites_4.html:3
+#, python-format
+msgid "Ami a(z) %(mode_label)s módhoz kell"
+msgstr "Cosa serve alla modalità %(mode_label)s"
+
+#: app/templates/gepem.html:31 app/templates/telepites_2.html:31
+#, python-format
+msgid ""
+"Amíg a próba fut, a videókártyát a beszédfelismerő kapja: az %(swap)s\n"
+"    éppen betöltött nyelvi modelljét erre az időre kiveszem a memóriából. Ha közben épp beszélgetsz vele, a válasza\n"
+"    megszakadhat. A modellt a következő kérésnél az %(swap2)s magától visszatölti."
+msgstr ""
+"Durante la prova la scheda video va al riconoscimento vocale: per quel tempo tolgo dalla memoria il modello linguistico\n"
+"    caricato da %(swap)s. Se ci stai chattando proprio allora, la risposta\n"
+"    può interrompersi. %(swap2)s ricarica il modello da solo alla richiesta successiva."
+
+#: machine.py:265
+msgid "Apple Silicon (közös memória)"
+msgstr "Apple Silicon (memoria condivisa)"
+
+#: cli.py:265
+msgid "AssemblyAI (felhős átírás)"
+msgstr "AssemblyAI (trascrizione nel cloud)"
+
+#: settings.py:69
+msgid "AssemblyAI címe"
+msgstr "Indirizzo di AssemblyAI"
+
+#: settings.py:66
+msgid "AssemblyAI-kulcs"
+msgstr "Chiave AssemblyAI"
+
+#: app/server.py:36
+msgid "AssemblyAI-kulcs (felhős átírás)"
+msgstr "Chiave AssemblyAI (trascrizione nel cloud)"
+
+#: app/wizard.py:104
+msgid "AssemblyAI-kulcs: átírás és próba-összefoglaló"
+msgstr "Chiave AssemblyAI: trascrizione e riassunto di prova"
+
+#: cloud.py:140
+msgid "Az AssemblyAI egy órán belül nem végzett."
+msgstr "AssemblyAI non ha finito entro un'ora."
+
+#: cloud.py:63
+msgid "Az AssemblyAI elutasította a kulcsot; ellenőrizd: skipwise-runner config set assemblyai_key ..."
+msgstr "AssemblyAI ha rifiutato la chiave; controllala: skipwise-runner config set assemblyai_key ..."
+
+#: cloud.py:73
+#, python-brace-format
+msgid "Az AssemblyAI hibát adott (HTTP {status_code}): {str}"
+msgstr "AssemblyAI ha restituito un errore (HTTP {status_code}): {str}"
+
+#: cloud.py:66
+#, python-brace-format
+msgid "Az AssemblyAI most nem fogad kérést (HTTP {status_code})."
+msgstr "AssemblyAI al momento non accetta richieste (HTTP {status_code})."
+
+#: cloud.py:146
+#, python-brace-format
+msgid "Az AssemblyAI nem tudta átírni a hangot: {get}"
+msgstr "AssemblyAI non è riuscito a trascrivere l'audio: {get}"
+
+#: cloud.py:60
+#, python-brace-format
+msgid "Az AssemblyAI nem érhető el ({exc}); később újrapróbálom."
+msgstr "AssemblyAI non è raggiungibile ({exc}); riproverò più tardi."
+
+#: app/templates/telepites_4.html:68
+msgid "Az AssemblyAI-kulccsal"
+msgstr "Con la chiave AssemblyAI"
+
+#: indavideo.py:70
+msgid "Az Indavideo nem adott letölthető fájlt ehhez a videóhoz (lehet, hogy privát vagy törölt)."
+msgstr "Indavideo non ha fornito un file scaricabile per questo video (forse privato o eliminato)."
+
+#: indavideo.py:52
+#, python-brace-format
+msgid "Az Indavideo nem adta meg a videó adatait (HTTP {status_code})."
+msgstr "Indavideo non ha fornito i dati del video (HTTP {status_code})."
+
+#: indavideo.py:50
+#, python-brace-format
+msgid "Az Indavideo nem érhető el ({exc}); később újrapróbálom."
+msgstr "Indavideo non è raggiungibile ({exc}); riproverò più tardi."
+
+#: indavideo.py:58
+msgid "Az Indavideo válasza nem olvasható; lehet, hogy a lejátszója megváltozott."
+msgstr "La risposta di Indavideo non è leggibile; forse il suo player è cambiato."
+
+#: llm.py:192
+#, python-brace-format
+msgid "Az LLM-szerver elutasította a kérést (HTTP {status_code}): {detail}"
+msgstr "Il server LLM ha rifiutato la richiesta (HTTP {status_code}): {detail}"
+
+#: llm.py:176
+#, python-brace-format
+msgid "Az LLM-szerver kapcsolata megszakadt ({exc}); később újrapróbálom."
+msgstr "La connessione al server LLM si è interrotta ({exc}); riproverò più tardi."
+
+#: settings.py:112
+msgid "Az LLM-szerver kulcsa"
+msgstr "Chiave del server LLM"
+
+#: llm.py:187
+#, python-brace-format
+msgid "Az LLM-szerver nem fogadta el a kulcsot (HTTP {status_code}: {detail}). Ellenőrizd: skipwise-runner config set llm_key ... (LiteLLM-nél a LITELLM_MASTER_KEY értéke), majd indítsd újra a futtatót."
+msgstr "Il server LLM non ha accettato la chiave (HTTP {status_code}: {detail}). Controlla: skipwise-runner config set llm_key ... (con LiteLLM il valore di LITELLM_MASTER_KEY), poi riavvia il runner."
+
+#: llm.py:200
+msgid "Az LLM-szerver válasza nem értelmezhető."
+msgstr "La risposta del server LLM non è interpretabile."
+
+#: localllm.py:322
+#, python-brace-format
+msgid "Az LM Studio nem tudta betölteni a(z) {name} modellt legalább {floor} token kontextussal ({last}). Válassz kisebb modellt."
+msgstr "LM Studio non è riuscito a caricare il modello {name} con almeno {floor} token di contesto ({last}). Scegli un modello più piccolo."
+
+#: localllm.py:283
+#, python-brace-format
+msgid "Az LM Studio nem tudta letölteni: {name} ({statusorismeretlenhiba})."
+msgstr "LM Studio non è riuscito a scaricare: {name} ({statusorismeretlenhiba})."
+
+#: localllm.py:346
+#, python-brace-format
+msgid "Az LM Studio szerverét nem sikerült elindítani ({exc}). Nyisd meg az LM Studiót, és a Developer lapon kapcsold be a szervert."
+msgstr "Impossibile avviare il server di LM Studio ({exc}). Apri LM Studio e attiva il server nella scheda Developer."
+
+#: app/templates/telepites_4.html:108
+msgid "Az Ollama letöltése"
+msgstr "Scarica Ollama"
+
+#: localllm.py:212
+#, python-brace-format
+msgid "Az Ollama nem jelezte, hogy kész: {name}."
+msgstr "Ollama non ha segnalato di essere pronto: {name}."
+
+#: localllm.py:193
+#, python-brace-format
+msgid "Az Ollama nem tudja letölteni: {name} ({_detail})."
+msgstr "Ollama non riesce a scaricare: {name} ({_detail})."
+
+#: localllm.py:200
+#, python-brace-format
+msgid "Az Ollama nem tudja letölteni: {name} ({msg})."
+msgstr "Ollama non riesce a scaricare: {name} ({msg})."
+
+#: settings.py:61
+msgid "Az ablak, az üzenetek és a hibák nyelve. Automatikusan: a párosított fiók felületi nyelve, párosítás előtt a rendszeré."
+msgstr "La lingua della finestra, dei messaggi e degli errori. Automatico: la lingua dell'interfaccia dell'account abbinato, prima dell'abbinamento quella del sistema."
+
+#: cli.py:470
+msgid "Az ablakhoz telepítsd a futtatót a desktop kiegészítővel: uv tool install --force --python 3.13 \"dwyt-runner[desktop,local] @ https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\""
+msgstr "Per la finestra installa il runner con l'estensione desktop: uv tool install --force --python 3.13 \"dwyt-runner[desktop,local] @ https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip\""
+
+#: app/server.py:237
+msgid "Az alaphelyzethez pipáld be, hogy érted, mi törlődik."
+msgstr "Per il ripristino, spunta che hai capito cosa verrà eliminato."
+
+#: remote.py:238
+msgid "Az asztali alkalmazás a saját gépén frissül."
+msgstr "L'app desktop si aggiorna sul proprio computer."
+
+#: protocol.py:119
+#, python-brace-format
+msgid "Az eredményt a központ nem fogadta el (HTTP {status_code}): {_message}"
+msgstr "Il servizio centrale non ha accettato il risultato (HTTP {status_code}): {_message}"
+
+#: media.py:78 tracks.py:195 tracks.py:235 whispercpp.py:265
+#, python-brace-format
+msgid "Az ffmpeg nem indult el vagy nem végzett: {exc}"
+msgstr "ffmpeg non si è avviato o non ha terminato: {exc}"
+
+#: tracks.py:108
+#, python-brace-format
+msgid "Az ffmpeg nem tudta beolvasni a fájlt: {exc}"
+msgstr "ffmpeg non è riuscito a leggere il file: {exc}"
+
+#: media.py:75 whispercpp.py:262
+msgid "Az ffmpeg nem tudta kinyerni a hangot: "
+msgstr "ffmpeg non è riuscito a estrarre l'audio: "
+
+#: tracks.py:232
+msgid "Az ffmpeg nem tudta kiolvasni a feliratot: "
+msgstr "ffmpeg non è riuscito a leggere i sottotitoli: "
+
+#: tracks.py:192
+msgid "Az ffmpeg nem tudta kivenni a hangsávot: "
+msgstr "ffmpeg non è riuscito a estrarre la traccia audio: "
+
+#: settings.py:144
+msgid "Az ide kerülő hang- és videófájlokat a futtató magától átírja; a fájlok nem hagyják el a gépet."
+msgstr "Il runner trascrive da solo i file audio e video messi qui; i file non lasciano il computer."
+
+#: app/server.py:218
+#, python-brace-format
+msgid "Az indítást nem sikerült beállítani: {exc}"
+msgstr "Impossibile impostare l'avvio: {exc}"
+
+#: resolve.py:97
+#, python-brace-format
+msgid "Az oldal nem érhető el (HTTP {status_code})."
+msgstr "La pagina non è raggiungibile (HTTP {status_code})."
+
+#: resolve.py:106
+#, python-brace-format
+msgid "Az oldal nem érhető el ({exc}); később újrapróbálom."
+msgstr "La pagina non è raggiungibile ({exc}); riproverò più tardi."
+
+#: work.py:200
+#, python-brace-format
+msgid "Az oldalon ezt találtam: {label}, {url}. {exc}"
+msgstr "Sulla pagina ho trovato questo: {label}, {url}. {exc}"
+
+#: resolve.py:226
+msgid "Az oldalon nem találtam videót vagy hangot. Ha a felvétel a YouTube-on is fent van, küldd be annak a linkjét."
+msgstr "Non ho trovato video o audio nella pagina. Se la registrazione è anche su YouTube, invia quel link."
+
+#: resolve.py:235
+msgid "Az oldalon nincs YouTube-videó, így felirat sincs hozzá; válassz helyi vagy felhős átírást."
+msgstr "Nella pagina non c'è un video YouTube, quindi nemmeno sottotitoli; scegli la trascrizione locale o nel cloud."
+
+#: local.py:166
+msgid "Az átírás a processzoron futott."
+msgstr "La trascrizione è stata eseguita sul processore."
+
+#: settings.py:71
+msgid "Az átírás után a hangot és a szöveget törli az AssemblyAI-nál."
+msgstr "Dopo la trascrizione elimina audio e testo presso AssemblyAI."
+
+#: settings.py:151
+msgid "Az átírás után összefoglaló is készül."
+msgstr "Dopo la trascrizione viene creato anche un riassunto."
+
+#: modes.py:57
+msgid "Az összefoglalóhoz add meg az AssemblyAI-kulcsot a Kulcsok lapon."
+msgstr "Per il riassunto inserisci la chiave AssemblyAI nella scheda Chiavi."
+
+#: settings.py:95
+msgid "Az összefoglalók ezen a gépen készülnek, a választott programmal. A futtató elindítja, letölti és betölti a modelleket."
+msgstr "I riassunti vengono creati su questo computer con il programma scelto. Il runner lo avvia, scarica e carica i modelli."
+
+#: app/templates/telepites_6.html:20
+msgid "Befejezés"
+msgstr "Fine"
+
+#: cli.py:482
+msgid "Bejelentkezéskor elindul: "
+msgstr "Si avvia all'accesso: "
+
+#: cli.py:483
+msgid "Bejelentkezéskor nem indul el."
+msgstr "Non si avvia all'accesso."
+
+#: app/wizard.py:95
+#, python-brace-format
+msgid "Beszédfelismerő (Whisper {whisper_model})"
+msgstr "Riconoscimento vocale (Whisper {whisper_model})"
+
+#: app/wizard.py:100
+msgid "Beszédfelismerő (Whisper)"
+msgstr "Riconoscimento vocale (Whisper)"
+
+#: settings.py:78
+msgid "Beszélők szétválasztása"
+msgstr "Separazione degli interlocutori"
+
+#: cli.py:339
+#, python-brace-format
+msgid "Betöltve: {name}"
+msgstr "Caricato: {name}"
+
+#: resolve.py:37
+msgid "Beágyazott lejátszó"
+msgstr "Player incorporato"
+
+#: app/templates/telepites_4.html:74
+msgid "Bármelyik modell választható, a jobbak magyarul is jól írnak. Külön regisztráció kell."
+msgstr "Si può scegliere qualsiasi modello; i migliori scrivono bene anche in ungherese. Serve una registrazione a parte."
+
+#: app/templates/gepem.html:100
+msgid ""
+"Csak a Skipwise kiadói kulcsával aláírt kiadást telepít, és csak akkor, amikor nincs munka. Utána a\n"
+"    futtató újraindul; a beállítások, kulcsok és modellek megmaradnak."
+msgstr ""
+"Installa solo versioni firmate con la chiave di rilascio di Skipwise, e solo quando non c'è lavoro. Poi il\n"
+"    runner si riavvia; impostazioni, chiavi e modelli restano."
+
+#: settings.py:129
+msgid "Csak amit ide felveszel, ahhoz kerülhet saját felvétel szövege."
+msgstr "Solo ciò che aggiungi qui può ricevere il testo delle tue registrazioni."
+
+#: settings.py:69
+msgid "Csak ha az EU-s végpontot használod (https://api.eu.assemblyai.com)."
+msgstr "Solo se usi l'endpoint UE (https://api.eu.assemblyai.com)."
+
+#: settings.py:104
+msgid "Csak ha az LM Studióban bekapcsoltad az API-tokent."
+msgstr "Solo se hai attivato il token API in LM Studio."
+
+#: settings.py:142
+msgid "Csak ha egy oldal bejelentkezést kér (Netscape-formátumú cookies.txt)."
+msgstr "Solo se un sito chiede l'accesso (cookies.txt in formato Netscape)."
+
+#: app/templates/allapot.html:28
+msgid "Dolgozom – most ne használd a helyi modelleket"
+msgstr "Sto lavorando – non usare ora i modelli locali"
+
+#: updater.py:206
+msgid "Ebben a változatban még nincs aláírt frissítés."
+msgstr "Questa versione non ha ancora un aggiornamento firmato."
+
+#: cli.py:103
+msgid "Ebben a változatban még nincs aláírt frissítés. Kézi frissítés: uv tool install --force --refresh --python 3.13 https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip"
+msgstr "Questa versione non ha ancora un aggiornamento firmato. Aggiornamento manuale: uv tool install --force --refresh --python 3.13 https://github.com/kzkz22/skipwise-runner/archive/refs/heads/main.zip"
+
+#: app/templates/gepem.html:83
+msgid "Ebben a változatban még nincs aláírt frissítés; az újabbat kézzel kell telepíteni."
+msgstr "Questa versione non ha ancora un aggiornamento firmato; una più recente va installata a mano."
+
+#: settings.py:92
+msgid "Egy átírás leghosszabb ideje"
+msgstr "Durata massima di una trascrizione"
+
+#: app/templates/mukodes.html:13 modes.py:15
+msgid "Egyéni"
+msgstr "Personalizzata"
+
+#: app/templates/telepites_4.html:6
+msgid "Egyéni módban a részleteket a telepítés után a"
+msgstr "In modalità Personalizzata, dopo la configurazione, i dettagli si impostano nelle impostazioni dettagliate della scheda"
+
+#: app/templates/telepites_4.html:85
+msgid "Előbb add meg fent az AssemblyAI-kulcsot."
+msgstr "Prima inserisci sopra la chiave AssemblyAI."
+
+#: cli.py:129
+msgid "Előbb párosítsd: skipwise-runner pair https://KÖZPONT-CÍME"
+msgstr "Prima abbinalo: skipwise-runner pair https://INDIRIZZO-CENTRALE"
+
+#: settings.py:134
+msgid "Engedélyezett oldalak"
+msgstr "Siti consentiti"
+
+#: cloud.py:112
+msgid "Ennek a futtatónak nincs AssemblyAI-kulcsa (skipwise-runner config set assemblyai_key ...)."
+msgstr "Questo runner non ha una chiave AssemblyAI (skipwise-runner config set assemblyai_key ...)."
+
+#: local.py:124
+msgid "Ennek a futtatónak nincs helyi Whispere (skipwise-runner config set whisper_url ..., vagy ezen a gépen: skipwise-runner config set whisper_builtin igen)."
+msgstr "Questo runner non ha un Whisper locale (skipwise-runner config set whisper_url ..., oppure su questo computer: skipwise-runner config set whisper_builtin igen)."
+
+#: work.py:213
+#, python-brace-format
+msgid "Ennek a futtatónak nincs modellje ehhez ({role})."
+msgstr "Questo runner non ha un modello per questo ({role})."
+
+#: settings.py:84
+msgid "Ennyi perc után akkor is kiüríti a modellt, ha még használják."
+msgstr "Dopo questi minuti scarica il modello anche se è ancora in uso."
+
+#: settings.py:100
+msgid "Ennyi tokennyi szöveget lát egyszerre a helyi modell. Az LM Studióban a futtató ezzel tölti be a modellt (ha a memória nem bírja, kevesebbel); az Ollama ezzel indul, ha a futtató indítja. A hosszabb szöveget a futtató részekre bontja."
+msgstr "Il modello locale vede questo numero di token di testo alla volta. In LM Studio il runner carica il modello con questo valore (con meno se la memoria non basta); Ollama parte con questo valore se lo avvia il runner. Il testo più lungo il runner lo divide in parti."
+
+#: app/server.py:110
+msgid "Ez a belépő már nem érvényes; nyisd meg az ablakot újra."
+msgstr "Questo accesso non è più valido; riapri la finestra."
+
+#: tracks.py:162
+msgid "Ez a felirat képként van tárolva, szövegként nem olvasható ki. Válassz helyi vagy felhős átírást."
+msgstr "Questi sottotitoli sono salvati come immagini e non si possono leggere come testo. Scegli la trascrizione locale o nel cloud."
+
+#: work.py:172
+#, python-brace-format
+msgid "Ez a futtató nem tud ilyen módot: {mode}."
+msgstr "Questo runner non supporta questa modalità: {mode}."
+
+#: app/templates/telepites_1.html:8
+msgid "Ez a gép"
+msgstr "Questo computer"
+
+#: cli.py:90
+#, python-brace-format
+msgid "Ez a gép eddig a(z) {runner_id}. futtató volt itt: {server}; mostantól az új párosítás érvényes (a régit a Skipwise Futtatók oldalán vond vissza)."
+msgstr "Finora questo computer era il runner {runner_id} qui: {server}; da ora vale il nuovo abbinamento (revoca il vecchio nella pagina Runner di Skipwise)."
+
+#: app/templates/telepites_5.html:7
+#, python-format
+msgid "Ez a gép „%(name)s” néven dolgozik a(z) %(server)s címen."
+msgstr "Questo computer lavora come «%(name)s» su %(server)s."
+
+#: app/templates/telepites_1.html:5
+msgid "Ez a kis program a"
+msgstr "Questo piccolo programma svolge"
+
+#: app/templates/gepem.html:67 app/templates/gepem.html:86
+#, python-format
+msgid "Ez a legújabb (%(checked_text)s)."
+msgstr "È la più recente (%(checked_text)s)."
+
+#: app/templates/mukodes.html:38
+msgid "Ez a választott mód képe; a"
+msgstr "Questa è la modalità scelta; si applica dopo"
+
+#: machine.py:617
+msgid "Ez csak becslés; a próbafuttatás méri meg, mennyire gyors ez a gép."
+msgstr "È solo una stima; la prova misura quanto è veloce questo computer."
+
+#: media.py:44
+msgid "Ez egy lejátszási lista; egyetlen videó URL-je kell."
+msgstr "Questa è una playlist; serve l'URL di un singolo video."
+
+#: app/templates/telepites_4.html:125
+#, python-format
+msgid "Ez írja az összefoglalót (%(title)s)"
+msgstr "Questo scrive il riassunto (%(title)s)"
+
+#: settings.py:127
+msgid "Ezek közül is választhatsz az elem oldalán."
+msgstr "Puoi sceglierli anche nella pagina dell'elemento."
+
+#: whispercpp.py:249
+msgid "Ezen a gépen nincs whisper-cli. Telepítsd (például a whisper.cpp csomagjából), vagy add meg a helyét: skipwise-runner config set whisper_cli /út/whisper-cli"
+msgstr "Su questo computer non c'è whisper-cli. Installalo (per esempio dal pacchetto whisper.cpp) o indica il percorso: skipwise-runner config set whisper_cli /percorso/whisper-cli"
+
+#: local.py:128
+#, python-brace-format
+msgid "Ezt a Whisper-modellt a futtató nem ismeri: {model} (whisper_models: {join})."
+msgstr "Il runner non conosce questo modello Whisper: {model} (whisper_models: {join})."
+
+#: work.py:165
+msgid "Ezt a forrást ez a futtató nem dolgozza fel."
+msgstr "Questo runner non elabora questa fonte."
+
+#: work.py:217
+#, python-brace-format
+msgid "Ezt a modellt a futtató nem ajánlja fel ehhez: {str} (llm_models, llm_private_models)."
+msgstr "Il runner non offre questo modello per questo: {str} (llm_models, llm_private_models)."
+
+#: app/server.py:101
+msgid "Ezt az oldalt a Skipwise futtató ablaka nyitja meg."
+msgstr "Questa pagina viene aperta dalla finestra del runner Skipwise."
+
+#: app/templates/gepem.html:24 app/templates/telepites_2.html:23
+msgid "Ezzel a helyi modellel próbálja az összefoglalót"
+msgstr "Prova il riassunto con questo modello locale"
+
+#: settings.py:118
+msgid "Ezzel készül a YouTube-videók összefoglalója. Az AssemblyAI-nál feltöltött egyenleggel nagyobb modell is választható (a nevek az AssemblyAI LLM Gateway modell-listáján)."
+msgstr "Con questo si fanno i riassunti dei video di YouTube. Con un credito AssemblyAI ricaricato si può scegliere anche un modello più grande (i nomi sono nell'elenco modelli dell'AssemblyAI LLM Gateway)."
+
+#: activity.py:15
+msgid "Fejezetek"
+msgstr "Capitoli"
+
+#: modes.py:15
+msgid "Felhő"
+msgstr "Cloud"
+
+#: settings.py:109
+msgid "Felhős vagy saját LLM-szerver címe"
+msgstr "Indirizzo di un server LLM cloud o proprio"
+
+#: settings.py:18
+msgid "Felhős átírás"
+msgstr "Trascrizione cloud"
+
+#: app/wizard.py:105 app/wizard.py:118
+msgid "Felhős átírás (AssemblyAI)"
+msgstr "Trascrizione cloud (AssemblyAI)"
+
+#: modes.py:63
+msgid "Felhős átíráshoz add meg az AssemblyAI-kulcsot; nélküle csak a YouTube-feliratok használhatók."
+msgstr "Per la trascrizione nel cloud inserisci la chiave AssemblyAI; senza, si possono usare solo i sottotitoli di YouTube."
+
+#: app/wizard.py:114
+msgid "Felhős összefoglaló: OpenRouter-kulcs"
+msgstr "Riassunto nel cloud: chiave OpenRouter"
+
+#: app/templates/mukodes.html:41
+msgid "Felirat használata"
+msgstr "Uso dei sottotitoli"
+
+#: cli.py:386
+#, python-brace-format
+msgid "Figyelem: {warning}"
+msgstr "Attenzione: {warning}"
+
+#: settings.py:144
+msgid "Figyelt mappák"
+msgstr "Cartelle monitorate"
+
+#: settings.py:148
+msgid "Figyelt mappák: modell"
+msgstr "Cartelle monitorate: modello"
+
+#: settings.py:149
+msgid "Figyelt mappák: nyelv"
+msgstr "Cartelle monitorate: lingua"
+
+#: settings.py:146
+msgid "Figyelt mappák: átírás módja"
+msgstr "Cartelle monitorate: modalità di trascrizione"
+
+#: settings.py:151
+msgid "Figyelt mappák: összefoglaló"
+msgstr "Cartelle monitorate: riassunto"
+
+#: app/templates/mukodes.html:46
+msgid "Fontos, ha te is használod az Ollamát vagy az LM Studiót."
+msgstr "Importante se usi anche tu Ollama o LM Studio."
+
+#: activity.py:14
+msgid "Fordítás"
+msgstr "Traduzione"
+
+#: settings.py:21
+msgid "Források és saját felvételek"
+msgstr "Fonti e registrazioni proprie"
+
+#: app/templates/gepem.html:67
+#, python-format
+msgid "Frissítve: %(updated)s."
+msgstr "Aggiornato: %(updated)s."
+
+#: app/templates/gepem.html:95
+msgid "Frissítés most"
+msgstr "Aggiorna ora"
+
+#: app/templates/gepem.html:94
+msgid "Frissítés …"
+msgstr "Aggiornamento …"
+
+#: settings.py:52
+msgid "Futtató azonosító"
+msgstr "ID del runner"
+
+#: app/templates/allapot.html:11 app/templates/telepites_5.html:10
+msgid "Futtatók"
+msgstr "Runner"
+
+#: settings.py:114
+msgid "Gondolkodás (felhős modellnél)"
+msgstr "Ragionamento (con modelli cloud)"
+
+#: app/templates/mukodes.html:31
+msgid ""
+"Gyors és szinte ingyenes, de a magyar szöveg gyengébb lehet, és ritkán elferdít egy számot vagy nevet.\n"
+"      Jobb minőséghez:"
+msgstr ""
+"Veloce e quasi gratuito, ma il testo ungherese può essere più debole, e a volte storpia un numero o un nome.\n"
+"      Per una qualità migliore:"
+
+#: app/templates/base.html:16 app/templates/gepem.html:5
+#: app/templates/gepem_wait.html:3 machine.py:602
+msgid "Gépem"
+msgstr "Il mio computer"
+
+#: app/wizard.py:15
+msgid "Gépvizsgálat"
+msgstr "Analisi del computer"
+
+#: settings.py:90
+msgid "Ha a Whisper egy másik gépen fut (dwyt-airouter és dwyt-gpu), annak címe; ilyenkor ez a gép nem ír át maga."
+msgstr "Se Whisper gira su un altro computer (dwyt-airouter e dwyt-gpu), il suo indirizzo; allora questo computer non trascrive da sé."
+
+#: settings.py:78
+msgid "Ha a beküldéskor nincs megadva a beszélők száma, ebből becsli: nagyobb érték kevesebb beszélőt ad. A 0,8 egy 8 beszélős interjún mérve a legjobb."
+msgstr "Se all'invio non è indicato il numero di interlocutori, viene stimato da questo: un valore più alto dà meno interlocutori. 0,8 è risultato il migliore su un'intervista con 8 interlocutori."
+
+#: app/templates/mukodes.html:43
+msgid "Ha a gép ki van kapcsolva"
+msgstr "Se il computer è spento"
+
+#: app/templates/telepites_3.html:31
+msgid "Ha a videónak van"
+msgstr "Se il video ha"
+
+#: settings.py:131
+msgid "Ha az LLM-szerver nem mondja meg, mi fut egy név mögött: név=leírás."
+msgstr "Se il server LLM non dice cosa gira dietro un nome: nome=descrizione."
+
+#: cli.py:121
+msgid "Ha szolgáltatásként fut, indítsd újra (systemctl restart dwyt-runner); az ablakos futtatót zárd be és nyisd meg újra."
+msgstr "Se gira come servizio, riavvialo (systemctl restart dwyt-runner); il runner con finestra chiudilo e riaprilo."
+
+#: settings.py:81
+msgid "Ha valaki épp használja a helyi nyelvi modellt, az átírás előtt megvárja, hogy egy percig ne használja (legfeljebb a megadott ideig), és csak utána üríti ki a videókártyáról."
+msgstr "Se qualcuno sta usando il modello linguistico locale, prima della trascrizione aspetta che resti inutilizzato per un minuto (al massimo per il tempo indicato) e solo dopo lo toglie dalla scheda video."
+
+#: settings.py:22
+msgid "Haladó"
+msgstr "Avanzate"
+
+#: app/templates/mukodes.html:76
+msgid "Haladó beállítások is"
+msgstr "Anche le impostazioni avanzate"
+
+#: app/wizard.py:27
+msgid "Haladóknak: lépésenként választható, a Működés lap részletes beállításaiban."
+msgstr "Per utenti esperti: si sceglie passo per passo, nelle impostazioni dettagliate della scheda Funzionamento."
+
+#: resolve.py:39
+msgid "Hang- vagy videófájl"
+msgstr "File audio o video"
+
+#: resolve.py:38
+msgid "Hangfájl a cikk napjáról"
+msgstr "File audio del giorno dell'articolo"
+
+#: settings.py:146
+msgid "Helyben vagy felhőben."
+msgstr "In locale o nel cloud."
+
+#: app/templates/gepem.html:24 app/templates/telepites_2.html:23
+msgid "Helyi modell a próbához"
+msgstr "Modello locale per la prova"
+
+#: machine.py:486 machine.py:489 machine.py:493 settings.py:95
+msgid "Helyi modellszerver"
+msgstr "Server di modelli locale"
+
+#: machine.py:498 machine.py:501 machine.py:504 machine.py:507 trial.py:101
+#: trial.py:103 trial.py:104 trial.py:173
+msgid "Helyi átírás"
+msgstr "Trascrizione locale"
+
+#: settings.py:19 settings.py:74
+msgid "Helyi átírás ezen a gépen"
+msgstr "Trascrizione locale su questo computer"
+
+#: trial.py:172
+#, python-brace-format
+msgid "Helyi átírás: {exc}"
+msgstr "Trascrizione locale: {exc}"
+
+#: machine.py:510 machine.py:513 machine.py:517 trial.py:112 trial.py:116
+#: trial.py:119 trial.py:121 trial.py:183 trial.py:185
+msgid "Helyi összefoglaló"
+msgstr "Riassunto locale"
+
+#: app/wizard.py:121
+msgid "Helyi összefoglaló (Ollama vagy LM Studio)"
+msgstr "Riassunto locale (Ollama o LM Studio)"
+
+#: trial.py:182
+#, python-brace-format
+msgid "Helyi összefoglaló: {exc}"
+msgstr "Riassunto locale: {exc}"
+
+#: cli.py:86
+msgid "Hiba: nincs token a bemeneten."
+msgstr "Errore: nessun token in ingresso."
+
+#: cli.py:57 cli.py:69 cli.py:346 cli.py:391
+#, python-brace-format
+msgid "Hiba: {exc}"
+msgstr "Errore: {exc}"
+
+#: work.py:97
+msgid "Hibás fájlazonosító a munkában."
+msgstr "ID file non valido nel lavoro."
+
+#: work.py:101
+msgid "Hibás letöltési cím a munkában."
+msgstr "Indirizzo di download non valido nel lavoro."
+
+#: tracks.py:135
+#, python-brace-format
+msgid "Hibás {what}-sorszám a munkában."
+msgstr "Numero di {what} non valido nel lavoro."
+
+#: app/templates/telepites_3.html:3
+msgid "Hol készüljön az átírás és az összefoglaló?"
+msgstr "Dove fare trascrizione e riassunto?"
+
+#: settings.py:134
+msgid "Honnan tölthet le a futtató (* = bárhonnan)."
+msgstr "Da dove il runner può scaricare (* = ovunque)."
+
+#: settings.py:92
+msgid "Hosszú felvételnél a hossz négyszerese számít, ha az több."
+msgstr "Per le registrazioni lunghe vale quattro volte la durata, se è di più."
+
+#: app/wizard.py:15
+msgid "Hozzávalók"
+msgstr "Ingredienti"
+
+#: errors.py:51
+#, python-brace-format
+msgid "Hálózati hiba ({what}); később újrapróbálom: {text}"
+msgstr "Errore di rete ({what}); riproverò più tardi: {text}"
+
+#: settings.py:157
+msgid "Ide kerülnek az ideiglenes fájlok; üresen a rendszer ideiglenes mappája."
+msgstr "Qui vanno i file temporanei; vuoto = la cartella temporanea di sistema."
+
+#: app/templates/telepites_6.html:15
+msgid "Induljon a gép bekapcsolásakor"
+msgstr "Avvia all'accensione del computer"
+
+#: app/templates/telepites_4.html:117
+msgid "Indítás"
+msgstr "Avvia"
+
+#: app/templates/mukodes.html:59
+msgid "Indítás bejelentkezéskor:"
+msgstr "Avvio all'accesso:"
+
+#: app/templates/telepites_4.html:116
+msgid "Indítás …"
+msgstr "Avvio …"
+
+#: cli.py:76
+msgid "Indítás: skipwise-runner run"
+msgstr "Avvio: skipwise-runner run"
+
+#: whispercpp.py:126
+#, python-brace-format
+msgid "Ismeretlen Whisper-modell: {name} ({known})."
+msgstr "Modello Whisper sconosciuto: {name} ({known})."
+
+#: app/server.py:96
+msgid "Ismeretlen cím."
+msgstr "Indirizzo sconosciuto."
+
+#: cloud.py:38
+#, python-brace-format
+msgid "Ismeretlen felhős modell: {requested}."
+msgstr "Modello cloud sconosciuto: {requested}."
+
+#: app/server.py:578
+msgid "Ismeretlen kulcs."
+msgstr "Chiave sconosciuta."
+
+#: work.py:242
+#, python-brace-format
+msgid "Ismeretlen munkafajta: {kind}."
+msgstr "Tipo di lavoro sconosciuto: {kind}."
+
+#: settings.py:196
+#, python-brace-format
+msgid "Ismeretlen vagy nem kézzel állítható beállítás: {key}"
+msgstr "Impostazione sconosciuta o non modificabile a mano: {key}"
+
+#: settings.py:112
+msgid "Javasolt egy külön kulcs keretkorláttal. Az AssemblyAI LLM Gateway-nél nem kell: ott az AssemblyAI-kulcs írja az összefoglalót is."
+msgstr "Si consiglia una chiave separata con limite di spesa. Con l'AssemblyAI LLM Gateway non serve: lì la chiave AssemblyAI scrive anche il riassunto."
+
+#: app/templates/telepites_5.html:11
+msgid "Jóváhagyás"
+msgstr "Approva"
+
+#: settings.py:17
+msgid "Kapcsolat a Skipwise-zal"
+msgstr "Connessione a Skipwise"
+
+#: activity.py:15
+msgid "Kategorizálás"
+msgstr "Categorizzazione"
+
+#: app/templates/telepites_5.html:14
+msgid "Kattints ide"
+msgstr "Fai clic qui"
+
+#: app/templates/telepites_4.html:28
+msgid "Kb. 3,5 GB, egyszer kell letölteni."
+msgstr "Circa 3,5 GB, da scaricare una volta."
+
+#: app/templates/gepem.html:59 app/templates/gepem.html:77
+msgid "Keresem …"
+msgstr "Cerco …"
+
+#: app/templates/telepites_4.html:64
+msgid "Ki írja az összefoglalót"
+msgstr "Chi scrive il riassunto"
+
+#: app/wizard.py:108
+msgid "Ki írja az összefoglalót, a fordítást és a válaszokat?"
+msgstr "Chi scrive riassunto, traduzione e risposte?"
+
+#: app/templates/base.html:25 app/tray.py:79
+msgid "Kilépés"
+msgstr "Esci"
+
+#: app/main.py:255
+msgid "Kilépés: az ablak Kilépés gombjával vagy Ctrl+C"
+msgstr "Uscita: pulsante Esci della finestra o Ctrl+C"
+
+#: app/main.py:254
+msgid "Kilépés: az ablak Kilépés gombjával, a tálcaikon menüjéből vagy Ctrl+C"
+msgstr "Uscita: pulsante Esci della finestra, menu dell'icona nell'area di notifica o Ctrl+C"
+
+#: app/templates/telepites_4.html:58
+#, python-format
+msgid "Kipróbáltuk a próba-összefoglalót: %(llm)s."
+msgstr "Abbiamo provato il riassunto di prova: %(llm)s."
+
+#: app/templates/telepites_4.html:57
+#, python-format
+msgid "Kipróbáltuk az átírást: %(assemblyai)s."
+msgstr "Abbiamo provato la trascrizione: %(assemblyai)s."
+
+#: app/templates/telepites_4.html:43 app/templates/telepites_4.html:95
+#, python-format
+msgid "Kipróbáltuk: %(llm)s."
+msgstr "Provato: %(llm)s."
+
+#: app/templates/telepites_4.html:79
+msgid ""
+"Kis modell: az összefoglaló használható, de lehetnek benne nyelvi botlások, és ritkán elferdít egy számot vagy\n"
+"      egy nevet – a fontos adatokat ellenőrizd az átiratban. Ingyenes fiókkal csak ez a modell érhető el, és\n"
+"      percenként kevés kérést enged, ezért a hosszú videók összefoglalója és a fordítás lassabban készül."
+msgstr ""
+"Modello piccolo: il riassunto è utilizzabile, ma può contenere errori linguistici e a volte storpia un numero o\n"
+"      un nome – controlla i dati importanti nella trascrizione. Con un account gratuito c'è solo questo modello, e\n"
+"      consente poche richieste al minuto, quindi riassunti di video lunghi e traduzioni richiedono più tempo."
+
+#: app/templates/telepites_4.html:127
+msgid "Kiválasztom"
+msgstr "Scegli"
+
+#: app/templates/telepites_4.html:150
+#, python-format
+msgid "Kiválasztva: %(llm_private_model)s."
+msgstr "Scelto: %(llm_private_model)s."
+
+#: cli.py:344
+msgid "Kiürítve: "
+msgstr "Scaricato: "
+
+#: app/templates/telepites_4.html:37 app/templates/telepites_4.html:51
+msgid "Kulcs"
+msgstr "Chiave"
+
+#: app/templates/base.html:17 app/templates/kulcsok.html:3
+#: app/templates/mukodes.html:35
+msgid "Kulcsok"
+msgstr "Chiavi"
+
+#: app/templates/kulcsok.html:21
+msgid "Kulcsok kipróbálása"
+msgstr "Prova le chiavi"
+
+#: app/templates/telepites_4.html:41 app/templates/telepites_4.html:93
+msgid "Kulcsot itt kérhetsz"
+msgstr "Richiedi una chiave qui"
+
+#: app/templates/telepites_6.html:8
+msgid "Kék:"
+msgstr "Blu:"
+
+#: tracks.py:248
+msgid "Kényszerített felirat: csak az idegen nyelvű részeket tartalmazza."
+msgstr "Sottotitoli forzati: contengono solo le parti in lingua straniera."
+
+#: activity.py:15
+msgid "Kérdés"
+msgstr "Domanda"
+
+#: app/wizard.py:15
+msgid "Kész"
+msgstr "Fatto"
+
+#: app/templates/telepites_6.html:3
+msgid "Kész!"
+msgstr "Fatto!"
+
+#: cli.py:336
+msgid "Kész."
+msgstr "Fatto."
+
+#: cli.py:367
+msgid "Kész. Bekapcsolás: skipwise-runner config set whisper_builtin igen"
+msgstr "Fatto. Per attivarlo: skipwise-runner config set whisper_builtin igen"
+
+#: app/templates/telepites_4.html:25
+msgid "Kész: a beszédfelismerő a gépen van."
+msgstr "Fatto: il riconoscimento vocale è sul computer."
+
+#: app/templates/telepites_4.html:84
+#, python-format
+msgid "Kész: ugyanazt a kulcsot használom, a próba-modell: %(trial_model)s."
+msgstr "Fatto: uso la stessa chiave, il modello di prova: %(trial_model)s."
+
+#: app/templates/telepites_5.html:3
+msgid "Kössük össze a Skipwise-fiókoddal"
+msgstr "Colleghiamolo al tuo account Skipwise"
+
+#: settings.py:90
+msgid "Külön GPU-gép (AI-router)"
+msgstr "Macchina GPU separata (AI router)"
+
+#: cli.py:266
+msgid "LLM (összefoglaló)"
+msgstr "LLM (riassunto)"
+
+#: app/server.py:37
+msgid "LLM-kulcs (felhős összefoglaló)"
+msgstr "Chiave LLM (riassunto nel cloud)"
+
+#: settings.py:97
+msgid "LM Studio"
+msgstr "LM Studio"
+
+#: app/server.py:37 settings.py:104
+msgid "LM Studio API-token"
+msgstr "Token API di LM Studio"
+
+#: settings.py:154
+msgid "Leghosszabb felvétel"
+msgstr "Registrazione più lunga"
+
+#: settings.py:153
+msgid "Legnagyobb fájl"
+msgstr "File più grande"
+
+#: app/templates/allapot.html:46
+msgid "Legutóbb"
+msgstr "Di recente"
+
+#: app/server.py:73
+msgid "Lejárt űrlap; töltsd újra az oldalt."
+msgstr "Modulo scaduto; ricarica la pagina."
+
+#: app/templates/telepites_4.html:29 app/templates/telepites_4.html:142
+msgid "Letöltés"
+msgstr "Download"
+
+#: cli.py:334
+#, python-brace-format
+msgid "Letöltés: {name}"
+msgstr "Download: {name}"
+
+#: settings.py:153
+msgid "MB"
+msgstr "MB"
+
+#: app/templates/allapot.html:54
+msgid "Ma:"
+msgstr "Oggi:"
+
+#: app/templates/telepites_5.html:10
+msgid "Megnyitottuk a böngészőben a Skipwise"
+msgstr "Abbiamo aperto nel browser la pagina"
+
+#: app/templates/gepem_wait.html:4 app/templates/telepites_2.html:6
+msgid "Megnézem, mi van a gépben (videókártya, memória, szabad hely, helyi modellszerver) …"
+msgstr "Controllo cosa c'è nel computer (scheda video, memoria, spazio libero, server di modelli locale) …"
+
+#: app/templates/telepites_2.html:9
+msgid ""
+"Megnéztük, mi van a gépben. A próbafuttatás ki is próbálja: átír egy fél perces mintát, és ha van\n"
+"  helyi modellszerver, összefoglal vele egy rövid szöveget."
+msgstr ""
+"Abbiamo controllato cosa c'è nel computer. La prova lo mette anche alla prova: trascrive un campione di mezzo minuto e, se c'è\n"
+"  un server di modelli locale, riassume con esso un breve testo."
+
+#: local.py:111
+#, python-brace-format
+msgid "Megszakadt a kapcsolat a Whisper-workerrel ({exc}); később újrapróbálom (a kész átírási lépés megmarad a workeren)."
+msgstr "La connessione al worker Whisper si è interrotta ({exc}); riproverò più tardi (il passaggio di trascrizione completato resta sul worker)."
+
+#: localllm.py:210
+#, python-brace-format
+msgid "Megszakadt a letöltés: {name} ({exc})."
+msgstr "Il download si è interrotto: {name} ({exc})."
+
+#: app/templates/allapot.html:29
+#, python-format
+msgid "Megvárom, amíg a nyelvi modellt (%(models)s) senki nem használja, utána kiveszem a videókártya memóriájából."
+msgstr "Aspetto che nessuno usi il modello linguistico (%(models)s), poi lo tolgo dalla memoria della scheda video."
+
+#: app/templates/kulcsok.html:15 app/templates/mukodes.html:38
+#: app/templates/mukodes.html:51 app/templates/mukodes.html:60
+#: app/templates/mukodes.html:69 app/templates/mukodes.html:102
+msgid "Mentés"
+msgstr "Salva"
+
+#: app/templates/telepites_4.html:44 app/templates/telepites_4.html:59
+#: app/templates/telepites_4.html:96
+msgid "Mentés és próba"
+msgstr "Salva e prova"
+
+#: app/wizard.py:20
+msgid "Minden a felhőben készül. Gyenge géphez, vagy ha a gép ritkán van bekapcsolva."
+msgstr "Tutto avviene nel cloud. Per un computer debole, o se è acceso di rado."
+
+#: app/wizard.py:25
+msgid "Minden ezen a gépen készül. Ingyenes és a legprivátabb; erős gép kell."
+msgstr "Tutto avviene su questo computer. Gratis e il più riservato; serve un computer potente."
+
+#: app/templates/mukodes.html:109
+msgid ""
+"Mintha most telepítenéd először: leállítja a futtatót, kikapcsolja a bejelentkezéskori indulást, törli a\n"
+"    beállításokat és a kulcsokat, majd a telepítő lépései jönnek. A Skipwise-ban a futtatót utána vond vissza a\n"
+"    Futtatók oldalon."
+msgstr ""
+"Come se lo installassi per la prima volta: ferma il runner, disattiva l'avvio all'accesso, elimina le\n"
+"    impostazioni e le chiavi, poi seguono i passaggi di configurazione. Dopo revoca il runner in Skipwise nella\n"
+"    pagina Runner."
+
+#: machine.py:608
+msgid "Mire képes"
+msgstr "Cosa può fare"
+
+#: app/templates/gepem.html:48
+msgid "Mire képes (becslés)"
+msgstr "Cosa può fare (stima)"
+
+#: app/templates/telepites_2.html:3
+msgid "Mire képes a géped?"
+msgstr "Cosa può fare il tuo computer?"
+
+#: app/templates/telepites_4.html:78
+msgid "Mire számíts a próba-modellel?"
+msgstr "Cosa aspettarsi dal modello di prova?"
+
+#: machine.py:523
+msgid "MoE-modellel működik"
+msgstr "funziona con un modello MoE"
+
+#: app/templates/telepites_4.html:39 app/templates/telepites_4.html:91
+msgid "Modell"
+msgstr "Modello"
+
+#: settings.py:123
+msgid "Modell a fordításhoz"
+msgstr "Modello per la traduzione"
+
+#: settings.py:125
+msgid "Modell a kérdésekhez"
+msgstr "Modello per le domande"
+
+#: settings.py:118
+msgid "Modell a nyilvános videókhoz"
+msgstr "Modello per i video pubblici"
+
+#: settings.py:121
+msgid "Modell a saját felvételekhez"
+msgstr "Modello per le registrazioni proprie"
+
+#: settings.py:131
+msgid "Modellek leírása"
+msgstr "Descrizioni dei modelli"
+
+#: app/templates/allapot.html:32
+msgid "Most"
+msgstr "Ora"
+
+#: app/server.py:327
+msgid "Most munka fut; a frissítés utána indítható (vagy magától megtörténik)."
+msgstr "È in corso un lavoro; l'aggiornamento si può avviare dopo (o avviene da solo)."
+
+#: protocol.py:91
+#, python-brace-format
+msgid "Munkakérés: HTTP {status_code}: {_message}"
+msgstr "Richiesta di lavoro: HTTP {status_code}: {_message}"
+
+#: settings.py:157
+msgid "Munkamappa"
+msgstr "Cartella di lavoro"
+
+#: app/templates/mukodes.html:5
+msgid "Még hiányzik:"
+msgstr "Manca ancora:"
+
+#: app/templates/gepem.html:68 app/templates/gepem.html:87
+msgid "Még nem néztem meg, van-e újabb."
+msgstr "Non ho ancora controllato se ce n'è una più recente."
+
+#: app/templates/telepites_1.html:21
+msgid "Mégse"
+msgstr "Annulla"
+
+#: app/templates/mukodes.html:42
+msgid "Módosítás a Skipwise-ban"
+msgstr "Modifica in Skipwise"
+
+#: app/templates/base.html:15 app/templates/telepites_4.html:6
+msgid "Működés"
+msgstr "Funzionamento"
+
+#: app/templates/mukodes.html:3 app/templates/telepites_3.html:6
+#: app/wizard.py:15
+msgid "Működési mód"
+msgstr "Modalità di funzionamento"
+
+#: cli.py:190
+msgid "NINCS (a YouTube-letöltéshez kellhet)"
+msgstr "ASSENTE (può servire per i download da YouTube)"
+
+#: cli.py:205
+msgid "NINCS TELEPÍTVE"
+msgstr "NON INSTALLATO"
+
+#: machine.py:523 machine.py:529
+msgid "Nagy helyi modell (30B+)"
+msgstr "Modello locale grande (30B+)"
+
+#: settings.py:135
+msgid "Naponta megnézi, van-e aláírt újabb változat, és két munka között telepíti. Automatikusan: az asztali alkalmazásban be; szerveren ki, ott a Skipwise Futtatók oldala szól, és a Frissítés most gombbal telepíthető."
+msgstr "Controlla ogni giorno se c'è una versione firmata più recente e la installa tra due lavori. Automatico: attivo nell'app desktop; disattivo su un server, dove lo segnala la pagina Runner di Skipwise e si installa con il pulsante Aggiorna ora."
+
+#: app/templates/telepites_6.html:9
+msgid "Narancs:"
+msgstr "Arancione:"
+
+#: cli.py:489
+msgid "Nem futott a futtató ablaka."
+msgstr "La finestra del runner non era aperta."
+
+#: app/templates/telepites_4.html:69
+msgid "Nem kell újabb regisztráció. Kis, gyors próba-modell (Qwen3.5 4B), szinte ingyenes."
+msgstr "Non serve un'altra registrazione. Modello di prova piccolo e veloce (Qwen3.5 4B), quasi gratuito."
+
+#: app/templates/telepites_2.html:44
+msgid ""
+"Nem kötelező. Először letölti a beszédfelismerőt (kb. 3,5 GB, egyszer), utána kb. egy perc.\n"
+"    Megmondja, mennyi idő alatt készülne el egy 1 órás videó ezen a gépen."
+msgstr ""
+"Facoltativo. Prima scarica il riconoscimento vocale (circa 3,5 GB, una volta), poi circa un minuto.\n"
+"    Ti dice quanto ci vorrebbe per un video di 1 ora su questo computer."
+
+#: cli.py:518
+#, python-brace-format
+msgid "Nem mentettem: {exc}"
+msgstr "Non salvato: {exc}"
+
+#: app/templates/telepites_5.html:14
+msgid "Nem nyílt meg a böngésző?"
+msgstr "Il browser non si è aperto?"
+
+#: localllm.py:391
+#, python-brace-format
+msgid "Nem sikerült elindítani: {cmd} ({exc})."
+msgstr "Avvio non riuscito: {cmd} ({exc})."
+
+#: whispercpp.py:111
+#, python-brace-format
+msgid "Nem sikerült letölteni: {name} ({join}); később újrapróbálom."
+msgstr "Download non riuscito: {name} ({join}); riproverò più tardi."
+
+#: whispercpp.py:215
+#, python-brace-format
+msgid "Nem található: {path} (whisper_cli)."
+msgstr "Non trovato: {path} (whisper_cli)."
+
+#: machine.py:583
+#, python-brace-format
+msgid "Nem találom a videókártyát (eddig: {card}). Ha kivetted, a helyi átírás a processzoron lassú lesz; ha nem, nézd meg az illesztőprogramot."
+msgstr "Non trovo la scheda video (finora: {card}). Se l'hai rimossa, la trascrizione locale sul processore sarà lenta; altrimenti controlla il driver."
+
+#: reset.py:53
+#, python-brace-format
+msgid "Nem tudtam törölni: {entry} ({exc})"
+msgstr "Eliminazione non riuscita: {entry} ({exc})"
+
+#: reset.py:34
+#, python-brace-format
+msgid "Nem tudtam törölni: {homename} ({exc})"
+msgstr "Eliminazione non riuscita: {homename} ({exc})"
+
+#: cli.py:174
+msgid "Nem töröltem semmit."
+msgstr "Non è stato eliminato nulla."
+
+#: whispercpp.py:226
+#, python-brace-format
+msgid "Nem érem el a whisper.cpp kiadásait a GitHubon ({exc}); később újrapróbálom."
+msgstr "Non raggiungo le versioni di whisper.cpp su GitHub ({exc}); riproverò più tardi."
+
+#: app/templates/telepites_4.html:105
+msgid "Nincs a gépen helyi modellszerver. Telepítsd az"
+msgstr "Sul computer non c'è un server di modelli locale. Installa"
+
+#: cli.py:296
+msgid "Nincs beállítva helyi modellszerver: skipwise-runner config set local_llm ollama (vagy lmstudio)"
+msgstr "Nessun server di modelli locale impostato: skipwise-runner config set local_llm ollama (o lmstudio)"
+
+#: cli.py:116
+msgid "Nincs előző változat, amire visszaállhatnék."
+msgstr "Non c'è una versione precedente a cui tornare."
+
+#: app/templates/allapot.html:42
+msgid "Nincs munka; várom a következőt a Skipwise-ból."
+msgstr "Nessun lavoro; aspetto il prossimo da Skipwise."
+
+#: remote.py:245 updater.py:159
+msgid "Nincs uv ezen a gépen, amivel frissíthetnék."
+msgstr "Su questo computer non c'è uv con cui aggiornare."
+
+#: whispercpp.py:212
+#, python-brace-format
+msgid "Nincs whisper-cli ebben a mappában: {path} (whisper_cli)."
+msgstr "In questa cartella non c'è whisper-cli: {path} (whisper_cli)."
+
+#: app/templates/allapot.html:11
+msgid "Nyisd meg a Skipwise"
+msgstr "Apri in Skipwise la pagina"
+
+#: cli.py:60
+#, python-brace-format
+msgid "Nyisd meg a {rstrip}/futtatok oldalt, és írd be ezt a kódot ({start} percig érvényes). Várakozás a jóváhagyásra…"
+msgstr "Apri la pagina {rstrip}/futtatok e inserisci questo codice (valido per {start} minuti). In attesa dell'approvazione…"
+
+#: app/templates/telepites_6.html:18
+msgid "Nyissuk meg a Skipwise-t, és küldjünk be egy első videót"
+msgstr "Apriamo Skipwise e inviamo un primo video"
+
+#: app/templates/telepites_4.html:82
+msgid ""
+"Okosabb modellhez töltsd fel az AssemblyAI-egyenleged (ugyanezzel a kulccsal, a Működés lap részletes\n"
+"      beállításaiban választható nagyobb modell), vagy válaszd az OpenRoutert. Bármikor átállhatsz."
+msgstr ""
+"Per un modello più intelligente ricarica il credito AssemblyAI (stessa chiave; un modello più grande si sceglie nelle impostazioni dettagliate\n"
+"      della scheda Funzionamento), oppure scegli OpenRouter. Puoi cambiare in qualsiasi momento."
+
+#: settings.py:97
+msgid "Ollama"
+msgstr "Ollama"
+
+#: app/templates/telepites_4.html:105
+msgid "Ollamát"
+msgstr "Ollama"
+
+#: app/templates/telepites_4.html:73
+msgid "OpenRouter-kulccsal"
+msgstr "Con una chiave OpenRouter"
+
+#: app/templates/telepites_4.html:89
+msgid "OpenRouter-kulcs"
+msgstr "Chiave OpenRouter"
+
+#: settings.py:114
+msgid "OpenRouter-modelleknél: a modell a válasz előtt végiggondolja a feladatot. Alaposabb, de lassabb és drágább (a gondolkodás is fizetős token). Ahol a modell mindig gondolkodik, ott nem kapcsolható ki."
+msgstr "Con i modelli OpenRouter: il modello ragiona sul compito prima di rispondere. Più accurato, ma più lento e costoso (anche il ragionamento sono token a pagamento). Dove il modello ragiona sempre, non si può disattivare."
+
+#: app/templates/telepites_6.html:10
+msgid "Piros:"
+msgstr "Rosso:"
+
+#: resolve.py:38
+msgid "Podcast-epizód"
+msgstr "Episodio di podcast"
+
+#: machine.py:466
+msgid "Processzor, memória"
+msgstr "Processore, memoria"
+
+#: settings.py:88
+msgid "Processzorszálak"
+msgstr "Thread del processore"
+
+#: app/templates/mukodes.html:30
+msgid "Próba-modell írja az összefoglalókat"
+msgstr "Un modello di prova scrive i riassunti"
+
+#: cli.py:525
+#, python-brace-format
+msgid "Próba: {text}"
+msgstr "Prova: {text}"
+
+#: app/templates/gepem.html:18 app/templates/telepites_2.html:18
+#: app/templates/telepites_2.html:28
+msgid "Próbafuttatás"
+msgstr "Prova"
+
+#: cli.py:286
+msgid "Próbafuttatás (az első alkalommal a modellek letöltése hosszabb) …"
+msgstr "Prova (la prima volta il download dei modelli richiede più tempo) …"
+
+#: app/templates/gepem.html:28
+msgid "Próbafuttatás (kb. 1 perc)"
+msgstr "Prova (circa 1 minuto)"
+
+#: trial.py:203
+#, python-brace-format
+msgid "Próbafuttatás · {strftime}"
+msgstr "Prova · {strftime}"
+
+#: app/templates/telepites_5.html:6
+msgid "Párosítva."
+msgstr "Abbinato."
+
+#: cli.py:75
+#, python-brace-format
+msgid "Párosítva: {get}. Beállítások: {path}"
+msgstr "Abbinato: {get}. Impostazioni: {path}"
+
+#: cli.py:96
+#, python-brace-format
+msgid "Párosítva: {name}. Beállítások: {path}"
+msgstr "Abbinato: {name}. Impostazioni: {path}"
+
+#: app/templates/allapot.html:21 app/templates/telepites_5.html:26
+#: app/wizard.py:15
+msgid "Párosítás"
+msgstr "Abbinamento"
+
+#: app/templates/allapot.html:5 app/templates/kulcsok.html:19
+msgid "Párosítás a Skipwise-zal"
+msgstr "Abbinamento con Skipwise"
+
+#: settings.py:50
+msgid "Párosítási token"
+msgstr "Token di abbinamento"
+
+#: app/templates/allapot.html:10
+msgid "Párosítókód:"
+msgstr "Codice di abbinamento:"
+
+#: settings.py:109
+msgid "Például https://openrouter.ai/api/v1, vagy a saját LiteLLM-ed. Az AssemblyAI-kulccsal: https://llm-gateway.assemblyai.com/v1 (ingyenes fiókkal csak a qwen3.5-4b-32k-fast próba-modell). Ha meg van adva, ez az elsődleges a helyi modellszerverrel szemben."
+msgstr "Per esempio https://openrouter.ai/api/v1, o il tuo LiteLLM. Con la chiave AssemblyAI: https://llm-gateway.assemblyai.com/v1 (con un account gratuito solo il modello di prova qwen3.5-4b-32k-fast). Se indicato, ha la precedenza sul server di modelli locale."
+
+#: settings.py:149
+msgid "Például hu; üresen felismeri."
+msgstr "Per esempio hu; vuoto = riconosciuta."
+
+#: app/templates/telepites_4.html:56
+msgid "Regisztráció és kulcs"
+msgstr "Registrazione e chiave"
+
+#: app/templates/telepites_4.html:53
+msgid "Regisztrációkor"
+msgstr "Alla registrazione ricevi"
+
+#: app/templates/telepites_1.html:15
+msgid "Rendszergazdai jog nem kell, a program csak a saját fiókodban fut."
+msgstr "Non servono diritti di amministratore; il programma gira solo nel tuo account."
+
+#: app/templates/mukodes.html:73
+msgid "Részletes beállítások"
+msgstr "Impostazioni dettagliate"
+
+#: app/templates/mukodes.html:33
+msgid ""
+"Részletes beállítások → Összefoglaló, fordítás,\n"
+"      kérdések"
+msgstr ""
+"Impostazioni dettagliate → Riassunto, traduzione,\n"
+"      domande"
+
+#: work.py:126
+#, python-brace-format
+msgid "Saját felvételhez ez a mód nem kérhető: {mode}."
+msgstr "Per una registrazione propria non si può chiedere questa modalità: {mode}."
+
+#: modes.py:15
+msgid "Saját gép"
+msgstr "Il tuo computer"
+
+#: app/templates/telepites_1.html:10
+msgid "Skipwise"
+msgstr "Skipwise"
+
+#: app/main.py:237 app/main.py:315 app/templates/base.html:6
+#: app/templates/telepites_1.html:8 app/tray.py:119
+msgid "Skipwise futtató"
+msgstr "Runner Skipwise"
+
+#: app/templates/base.html:22
+#, python-format
+msgid "Skipwise futtató %(version)s"
+msgstr "Runner Skipwise %(version)s"
+
+#: cli.py:187
+#, python-brace-format
+msgid "Skipwise futtató {__version__}, beállítások: {path}"
+msgstr "Runner Skipwise {__version__}, impostazioni: {path}"
+
+#: cli.py:135
+#, python-brace-format
+msgid "Skipwise futtató {__version__}: munkát kérek innen: {server} (leállítás: Ctrl+C)"
+msgstr "Runner Skipwise {__version__}: chiedo lavoro a {server} (stop: Ctrl+C)"
+
+#: app/tray.py:93 app/tray.py:108
+msgid "Skipwise futtató – "
+msgstr "Runner Skipwise – "
+
+#: app/tray.py:29
+msgid "Skipwise futtató – leállt: "
+msgstr "Runner Skipwise – fermo: "
+
+#: app/tray.py:33
+msgid "Skipwise futtató – modellcsere: most ne használd a helyi modelleket"
+msgstr "Runner Skipwise – cambio modello: non usare ora i modelli locali"
+
+#: app/tray.py:31
+msgid "Skipwise futtató – nem fut"
+msgstr "Runner Skipwise – non in esecuzione"
+
+#: app/tray.py:27
+msgid "Skipwise futtató – nincs párosítva"
+msgstr "Runner Skipwise – non abbinato"
+
+#: app/templates/telepites.html:6
+msgid "Skipwise futtató – telepítés"
+msgstr "Runner Skipwise – configurazione"
+
+#: app/tray.py:39
+msgid "Skipwise futtató – vár a következő munkára"
+msgstr "Runner Skipwise – in attesa del prossimo lavoro"
+
+#: app/tray.py:38
+#, python-brace-format
+msgid "Skipwise futtató – {label}"
+msgstr "Runner Skipwise – {label}"
+
+#: modes.py:115
+msgid "Skipwise-könyvtár"
+msgstr "Libreria Skipwise"
+
+#: machine.py:471 machine.py:475
+msgid "Szabad hely"
+msgstr "Spazio libero"
+
+#: settings.py:142
+msgid "Sütifájl"
+msgstr "File dei cookie"
+
+#: app/templates/telepites_1.html:12
+msgid "Te"
+msgstr "Tu"
+
+#: remote.py:254
+#, python-brace-format
+msgid "Telepítve ({__version__} helyett a legújabb); újraindulok."
+msgstr "Installato (la più recente al posto di {__version__}); mi riavvio."
+
+#: app/templates/gepem.html:64
+#, python-format
+msgid "Telepítve: %(installedorismeretlen)s"
+msgstr "Installato: %(installedorismeretlen)s"
+
+#: app/templates/gepem.html:82
+#, python-format
+msgid "Telepítve: %(version)s"
+msgstr "Installato: %(version)s"
+
+#: cli.py:111
+#, python-brace-format
+msgid "Telepítve: {__version__}; legújabb: {version}"
+msgstr "Installato: {__version__}; più recente: {version}"
+
+#: app/templates/telepites.html:11
+msgid "Telepítés lépései"
+msgstr "Passaggi di configurazione"
+
+#: app/templates/telepites_1.html:22 app/templates/telepites_2.html:55
+#: app/templates/telepites_3.html:36 app/templates/telepites_4.html:157
+#: app/templates/telepites_4.html:158 app/templates/telepites_5.html:31
+#: app/templates/telepites_5.html:32
+msgid "Tovább"
+msgstr "Avanti"
+
+#: settings.py:127
+msgid "További választható modellek (nyilvános)"
+msgstr "Altri modelli selezionabili (pubblici)"
+
+#: settings.py:129
+msgid "További választható modellek (saját felvételek)"
+msgstr "Altri modelli selezionabili (registrazioni proprie)"
+
+#: app/templates/telepites_4.html:139
+msgid "Tölts le egy modellt"
+msgstr "Scarica un modello"
+
+#: settings.py:71
+msgid "Törlés az AssemblyAI-nál"
+msgstr "Elimina presso AssemblyAI"
+
+#: cli.py:171
+#, python-brace-format
+msgid "Törlődnek {what}; a modellek helye: {models_dir}. Mehet? (igen/nem) "
+msgstr "Verranno eliminati {what}; i modelli sono in: {models_dir}. Procedo? (igen/nem) "
+
+#: settings.py:81
+msgid "Udvarias mód"
+msgstr "Modalità cortese"
+
+#: app/templates/mukodes.html:50
+msgid "Udvarias mód:"
+msgstr "Modalità cortese:"
+
+#: settings.py:84
+msgid "Udvarias mód: leghosszabb várakozás"
+msgstr "Modalità cortese: attesa massima"
+
+#: app/templates/gepem.html:18
+msgid "Utolsó próbafuttatás"
+msgstr "Ultima prova"
+
+#: app/templates/telepites_4.html:139
+msgid "Vagy tölts le másikat"
+msgstr "Oppure scaricane un altro"
+
+#: modes.py:15
+msgid "Vegyes"
+msgstr "Misto"
+
+#: machine.py:457 machine.py:460
+msgid "Videókártya"
+msgstr "Scheda video"
+
+#: app/templates/telepites_2.html:54 app/templates/telepites_3.html:35
+#: app/templates/telepites_4.html:156 app/templates/telepites_5.html:30
+msgid "Vissza"
+msgstr "Indietro"
+
+#: app/templates/gepem.html:97
+#, python-format
+msgid "Vissza az előzőre (%(previous)s)"
+msgstr "Torna alla precedente (%(previous)s)"
+
+#: app/templates/gepem.html:96
+msgid "Visszaállítás …"
+msgstr "Ripristino …"
+
+#: app/templates/telepites_4.html:107
+msgid "Vizsgálom …"
+msgstr "Controllo …"
+
+#: modes.py:50
+msgid "Válaszd ki a helyi modellszervert (Ollama vagy LM Studio)."
+msgstr "Scegli il server di modelli locale (Ollama o LM Studio)."
+
+#: settings.py:76
+msgid "Választható Whisper-modellek"
+msgstr "Modelli Whisper selezionabili"
+
+#: machine.py:587
+#, python-brace-format
+msgid "Változott a memória: {_num} GB (eddig {_num2} GB)."
+msgstr "La memoria è cambiata: {_num} GB (finora {_num2} GB)."
+
+#: app/templates/telepites_5.html:13
+msgid "Várjuk a jóváhagyást … (10 percig érvényes)"
+msgstr "In attesa dell'approvazione … (valido 10 minuti)"
+
+#: captions.py:122
+msgid "YouTube automatikus feliratából készült: felismerési hibák lehetnek benne, és nincsenek beszélők. Jobb átirathoz válassz helyi vagy felhős átírást."
+msgstr "Creato dai sottotitoli automatici di YouTube: possono esserci errori di riconoscimento e non ci sono interlocutori. Per una trascrizione migliore scegli quella locale o nel cloud."
+
+#: modes.py:98
+msgid "YouTube-feliratból"
+msgstr "Dai sottotitoli di YouTube"
+
+#: work.py:185
+msgid "YouTube-feliratot csak YouTube-videóhoz lehet kérni."
+msgstr "I sottotitoli di YouTube si possono chiedere solo per un video di YouTube."
+
+#: modes.py:114 resolve.py:37
+msgid "YouTube-videó"
+msgstr "Video YouTube"
+
+#: app/templates/telepites_6.html:7
+msgid "Zöld:"
+msgstr "Verde:"
+
+#: machine.py:540
+msgid "a **Felhő** módot ajánljuk: ezen a gépen a helyi átírás lassú lenne; a felhő fizetős, de gyors"
+msgstr "consigliamo la modalità **Cloud**: su questo computer la trascrizione locale sarebbe lenta; il cloud è a pagamento ma veloce"
+
+#: trial.py:196
+msgid "a **Felhő** módot ajánljuk: ezen a gépen a helyi átírás túl lassú"
+msgstr "consigliamo la modalità **Cloud**: su questo computer la trascrizione locale è troppo lenta"
+
+#: trial.py:190
+msgid "a **Saját gép** módot ajánljuk: az átírás és az összefoglaló is itt készül, ingyen"
+msgstr "consigliamo la modalità **Il tuo computer**: trascrizione e riassunto si fanno entrambi qui, gratis"
+
+#: machine.py:534
+msgid "a **Saját gép** módot ajánljuk: az átírás és az összefoglaló is itt készül, ingyen, és semmi nem megy a felhőbe"
+msgstr "consigliamo la modalità **Il tuo computer**: trascrizione e riassunto si fanno entrambi qui, gratis, e niente va nel cloud"
+
+#: machine.py:537 trial.py:193
+msgid "a **Vegyes** módot ajánljuk: az átírás itt, ingyen készül, az összefoglaló a felhőben, jó minőségben"
+msgstr "consigliamo la modalità **Misto**: la trascrizione si fa qui gratis, il riassunto nel cloud, di buona qualità"
+
+#: app/wizard.py:101
+msgid "a GPU-gép végzi"
+msgstr "lo fa la macchina GPU"
+
+#: activity.py:48
+msgid "a GPU-gépen"
+msgstr "sulla macchina GPU"
+
+#: modes.py:91
+msgid "a GPU-gépen (Whisper)"
+msgstr "sulla macchina GPU (Whisper)"
+
+#: keystore.py:66
+msgid "a Windows hitelesítőadat-kezelője"
+msgstr "Gestione credenziali di Windows"
+
+#: settings.py:160
+msgid "a beállítási fájl"
+msgstr "il file delle impostazioni"
+
+#: keystore.py:63
+msgid "a beállítási fájl (csak a te felhasználód olvashatja)"
+msgstr "il file delle impostazioni (solo il tuo utente può leggerlo)"
+
+#: app/templates/mukodes.html:66
+msgid ""
+"a beállítások a Skipwise Futtatók oldalán, a Beállítás gombbal is\n"
+"      módosíthatók"
+msgstr ""
+"le impostazioni si possono cambiare anche nella pagina Runner di Skipwise con il pulsante\n"
+"      Impostazioni"
+
+#: cli.py:170
+msgid "a beállítások, a kulcsok"
+msgstr "le impostazioni, le chiavi"
+
+#: cli.py:419
+msgid "a böngészőben, saját ablak helyett"
+msgstr "nel browser invece che in una finestra propria"
+
+#: app/templates/telepites_3.html:31
+msgid "a feltöltőtől származó felirata"
+msgstr "sottotitoli dell'autore"
+
+#: keystore.py:173
+#, python-brace-format
+msgid "a fiókod nem éri el a(z) {model} modellt (ingyenes fiókkal csak a {TRIAL_MODEL}; nagyobb modellhez töltsd fel az egyenleged)"
+msgstr "il tuo account non accede al modello {model} (con un account gratuito solo {TRIAL_MODEL}; per un modello più grande ricarica il credito)"
+
+#: app/templates/mukodes.html:59
+msgid "a futtató a gép bekapcsolása után magától elindul a tálcán, ablak nélkül, és felveszi a munkákat"
+msgstr "dopo l'accensione del computer il runner si avvia da solo nell'area di notifica, senza finestra, e accetta lavori"
+
+#: machine.py:491
+msgid "a futtató el tudja indítani"
+msgstr "il runner può avviarlo"
+
+#: cli.py:437
+msgid "a helyi modellszerver ezen modelljével (alapból llm_private_model)"
+msgstr "con questo modello del server di modelli locale (di default llm_private_model)"
+
+#: machine.py:462
+msgid "a helyi átírás a processzoron fut, lassan"
+msgstr "la trascrizione locale gira sul processore, lentamente"
+
+#: keystore.py:37
+msgid "a keyring csomag nincs telepítve"
+msgstr "il pacchetto keyring non è installato"
+
+#: release.py:125
+msgid "a kiadás listája más változatot nevez meg"
+msgstr "l'elenco della versione indica un'altra versione"
+
+#: machine.py:502
+msgid "a kisebb (turbo) modellel; a magyar szöveg kicsit pontatlanabb"
+msgstr "con il modello più piccolo (turbo); il testo ungherese è un po' meno preciso"
+
+#: app/templates/telepites_1.html:10
+msgid "a kulcsaidat nem látja"
+msgstr "non vede le tue chiavi"
+
+#: keystore.py:108 keystore.py:134 keystore.py:143 keystore.py:170
+msgid "a kulcsot nem fogadja el"
+msgstr "non accetta la chiave"
+
+#: remote.py:203
+msgid "a kulcsot nem sikerült megfejteni; add meg újra a Skipwise-ban"
+msgstr "la chiave non si è potuta decifrare; inseriscila di nuovo in Skipwise"
+
+#: remote.py:41
+msgid "a lenti beállítások szerint (például külön GPU-gép, saját LiteLLM)"
+msgstr "secondo le impostazioni qui sotto (per esempio macchina GPU separata, LiteLLM proprio)"
+
+#: app/wizard.py:98
+msgid "a letöltés a háttérben is folytatódik"
+msgstr "il download continua anche in background"
+
+#: cli.py:428
+msgid "a letöltött modelleket is"
+msgstr "anche i modelli scaricati"
+
+#: keystore.py:68
+msgid "a macOS kulcskarikája"
+msgstr "il portachiavi di macOS"
+
+#: app/templates/telepites_4.html:70
+msgid "a magyar szöveg gyengébb lehet"
+msgstr "il testo ungherese può essere più debole"
+
+#: settings.py:117
+msgid "a modell alapértelmezése"
+msgstr "predefinito del modello"
+
+#: trial.py:97
+msgid "a processzoron"
+msgstr "sul processore"
+
+#: machine.py:505
+msgid "a processzoron: egy 1 órás videó nagyjából 1 óra vagy több"
+msgstr "sul processore: un video di 1 ora richiede circa 1 ora o più"
+
+#: keystore.py:71 settings.py:160
+msgid "a rendszer kulcstárolója"
+msgstr "l'archivio chiavi di sistema"
+
+#: keystore.py:70
+msgid "a rendszer kulcstárolója (Secret Service)"
+msgstr "l'archivio chiavi di sistema (Secret Service)"
+
+#: updater.py:223
+msgid "a telepítő újraindítja a futtatót."
+msgstr "il programma di installazione riavvia il runner."
+
+#: trial.py:97
+msgid "a videókártyán"
+msgstr "sulla scheda video"
+
+#: app/templates/mukodes.html:35
+msgid "add meg egy OpenRouter-kulcsot a"
+msgstr "inserisci una chiave OpenRouter nella scheda"
+
+#: app/templates/telepites_3.html:10 app/wizard.py:16 app/wizard.py:105
+msgid "ajánlott"
+msgstr "consigliato"
+
+#: tracks.py:121
+msgid "alapértelmezett"
+msgstr "predefinito"
+
+#: app/templates/mukodes.html:34
+msgid "alatt (ugyanaz a kulcs), vagy"
+msgstr "(stessa chiave), oppure"
+
+#: settings.py:59 settings.py:63 settings.py:138 settings.py:160
+msgid "automatikus"
+msgstr "automatico"
+
+#: modes.py:95 modes.py:107
+msgid "az AssemblyAI-kreditből"
+msgstr "dal credito AssemblyAI"
+
+#: release.py:67
+msgid "az aláírás nem egyezik"
+msgstr "la firma non corrisponde"
+
+#: app/wizard.py:24
+msgid "az összefoglaló fizetős (centes tétel)"
+msgstr "il riassunto è a pagamento (pochi centesimi)"
+
+#: app/templates/telepites_6.html:10
+msgid "baj van, kattints rá a részletekért"
+msgstr "c'è un problema, fai clic per i dettagli"
+
+#: settings.py:59 settings.py:117 settings.py:138
+msgid "be"
+msgstr "attivo"
+
+#: media.py:37
+msgid "beolvasni a videót"
+msgstr "leggere il video"
+
+#: cli.py:364
+#, python-brace-format
+msgid "beszédfelismerés: {vad_model}"
+msgstr "rilevamento del parlato: {vad_model}"
+
+#: whispercpp.py:169
+msgid "beszédfelismerő modell"
+msgstr "modello di riconoscimento vocale"
+
+#: whispercpp.py:170
+msgid "beszédérzékelő (VAD)"
+msgstr "rilevatore di attività vocale (VAD)"
+
+#: whispercpp.py:171
+msgid "beszélő-szétválasztó modellek"
+msgstr "modelli di separazione degli interlocutori"
+
+#: activity.py:19
+msgid "beszélők szétválasztása"
+msgstr "separazione degli interlocutori"
+
+#: cli.py:366
+#, python-brace-format
+msgid "beszélők: {name}, {name2}"
+msgstr "interlocutori: {name}, {name2}"
+
+#: cli.py:312
+msgid "betöltve"
+msgstr "caricato"
+
+#: app/templates/kulcsok.html:10
+msgid "beállítva"
+msgstr "impostata"
+
+#: app/templates/telepites_4.html:38 app/templates/telepites_4.html:52
+#: app/templates/telepites_4.html:90
+msgid "beállítva – új kulcshoz írd be"
+msgstr "impostata – per una nuova chiave scrivila qui"
+
+#: modes.py:115
+msgid "bárhonnan olvasható"
+msgstr "leggibile ovunque"
+
+#: app/templates/telepites_1.html:12
+msgid "böngészőben,"
+msgstr "nel browser,"
+
+#: app/templates/telepites_4.html:75
+msgid "centes tétel videónként"
+msgstr "pochi centesimi a video"
+
+#: cli.py:420
+msgid "csak a tálcaikon indul, az ablak nem nyílik meg"
+msgstr "avvia solo l'icona nell'area di notifica, la finestra non si apre"
+
+#: cli.py:425
+msgid "csak megnézi, van-e újabb"
+msgstr "controlla solo se ce n'è una più recente"
+
+#: app/templates/telepites_6.html:8
+msgid "dolgozik"
+msgstr "al lavoro"
+
+#: app/wizard.py:101 app/wizard.py:117 app/wizard.py:119
+msgid "ebben a módban nem kell"
+msgstr "non serve in questa modalità"
+
+#: app/wizard.py:123
+msgid "ebben a módban nem kell · később a Működés lapon bekapcsolható"
+msgstr "non serve in questa modalità · si può attivare più tardi nella scheda Funzionamento"
+
+#: machine.py:524
+#, python-brace-format
+msgid "egy MoE-modell (például Qwen3 30B-A3B) a rendszermemória segítségével elfut, lassabban; egy sűrű 30B-s modellhez legalább {LARGE_LLM_VRAM_GB} GB videómemória kellene"
+msgstr "un modello MoE (per esempio Qwen3 30B-A3B) gira con l'aiuto della memoria di sistema, più lentamente; un modello denso da 30B richiederebbe almeno {LARGE_LLM_VRAM_GB} GB di memoria video"
+
+#: machine.py:514
+msgid "egy kisebb (8B körüli) modell fér el; a magyar összefoglalók érezhetően gyengébbek lesznek, mint egy felhős modellé"
+msgstr "ci sta un modello più piccolo (circa 8B); i riassunti in ungherese saranno sensibilmente più deboli di quelli di un modello cloud"
+
+#: machine.py:511
+msgid "egy nagy (30B körüli) modell is elfér; a magyar szöveg közelít a felhőshöz"
+msgstr "ci sta anche un modello grande (circa 30B); il testo ungherese si avvicina a quello del cloud"
+
+#: machine.py:530
+#, python-brace-format
+msgid "ehhez legalább {LARGE_LLM_VRAM_GB} GB videómemória kellene"
+msgstr "servirebbero almeno {LARGE_LLM_VRAM_GB} GB di memoria video"
+
+#: cli.py:207
+#, python-brace-format
+msgid "engedélyezett tartományok: {join}"
+msgstr "domini consentiti: {join}"
+
+#: cli.py:188
+#, python-brace-format
+msgid "eszközök: {dumps}"
+msgstr "strumenti: {dumps}"
+
+#: remote.py:188
+msgid "ez a beállítás a Skipwise-ból nem állítható"
+msgstr "questa impostazione non si può cambiare da Skipwise"
+
+#: remote.py:206
+msgid "ez a kulcs a Skipwise-ból nem törölhető"
+msgstr "questa chiave non si può eliminare da Skipwise"
+
+#: remote.py:197
+msgid "ez a kulcs a Skipwise-ból nem állítható"
+msgstr "questa chiave non si può impostare da Skipwise"
+
+#: activity.py:48 activity.py:51 app/templates/mukodes.html:39
+#: app/templates/telepites_3.html:30
+msgid "ezen a gépen"
+msgstr "su questo computer"
+
+#: modes.py:100
+msgid "ezen a gépen (Ollama vagy LM Studio)"
+msgstr "su questo computer (Ollama o LM Studio)"
+
+#: modes.py:93
+msgid "ezen a gépen (Whisper)"
+msgstr "su questo computer (Whisper)"
+
+#: modes.py:103
+#, python-brace-format
+msgid "ezen a gépen ({title})"
+msgstr "su questo computer ({title})"
+
+#: machine.py:508
+msgid "ezen a gépen nagyon lassú lenne; az átírás felhőben ajánlott"
+msgstr "sarebbe molto lenta su questo computer; si consiglia la trascrizione nel cloud"
+
+#: activity.py:23
+msgid "fejezetek írása"
+msgstr "scrittura dei capitoli"
+
+#: activity.py:46 activity.py:51 settings.py:147
+msgid "felhőben"
+msgstr "nel cloud"
+
+#: modes.py:95
+msgid "felhőben (AssemblyAI), ha kéred"
+msgstr "nel cloud (AssemblyAI), se lo chiedi"
+
+#: modes.py:106
+msgid "felhőben (AssemblyAI, próba-modell)"
+msgstr "nel cloud (AssemblyAI, modello di prova)"
+
+#: modes.py:109
+#, python-brace-format
+msgid "felhőben ({_provider})"
+msgstr "nel cloud ({_provider})"
+
+#: app/templates/mukodes.html:39 app/templates/telepites_3.html:30
+msgid "felhőben · a pöttyök mutatják, merre halad az adat"
+msgstr "nel cloud · i pallini mostrano dove vanno i dati"
+
+#: tracks.py:157
+msgid "felirat"
+msgstr "traccia dei sottotitoli"
+
+#: activity.py:17
+msgid "felirat letöltése"
+msgstr "download dei sottotitoli"
+
+#: activity.py:18
+msgid "feltöltés a felhőbe"
+msgstr "caricamento nel cloud"
+
+#: work.py:95
+msgid "felvétel"
+msgstr "registrazione"
+
+#: activity.py:22
+msgid "felvétel keresése az oldalon"
+msgstr "ricerca della registrazione nella pagina"
+
+#: machine.py:35
+msgid "figyelem"
+msgstr "attenzione"
+
+#: cli.py:201
+#, python-brace-format
+msgid "figyelt mappák: {join} ({options})"
+msgstr "cartelle monitorate: {join} ({options})"
+
+#: app/wizard.py:21
+msgid "fizetős, a te kulcsaiddal · egy AssemblyAI-regisztrációval kipróbálható (50 $ induló kredit, bankkártya nélkül)"
+msgstr "a pagamento, con le tue chiavi · si prova con una registrazione AssemblyAI (50 $ di credito iniziale, senza carta)"
+
+#: modes.py:96 modes.py:111
+msgid "fizetős, a te kulcsoddal"
+msgstr "a pagamento, con la tua chiave"
+
+#: activity.py:21 app/templates/allapot.html:54
+msgid "fordítás"
+msgstr "traduzione"
+
+#: cli.py:204
+msgid "fut"
+msgstr "in esecuzione"
+
+#: app/templates/telepites_4.html:115
+#, python-format
+msgid "fut · %(models)s modell"
+msgstr "in esecuzione · %(models)s modelli"
+
+#: machine.py:485
+#, python-brace-format
+msgid "fut · {n} modell"
+msgstr "in esecuzione · {n} modelli"
+
+#: app/templates/telepites_5.html:11
+msgid "gombot."
+msgstr "."
+
+#: machine.py:498 trial.py:101
+msgid "gyors"
+msgstr "veloce"
+
+#: app/templates/telepites_1.html:12
+msgid "gépen vagy telefonon"
+msgstr "su computer o telefono"
+
+#: app/templates/mukodes.html:50
+#, python-format
+msgid "ha épp te használsz egy modellt, legfeljebb %(polite_wait_min)s percet várok, mielőtt kiveszem a memóriából"
+msgstr "se stai usando un modello proprio allora, aspetto al massimo %(polite_wait_min)s minuti prima di toglierlo dalla memoria"
+
+#: activity.py:18
+msgid "hang előkészítése"
+msgstr "preparazione dell'audio"
+
+#: tracks.py:145
+msgid "hangsáv"
+msgstr "traccia audio"
+
+#: settings.py:147
+msgid "helyben"
+msgstr "in locale"
+
+#: cli.py:196
+#, python-brace-format
+msgid "helyi Whisper: {whisper_url} ({join}); nem hívom meg, mert a GPU-t elvenné az LLM-től"
+msgstr "Whisper locale: {whisper_url} ({join}); non lo chiamo, perché toglierebbe la GPU all'LLM"
+
+#: cli.py:206
+#, python-brace-format
+msgid "helyi modellszerver: {title} ({url}): {state}"
+msgstr "server di modelli locale: {title} ({url}): {state}"
+
+#: release.py:54
+msgid "hibás aláírásfájl"
+msgstr "file di firma non valido"
+
+#: release.py:40
+msgid "hibás base64"
+msgstr "base64 non valido"
+
+#: release.py:97
+#, python-brace-format
+msgid "hibás fájlbejegyzés: {kind}"
+msgstr "voce di file non valida: {kind}"
+
+#: release.py:51
+msgid "hibás nyilvános kulcs"
+msgstr "chiave pubblica non valida"
+
+#: release.py:122
+msgid "hibás változatszám"
+msgstr "numero di versione non valido"
+
+#: release.py:92
+msgid "hibás változatszám a listában"
+msgstr "numero di versione non valido nell'elenco"
+
+#: app/templates/allapot.html:19 app/templates/telepites_5.html:24
+msgid "https://skipwise.app"
+msgstr "https://skipwise.app"
+
+#: activity.py:17
+msgid "indul"
+msgstr "in avvio"
+
+#: app/templates/telepites_4.html:115
+msgid "indul …"
+msgstr "in avvio …"
+
+#: modes.py:91 modes.py:93 modes.py:98 modes.py:100 modes.py:104
+msgid "ingyenes"
+msgstr "gratis"
+
+#: app/wizard.py:26
+msgid "ingyenes · a magyar összefoglaló gyengébb"
+msgstr "gratis · il riassunto in ungherese è più debole"
+
+#: release.py:57
+msgid "ismeretlen aláírás-fajta"
+msgstr "tipo di firma sconosciuto"
+
+#: localllm.py:285
+msgid "ismeretlen hiba"
+msgstr "errore sconosciuto"
+
+#: app/templates/telepites_1.html:8
+msgid "itt vannak a kulcsaid"
+msgstr "qui ci sono le tue chiavi"
+
+#: app/templates/telepites_4.html:73
+msgid "jobb minőség"
+msgstr "qualità migliore"
+
+#: machine.py:35 machine.py:510 trial.py:119
+msgid "jó"
+msgstr "buono"
+
+#: trial.py:116
+msgid "jó, de lassú"
+msgstr "buono, ma lento"
+
+#: app/templates/telepites_4.html:53
+msgid ""
+"kapsz, bankkártya nélkül: ez nagyjából 300 óra\n"
+"      átírásra elég. Felhős átírás csak akkor készül, ha a Skipwise-ban kéred. A kulcsot a gép saját, védett\n"
+"      kulcstárolójában őrizzük, a Skipwise sosem látja."
+msgstr ""
+"senza carta: bastano per circa 300 ore\n"
+"      di trascrizione. La trascrizione nel cloud avviene solo se la chiedi in Skipwise. Conserviamo la chiave nell'archivio protetto\n"
+"      del computer; Skipwise non la vede mai."
+
+#: activity.py:22
+msgid "kategória választása"
+msgstr "scelta della categoria"
+
+#: trial.py:91
+#, python-brace-format
+msgid "kb. {n} perc"
+msgstr "circa {n} min"
+
+#: trial.py:92
+#, python-brace-format
+msgid "kb. {n} óra"
+msgstr "circa {n} h"
+
+#: app/wizard.py:16
+msgid "kell"
+msgstr "necessario"
+
+#: machine.py:476
+#, python-brace-format
+msgid "kell: kb. {WHISPER_DISK_GB} GB, saját összefoglalóhoz +{LOCAL_LLM_DISK_GB} GB"
+msgstr "servono: circa {WHISPER_DISK_GB} GB, +{LOCAL_LLM_DISK_GB} GB per i riassunti propri"
+
+#: app/templates/gepem.html:65
+msgid "keresem, és ha van, telepítem …"
+msgstr "cerco e, se c'è, installo …"
+
+#: machine.py:35
+msgid "kevés"
+msgstr "poca"
+
+#: machine.py:454
+msgid "kevés saját memória: csak a kisebb beszédfelismerő modell fér el"
+msgstr "poca memoria dedicata: ci sta solo il modello di riconoscimento vocale più piccolo"
+
+#: settings.py:59 settings.py:117 settings.py:138
+msgid "ki"
+msgstr "disattivo"
+
+#: remote.py:253 ytdlp_update.py:104
+#, python-brace-format
+msgid "kilépési kód {returncode}"
+msgstr "codice di uscita {returncode}"
+
+#: app/templates/kulcsok.html:14
+msgid "kulcs"
+msgstr "chiave"
+
+#: tracks.py:119
+msgid "kényszerített"
+msgstr "forzato"
+
+#: cli.py:192
+#, python-brace-format
+msgid "képességek: átírás {join}; összefoglaló: {join2}"
+msgstr "capacità: trascrizione {join}; riassunto: {join2}"
+
+#: tracks.py:117
+msgid "képként"
+msgstr "come immagini"
+
+#: app/templates/allapot.html:54
+msgid "kérdés"
+msgstr "domanda"
+
+#: cli.py:429
+msgid "kérdés nélkül"
+msgstr "senza chiedere"
+
+#: app/templates/telepites_2.html:19
+msgid "kész"
+msgstr "fatto"
+
+#: app/wizard.py:111
+msgid "később a Működés lapon átállítható"
+msgstr "si può cambiare più tardi nella scheda Funzionamento"
+
+#: app/templates/telepites_1.html:10
+msgid "könyvtár, keresés"
+msgstr "libreria, ricerca"
+
+#: app/wizard.py:106 app/wizard.py:117
+msgid "kötelező ehhez a módhoz"
+msgstr "necessario per questa modalità"
+
+#: cli.py:216
+msgid "központ: a token érvénytelen vagy visszavonták"
+msgstr "servizio centrale: il token non è valido o è stato revocato"
+
+#: cli.py:224 cli.py:226
+#, python-brace-format
+msgid "központ: rendben ({server})"
+msgstr "servizio centrale: OK ({server})"
+
+#: cli.py:219 cli.py:222
+#, python-brace-format
+msgid "központ: {exc}"
+msgstr "servizio centrale: {exc}"
+
+#: app/templates/telepites_4.html:6
+msgid ""
+"lap részletes beállításaiban adod meg.\n"
+"  A kulcsokat itt is megadhatod."
+msgstr ""
+".\n"
+"  Puoi inserire le chiavi anche qui."
+
+#: app/templates/mukodes.html:35
+msgid "lapon, és állíts át rá:"
+msgstr "e passa a quella:"
+
+#: machine.py:499
+#, python-brace-format
+msgid "large-v3, beszélőkkel, a videókártyán ({backend})"
+msgstr "large-v3, con interlocutori, sulla scheda video ({backend})"
+
+#: settings.py:76
+msgid "large-v3: pontosabb; large-v3-turbo: gyorsabb, kicsit pontatlanabb. Az első az alapértelmezett. Külön GPU-gépnél az ott telepített nevek."
+msgstr "large-v3: più preciso; large-v3-turbo: più veloce, un po' meno preciso. Il primo è il predefinito. Con una macchina GPU separata, i nomi installati lì."
+
+#: machine.py:504
+msgid "lassú"
+msgstr "lento"
+
+#: machine.py:518
+#, python-brace-format
+msgid "legalább {SMALL_LLM_VRAM_GB} GB videómemória kellene"
+msgstr "servirebbero almeno {SMALL_LLM_VRAM_GB} GB di memoria video"
+
+#: captions.py:110
+msgid "letölteni a feliratot"
+msgstr "scaricare i sottotitoli"
+
+#: media.py:60
+msgid "letölteni a hangot"
+msgstr "scaricare l'audio"
+
+#: activity.py:17
+msgid "letöltés"
+msgstr "download"
+
+#: app/templates/gepem.html:84
+msgid "letöltöm és ellenőrzöm …"
+msgstr "scarico e verifico …"
+
+#: cli.py:505
+#, python-brace-format
+msgid "llm {action}: add meg a modell nevét"
+msgstr "llm {action}: indica il nome del modello"
+
+#: app/templates/allapot.html:55
+msgid "megnyitás a Skipwise-ban"
+msgstr "apri in Skipwise"
+
+#: cloud.py:125 cloud.py:142 gpuswap.py:62 llm.py:89 llm.py:211 local.py:83
+#: local.py:139 whispercpp.py:298 worker.py:142
+msgid "megszakítva"
+msgstr "annullato"
+
+#: cli.py:274
+msgid "megvan"
+msgstr "sì"
+
+#: app/templates/kulcsok.html:19
+#, python-format
+msgid "megvan (%(server)s)"
+msgstr "sì (%(server)s)"
+
+#: activity.py:21
+msgid "mentés"
+msgstr "salvataggio"
+
+#: activity.py:20
+msgid "modell letöltése (első használat)"
+msgstr "download del modello (primo uso)"
+
+#: cli.py:363
+#, python-brace-format
+msgid "modell: {path}"
+msgstr "modello: {path}"
+
+#: app/templates/telepites_6.html:9
+msgid "modellcsere, közben ne használd a helyi modelleket"
+msgstr "cambio modello, nel frattempo non usare i modelli locali"
+
+#: app/templates/telepites_1.html:9
+msgid "munkát kér →"
+msgstr "chiede lavoro →"
+
+#: release.py:59
+msgid "más kulccsal írták alá"
+msgstr "firmato con un'altra chiave"
+
+#: machine.py:487
+msgid "még nincs letöltött modell"
+msgstr "ancora nessun modello scaricato"
+
+#: app/templates/allapot.html:54
+msgid "még semmi"
+msgstr "ancora niente"
+
+#: machine.py:501
+msgid "működik"
+msgstr "funziona"
+
+#: machine.py:513 trial.py:121
+msgid "működik, de gyengébb"
+msgstr "funziona, ma più debole"
+
+#: trial.py:103
+msgid "működik, lassabban"
+msgstr "funziona, più lentamente"
+
+#: trial.py:104
+msgid "nagyon lassú"
+msgstr "molto lento"
+
+#: machine.py:456
+msgid "nem NVIDIA: Vulkannal működik, ez lassabb lehet a CUDA-nál"
+msgstr "non NVIDIA: funziona con Vulkan, che può essere più lento di CUDA"
+
+#: machine.py:507
+msgid "nem ajánlott"
+msgstr "sconsigliato"
+
+#: machine.py:517 machine.py:529
+msgid "nem fér el"
+msgstr "non ci sta"
+
+#: app/wizard.py:16
+msgid "nem kell"
+msgstr "non necessario"
+
+#: trial.py:173 trial.py:183
+msgid "nem sikerült"
+msgstr "non riuscito"
+
+#: machine.py:471
+msgid "nem sikerült megnézni"
+msgstr "impossibile controllare"
+
+#: cli.py:344
+msgid "nem volt betöltött modell"
+msgstr "nessun modello era caricato"
+
+#: keystore.py:104 keystore.py:130 keystore.py:139 keystore.py:164
+#, python-brace-format
+msgid "nem érhető el ({exc})"
+msgstr "non raggiungibile ({exc})"
+
+#: app/templates/kulcsok.html:10 app/templates/kulcsok.html:19 cli.py:274
+#: settings.py:97 tracks.py:123 tracks.py:124
+msgid "nincs"
+msgstr "nessuno"
+
+#: machine.py:493
+msgid "nincs (Ollama és LM Studio nem található)"
+msgstr "nessuno (Ollama e LM Studio non trovati)"
+
+#: release.py:48
+msgid "nincs aláíró kulcs a futtatóban"
+msgstr "il runner non ha una chiave di firma"
+
+#: modes.py:113 trial.py:185
+msgid "nincs beállítva"
+msgstr "non impostato"
+
+#: cli.py:194
+msgid "nincs beállítva (llm_url, llm_public_model)"
+msgstr "non impostato (llm_url, llm_public_model)"
+
+#: trial.py:186
+msgid "nincs helyi modellszerver vagy modell (local_llm, llm_private_model)"
+msgstr "nessun server di modelli locale o modello (local_llm, llm_private_model)"
+
+#: keystore.py:177
+#, python-brace-format
+msgid "nincs ilyen modell az AssemblyAI-nál: {model}"
+msgstr "AssemblyAI non ha questo modello: {model}"
+
+#: keystore.py:43
+#, python-brace-format
+msgid "nincs kulcstároló ({type})"
+msgstr "nessun archivio chiavi ({type})"
+
+#: machine.py:460
+#, python-brace-format
+msgid "nincs külön videókártya{f}"
+msgstr "nessuna scheda video dedicata{f}"
+
+#: keystore.py:99
+msgid "nincs megadva"
+msgstr "non indicata"
+
+#: keystore.py:154
+msgid "nincs megadva AssemblyAI-kulcs"
+msgstr "nessuna chiave AssemblyAI indicata"
+
+#: keystore.py:118
+msgid "nincs megadva LLM-cím"
+msgstr "nessun indirizzo LLM indicato"
+
+#: cli.py:302
+msgid "nincs telepítve"
+msgstr "non installato"
+
+#: ytdlp_update.py:100
+msgid "nincs uv és pip sem, amivel frissíthetném"
+msgstr "non c'è né uv né pip con cui aggiornare"
+
+#: app/wizard.py:107
+msgid "nélküle csak a YouTube-feliratok használhatók"
+msgstr "senza, si possono usare solo i sottotitoli di YouTube"
+
+#: app/templates/allapot.html:11
+#, python-format
+msgid ""
+"oldalát (%(server)s/futtatok), és írd be ezt a kódot.\n"
+"       Az ablak magától továbblép, ha jóváhagytad."
+msgstr ""
+"(%(server)s/futtatok) e inserisci questo codice.\n"
+"       La finestra va avanti da sola dopo l'approvazione."
+
+#: app/templates/telepites_5.html:10
+msgid ""
+"oldalát, a kód már ki van töltve. Nézd meg,\n"
+"    hogy ott is ez a kód látszik-e, és nyomd meg a"
+msgstr ""
+"di Skipwise; il codice è già inserito. Controlla\n"
+"    che anche lì compaia questo codice e premi"
+
+#: app/templates/allapot.html:20
+msgid "otthoni gép"
+msgstr "computer di casa"
+
+#: settings.py:85 settings.py:93 settings.py:154
+msgid "perc"
+msgstr "min"
+
+#: app/templates/telepites_4.html:68
+msgid "próba"
+msgstr "prova"
+
+#: gateway.py:23
+msgid "próba-modell: a magyar szöveg gyengébb lehet, a számokat és neveket érdemes ellenőrizni"
+msgstr "modello di prova: il testo ungherese può essere più debole; conviene controllare numeri e nomi"
+
+#: app/templates/kulcsok.html:11
+#, python-format
+msgid "próba: %(text)s"
+msgstr "prova: %(text)s"
+
+#: cli.py:209
+msgid "párosítás: még nincs (skipwise-runner pair SERVER)"
+msgstr "abbinamento: non ancora (skipwise-runner pair SERVER)"
+
+#: app/templates/telepites_4.html:141
+msgid "például qwen/qwen3-8b"
+msgstr "per esempio qwen/qwen3-8b"
+
+#: app/templates/telepites_4.html:141
+msgid "például qwen3:8b"
+msgstr "per esempio qwen3:8b"
+
+#: keystore.py:106 keystore.py:132 keystore.py:141 keystore.py:166
+msgid "rendben"
+msgstr "OK"
+
+#: keystore.py:168
+msgid "rendben (most épp sok a kérés, a munkák várnak egy kicsit)"
+msgstr "OK (ora ci sono molte richieste, i lavori aspettano un po')"
+
+#: app/templates/telepites_6.html:7
+msgid "rendben, várja a munkát"
+msgstr "tutto a posto, in attesa di lavoro"
+
+#: machine.py:494
+msgid "saját összefoglalóhoz a telepítő felajánlja az Ollamát"
+msgstr "per i riassunti propri l'installazione propone Ollama"
+
+#: app/templates/telepites_4.html:38 app/templates/telepites_4.html:90
+msgid "sk-or-…"
+msgstr "sk-or-…"
+
+#: app/templates/telepites_1.html:5
+msgid "te gépeden"
+msgstr "sul tuo computer"
+
+#: cli.py:302
+msgid "telepítve"
+msgstr "installato"
+
+#: app/templates/telepites_4.html:115
+msgid "telepítve, nem fut"
+msgstr "installato, non in esecuzione"
+
+#: cli.py:204
+msgid "telepítve, nem fut (a futtató elindítja)"
+msgstr "installato, non in esecuzione (lo avvia il runner)"
+
+#: settings.py:103
+msgid "token"
+msgstr "token"
+
+#: app/templates/mukodes.html:33
+msgid "töltsd fel az AssemblyAI-egyenleged, és válassz nagyobb modellt lent, a"
+msgstr "ricarica il credito AssemblyAI e scegli più sotto un modello più grande, in"
+
+#: trial.py:112
+msgid "túl lassú"
+msgstr "troppo lento"
+
+#: app/templates/mukodes.html:38
+msgid "után lép életbe."
+msgstr "."
+
+#: updater.py:166
+#, python-brace-format
+msgid "uv: kilépési kód {returncode}"
+msgstr "uv: codice di uscita {returncode}"
+
+#: modes.py:114
+msgid "vagy saját felvétel"
+msgstr "o registrazione propria"
+
+#: app/templates/gepem.html:4 cli.py:250
+msgid "videókártya nélkül"
+msgstr "senza scheda video"
+
+#: cli.py:426
+msgid "vissza az előző változatra"
+msgstr "torna alla versione precedente"
+
+#: app/templates/gepem.html:8
+msgid "vizsgálat …"
+msgstr "controllo …"
+
+#: app/templates/gepem.html:8
+#, python-format
+msgid "vizsgálva %(scanned)s"
+msgstr "controllato %(scanned)s"
+
+#: activity.py:21
+msgid "válasz írása"
+msgstr "scrittura della risposta"
+
+#: activity.py:19
+msgid "vár a videókártyára"
+msgstr "in attesa della scheda video"
+
+#: app/templates/telepites_1.html:5
+msgid ""
+"végzi el a munkát a Skipwise-nak: letölti a videót, átírja\n"
+"  szöveggé, és összefoglalót készít belőle. Az eredményt a Skipwise-ban látod, telefonról is."
+msgstr ""
+"il lavoro per Skipwise: scarica il video, lo trascrive\n"
+"  in testo e ne crea un riassunto. Il risultato lo vedi in Skipwise, anche dal telefono."
+
+#: cli.py:501
+msgid "whisper try: add meg a fájlt"
+msgstr "whisper try: indica il file"
+
+#: updater.py:221
+#, python-brace-format
+msgid "{__version__} → {version} telepítve; "
+msgstr "{__version__} → {version} installato; "
+
+#: errors.py:45
+#, python-brace-format
+msgid "{_site} megtagadta a letöltést (HTTP 403, {what}). Ezt többnyire egy újabb yt-dlp megoldja; a futtató megnézi, van-e, és később újrapróbálja."
+msgstr "{_site} ha rifiutato il download (HTTP 403, {what}). Di solito lo risolve un yt-dlp più recente; il runner controlla se c'è e riprova più tardi."
+
+#: machine.py:466
+#, python-brace-format
+msgid "{cpu} · {threads} szál · {_num} GB"
+msgstr "{cpu} · {threads} thread · {_num} GB"
+
+#: app/runtime.py:51
+#, python-brace-format
+msgid "{exc} Frissítsd a futtatót."
+msgstr "{exc} Aggiorna il runner."
+
+#: cli.py:150
+#, python-brace-format
+msgid "{exc} Frissítés: uv tool upgrade dwyt-runner"
+msgstr "{exc} Aggiornamento: uv tool upgrade dwyt-runner"
+
+#: app/runtime.py:261
+#, python-brace-format
+msgid "{get}/{get2}. rész"
+msgstr "parte {get}/{get2}"
+
+#: machine.py:489
+#, python-brace-format
+msgid "{installed} telepítve, de nem fut"
+msgstr "{installed} installato, ma non in esecuzione"
+
+#: settings.py:216
+#, python-brace-format
+msgid "{label}: ezek egyike: {values}"
+msgstr "{label}: uno di questi: {values}"
+
+#: settings.py:230
+#, python-brace-format
+msgid "{label}: http:// vagy https:// kezdetű cím"
+msgstr "{label}: un indirizzo che inizia con http:// o https://"
+
+#: settings.py:204
+#, python-brace-format
+msgid "{label}: igen vagy nem"
+msgstr "{label}: sì o no"
+
+#: settings.py:224
+#, python-brace-format
+msgid "{label}: ismeretlen érték: {join}"
+msgstr "{label}: valore sconosciuto: {join}"
+
+#: settings.py:209
+#, python-brace-format
+msgid "{label}: számot várok"
+msgstr "{label}: serve un numero"
+
+#: settings.py:211
+#, python-brace-format
+msgid "{label}: {min:g} és {max:g} között"
+msgstr "{label}: tra {min:g} e {max:g}"
+
+#: trial.py:109
+#, python-brace-format
+msgid "{model} · {tokens_s:.0f} token/mp · egy összefoglaló {_minutes}"
+msgstr "{model} · {tokens_s:.0f} token/s · un riassunto {_minutes}"
+
+#: trial.py:98
+#, python-brace-format
+msgid "{model}, {where} · egy 1 órás videó {_minutes} alatt kész, beszélőkkel"
+msgstr "{model}, {where} · un video di 1 ora è pronto in {_minutes}, con interlocutori"
+
+#: cli.py:319 cli.py:322
+#, python-brace-format
+msgid "{title} nincs telepítve ezen a gépen."
+msgstr "{title} non è installato su questo computer."
+
+#: cli.py:317
+#, python-brace-format
+msgid "{title}: fut ({url})"
+msgstr "{title}: in esecuzione ({url})"
+
+#: cli.py:301
+#, python-brace-format
+msgid "{title}: nem fut ({installed}); indítás: skipwise-runner llm start"
+msgstr "{title}: non in esecuzione ({installed}); avvio: skipwise-runner llm start"
+
+#: cli.py:305
+#, python-brace-format
+msgid "{title}{versionifversionelse}: fut ({url}); az összefoglalókhoz: {openai_url}"
+msgstr "{title}{versionifversionelse}: in esecuzione ({url}); per i riassunti: {openai_url}"
+
+#: app/templates/allapot.html:39
+#, python-format
+msgid "· %(minutes)s perce"
+msgstr "· %(minutes)s min fa"
+
+#: app/templates/telepites_4.html:41 app/templates/telepites_4.html:93
+msgid ""
+"· Tipp: hozz\n"
+"      létre külön kulcsot a Skipwise-nak havi keretkorláttal."
+msgstr ""
+"· Suggerimento: crea\n"
+"      una chiave separata per Skipwise con un limite di spesa mensile."
+
+#: app/templates/allapot.html:7
+msgid "· gépvizsgálat, működési mód, hozzávalók és párosítás, lépésről lépésre"
+msgstr "· analisi del computer, modalità di funzionamento, ingredienti e abbinamento, passo per passo"
+
+#: app/templates/kulcsok.html:21
+msgid "· Üres mezővel mentve a kulcs törlődik."
+msgstr "· Salvando con il campo vuoto la chiave viene eliminata."
+
+#: app/templates/base.html:14
+msgid "Állapot"
+msgstr "Stato"
+
+#: app/templates/mukodes.html:36
+msgid "Átállás OpenRouterre"
+msgstr "Passa a OpenRouter"
+
+#: app/templates/gepem.html:44
+msgid "Átír egy 33 másodperces mintát, és egy rövid összefoglalót íratja a helyi modellel. Megmondja, mennyi idő alatt készülne el egy 1 órás videó."
+msgstr "Trascrive un campione di 33 secondi e fa scrivere un breve riassunto al modello locale. Ti dice quanto ci vorrebbe per un video di 1 ora."
+
+#: activity.py:14 modes.py:91 modes.py:93 modes.py:95 modes.py:98
+msgid "Átírás"
+msgstr "Trascrizione"
+
+#: app/wizard.py:23
+msgid "Átírás ezen a gépen, összefoglaló a felhőben. Jó magyar összefoglaló kevés pénzért."
+msgstr "Trascrizione su questo computer, riassunto nel cloud. Un buon riassunto in ungherese a poco prezzo."
+
+#: errors.py:49 media.py:46
+msgid "Élő adás vagy premier; a vége után dolgozható fel."
+msgstr "Diretta o première; si può elaborare dopo la fine."
+
+#: app/templates/mukodes.html:114
+msgid "Értem: a beállítások és a kulcsok törlődnek"
+msgstr "Ho capito: impostazioni e chiavi verranno eliminate"
+
+#: app/templates/telepites_3.html:18
+#, python-format
+msgid "Így halad egy videó %(modes)s módban"
+msgstr "Come procede un video in modalità %(modes)s"
+
+#: settings.py:53
+msgid "Így látszik a Skipwise Futtatók oldalán, például „otthoni gép”."
+msgstr "Così appare nella pagina Runner di Skipwise, per esempio «computer di casa»."
+
+#: activity.py:14
+msgid "Összefoglaló"
+msgstr "Riassunto"
+
+#: modes.py:100 modes.py:103 modes.py:106 modes.py:109 modes.py:113
+#: settings.py:20
+msgid "Összefoglaló, fordítás, kérdések"
+msgstr "Riassunto, traduzione, domande"
+
+#: machine.py:579
+#, python-brace-format
+msgid "Új videókártyát találtam: {card}{was}. Futtassunk próbát? Lehet, hogy most más mód is jól menne."
+msgstr "Ho trovato una nuova scheda video: {card}{was}. Facciamo una prova? Ora potrebbe andare bene anche un'altra modalità."
+
+#: app/templates/gepem.html:61 app/templates/gepem.html:79
+msgid "Újabb keresése"
+msgstr "Cerca una versione più recente"
+
+#: app/templates/gepem.html:66 app/templates/gepem.html:85
+#, python-format
+msgid "Újabb van: %(latest)s."
+msgstr "C'è una versione più recente: %(latest)s."
+
+#: app/templates/telepites_2.html:28 app/templates/telepites_4.html:23
+msgid "Újra"
+msgstr "Di nuovo"
+
+#: app/templates/gepem.html:9 app/templates/telepites_4.html:109
+msgid "Újravizsgálat"
+msgstr "Ricontrolla"
+
+#: app/wizard.py:15
+msgid "Üdvözlés"
+msgstr "Benvenuto"
+
+#: app/templates/telepites_1.html:4
+msgid "Üdvözöl a Skipwise futtató"
+msgstr "Benvenuto nel runner Skipwise"
+
+#: settings.py:86
+msgid "Üresen a futtató maga intézi (Windowson letölti). Megadható a whisper-cli program vagy egy kicsomagolt kiadás mappája."
+msgstr "Vuoto: se ne occupa il runner (su Windows lo scarica). Si può indicare il programma whisper-cli o la cartella di una versione decompressa."
+
+#: settings.py:123
+msgid "Üresen a nyilvános videók modellje."
+msgstr "Vuoto: il modello dei video pubblici."
+
+#: settings.py:125
+msgid "Üresen a nyilvános videók modellje; egy gondolkodó modell itt jobb válaszokat ad."
+msgstr "Vuoto: il modello dei video pubblici; qui un modello che ragiona dà risposte migliori."
+
+#: settings.py:98
+msgid "Üresen a szokásos cím ezen a gépen."
+msgstr "Vuoto: l'indirizzo abituale su questo computer."
+
+#: settings.py:148
+msgid "Üresen az alapértelmezett."
+msgstr "Vuoto: il predefinito."
+
+#: activity.py:18 app/templates/allapot.html:54
+msgid "átírás"
+msgstr "trascrizione"
+
+#: remote.py:39
+msgid "átírás ezen a gépen, összefoglaló felhőben"
+msgstr "trascrizione su questo computer, riassunto nel cloud"
+
+#: remote.py:38
+msgid "átírás felhőben (AssemblyAI), összefoglaló felhőben"
+msgstr "trascrizione nel cloud (AssemblyAI), riassunto nel cloud"
+
+#: remote.py:40
+msgid "átírás és összefoglaló ezen a gépen"
+msgstr "trascrizione e riassunto su questo computer"
+
+#: app/templates/allapot.html:54
+msgid "összefoglaló"
+msgstr "riassunto"
+
+#: activity.py:20
+msgid "összefoglaló írása"
+msgstr "scrittura del riassunto"
+
+#: app/templates/kulcsok.html:14
+msgid "új kulcs"
+msgstr "nuova chiave"
+
+#: updater.py:222
+msgid "újraindulok."
+msgstr "mi riavvio."
+
+#: app/templates/telepites_1.html:9
+msgid "← eredményt küld"
+msgstr "← invia risultati"
+
+#: app/templates/telepites_1.html:11
+msgid "← olvasod"
+msgstr "← lo leggi"
+

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 import httpx
 
 from .errors import WorkError
+from .i18n import gettext as _
 
 _THINK = re.compile(r"<think>.*?</think>", re.S)
 STALL_S = 180  # the answer comes as a stream: this long without a byte means the connection is dead
@@ -85,7 +86,7 @@ def _wait(seconds: float) -> None:
     end = time.monotonic() + seconds
     while time.monotonic() < end:
         if _cancelled():
-            raise WorkError("megszakítva", "never")
+            raise WorkError(_("megszakítva"), "never")
         time.sleep(min(1.0, max(0.0, end - time.monotonic())))
 
 
@@ -139,8 +140,9 @@ class Llm:
                 return self._complete(model, messages, temperature, on_text)
             except RateLimited as exc:
                 if attempt == RATE_TRIES:
-                    raise WorkError(f"A(z) {model} modell percenkénti kerete elfogyott (HTTP 429); később "
-                                    "újrapróbálom.", "later") from exc
+                    raise WorkError(_("A(z) {model} modell percenkénti kerete elfogyott (HTTP 429); "
+                                       "később újrapróbálom.").format(
+                                      model=model), "later") from exc
                 _wait(exc.retry_after or RATE_WAIT_S[min(attempt, len(RATE_WAIT_S) - 1)])
         raise AssertionError("unreachable")
 
@@ -167,29 +169,35 @@ class Llm:
                     return self._whole(resp, model, started)
                 return self._streamed(resp, model, started, on_text)
         except httpx.TimeoutException as exc:
-            raise WorkError(f"A(z) {model} modell {int(self.stall_s // 60) or 1} perce nem küldött semmit; a "
-                            "kapcsolat valószínűleg megszakadt. Később újrapróbálom.", "later") from exc
+            raise WorkError(_("A(z) {model} modell {int} perce nem küldött semmit; a kapcsolat "
+                               "valószínűleg megszakadt. Később újrapróbálom.").format(
+                              model=model, int=int(self.stall_s // 60) or 1), "later") from exc
         except httpx.HTTPError as exc:
-            raise WorkError(f"Az LLM-szerver kapcsolata megszakadt ({exc}); később újrapróbálom.", "later") from exc
+            raise WorkError(_("Az LLM-szerver kapcsolata megszakadt ({exc}); később újrapróbálom.").format(
+                exc=exc), "later") from exc
 
     def _refused(self, resp: httpx.Response, model: str) -> None:
         if resp.status_code in (408, 429) or resp.status_code >= 500:
-            raise WorkError(f"A(z) {model} modell most nem érhető el (HTTP {resp.status_code}).", "later")
+            raise WorkError(_("A(z) {model} modell most nem érhető el (HTTP {status_code}).").format(
+                model=model, status_code=resp.status_code), "later")
         detail = _error(resp)
         if resp.status_code in (401, 403) or "No connected db" in detail:
             # LiteLLM answers "No connected db" when the key is not its master key (it would look
             # the key up in a database it does not have).
-            raise WorkError(f"Az LLM-szerver nem fogadta el a kulcsot (HTTP {resp.status_code}: {detail[:200]}). "
-                            "Ellenőrizd: skipwise-runner config set llm_key ... "
-                            "(LiteLLM-nél a LITELLM_MASTER_KEY értéke), majd indítsd újra a futtatót.")
-        raise WorkError(f"Az LLM-szerver elutasította a kérést (HTTP {resp.status_code}): {detail}")
+            raise WorkError(_("Az LLM-szerver nem fogadta el a kulcsot (HTTP {status_code}: "
+                               "{detail}). Ellenőrizd: skipwise-runner config set llm_key ... "
+                               "(LiteLLM-nél a LITELLM_MASTER_KEY értéke), majd indítsd újra a "
+                               "futtatót.").format(
+                              status_code=resp.status_code, detail=detail[:200]))
+        raise WorkError(_("Az LLM-szerver elutasította a kérést (HTTP {status_code}): {detail}").format(
+            status_code=resp.status_code, detail=detail))
 
     def _whole(self, resp: httpx.Response, model: str, started: float) -> Answer:
         try:
             data = resp.json()
             text = data["choices"][0]["message"].get("content") or ""
         except (ValueError, KeyError, IndexError) as exc:
-            raise WorkError("Az LLM-szerver válasza nem értelmezhető.", "later") from exc
+            raise WorkError(_("Az LLM-szerver válasza nem értelmezhető."), "later") from exc
         return _answer(text, data.get("model"), data.get("usage") or {}, started)
 
     def _streamed(self, resp: httpx.Response, model: str, started: float,
@@ -200,10 +208,11 @@ class Llm:
         finished = False  # [DONE] or a finish_reason: otherwise the stream broke off in the middle
         for line in resp.iter_lines():
             if _cancelled():
-                raise WorkError("megszakítva", "never")
+                raise WorkError(_("megszakítva"), "never")
             if time.monotonic() - started > self.timeout:
-                raise WorkError(f"A(z) {model} modell {int(self.timeout // 60)} perc alatt sem végzett; később "
-                                "újrapróbálom.", "later")
+                raise WorkError(_("A(z) {model} modell {int} perc alatt sem végzett; később "
+                                   "újrapróbálom.").format(
+                                  model=model, int=int(self.timeout // 60)), "later")
             if not line.startswith("data:"):
                 continue  # SSE comments (": OPENROUTER PROCESSING"), event names, empty lines
             payload = line[5:].strip()
@@ -217,7 +226,8 @@ class Llm:
             if chunk.get("error"):
                 err = chunk["error"]
                 text = err.get("message") if isinstance(err, dict) else err
-                raise WorkError(f"A(z) {model} modell válasza félbeszakadt: {str(text)[:200]}", "later")
+                raise WorkError(_("A(z) {model} modell válasza félbeszakadt: {str}").format(
+                    model=model, str=str(text)[:200]), "later")
             used = chunk.get("model") or used
             usage = chunk.get("usage") or usage
             reasoning = False
@@ -231,8 +241,9 @@ class Llm:
             if on_text is not None:
                 on_text(*visible("".join(parts), reasoning))
         if not finished:
-            raise WorkError(f"A(z) {model} modell válasza félbeszakadt (a kapcsolat megszakadt); később "
-                            "újrapróbálom.", "later")
+            raise WorkError(_("A(z) {model} modell válasza félbeszakadt (a kapcsolat megszakadt); "
+                               "később újrapróbálom.").format(
+                              model=model), "later")
         return _answer("".join(parts), used, usage, started)
 
 
@@ -250,7 +261,7 @@ def visible(text: str, reasoning: bool = False) -> tuple[str, bool]:
 def _answer(text: str, model: str | None, usage: dict, started: float) -> Answer:
     text = _THINK.sub("", text).strip()
     if not text:
-        raise WorkError("A modell üres választ adott.", "later")
+        raise WorkError(_("A modell üres választ adott."), "later")
     details = usage.get("completion_tokens_details") or {}
     return Answer(text=text, model=model, prompt_tokens=usage.get("prompt_tokens"),
                   completion_tokens=usage.get("completion_tokens"), seconds=time.monotonic() - started,

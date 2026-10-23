@@ -13,6 +13,7 @@ import shutil
 from pathlib import Path
 
 from . import autostart, config, keystore
+from .i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 KEEP = {"window.json", "app.log", "app.log.1", "app.log.2"}
@@ -30,17 +31,17 @@ def run(models: bool = False) -> list[str]:
         try:
             (home / name).unlink(missing_ok=True)
         except OSError as exc:
-            done.append(f"Nem tudtam törölni: {home / name} ({exc})")
+            done.append(_("Nem tudtam törölni: {homename} ({exc})").format(homename=home / name, exc=exc))
     try:
         if autostart.enabled():
             autostart.disable()
-            done.append("A bejelentkezéskori indulást kikapcsoltam.")
+            done.append(_("A bejelentkezéskori indulást kikapcsoltam."))
     except OSError as exc:
-        done.append(f"A bejelentkezéskori indulást nem sikerült kikapcsolni: {exc}")
+        done.append(_("A bejelentkezéskori indulást nem sikerült kikapcsolni: {exc}").format(exc=exc))
     if keystore.usable():
         for key in sorted(config.SECRET_KEYS):
             keystore.put(key, "")
-        done.append("A kulcsokat töröltem a rendszer kulcstárolójából.")
+        done.append(_("A kulcsokat töröltem a rendszer kulcstárolójából."))
     model_dirs = [d for d in {config.data_home() / "models", home / "models"} if d.exists()]
     if home.is_dir():
         for entry in home.iterdir():
@@ -49,17 +50,17 @@ def run(models: bool = False) -> list[str]:
             try:
                 shutil.rmtree(entry) if entry.is_dir() else entry.unlink()
             except OSError as exc:
-                done.append(f"Nem tudtam törölni: {entry} ({exc})")
-    done.append("A beállításokat töröltem.")
+                done.append(_("Nem tudtam törölni: {entry} ({exc})").format(entry=entry, exc=exc))
+    done.append(_("A beállításokat töröltem."))
     for d in model_dirs:
         if models:
             try:
                 shutil.rmtree(d)
-                done.append(f"A letöltött modelleket töröltem ({d}).")
+                done.append(_("A letöltött modelleket töröltem ({d}).").format(d=d))
             except OSError as exc:
-                done.append(f"A modelleket nem tudtam törölni: {exc}")
+                done.append(_("A modelleket nem tudtam törölni: {exc}").format(exc=exc))
         else:
-            done.append(f"A letöltött modellek megmaradtak: {d}")
+            done.append(_("A letöltött modellek megmaradtak: {d}").format(d=d))
     log.info("reset: %s", " ".join(done))
     return done
 

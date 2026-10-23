@@ -9,6 +9,7 @@ usable one. `secret_store` = auto (default) | keyring | file.
 from __future__ import annotations
 
 import logging
+from .i18n import gettext as _
 
 SERVICE = "dwyt-runner"
 log = logging.getLogger("dwyt-runner")
@@ -33,13 +34,13 @@ def usable() -> bool:
     keyring, fail = _keyring()
     _usable = False
     if keyring is None:
-        why_not = "a keyring csomag nincs telepítve"
+        why_not = _("a keyring csomag nincs telepítve")
         return False
     try:
         backend = keyring.get_keyring()
         if isinstance(backend, fail.Keyring) or "chainer" in type(backend).__name__.lower() and \
                 not getattr(backend, "backends", None):
-            why_not = f"nincs kulcstároló ({type(backend).__name__})"
+            why_not = _("nincs kulcstároló ({type})").format(type=type(backend).__name__)
             return False
         keyring.set_password(SERVICE, "_probe", "ok")
         _usable = keyring.get_password(SERVICE, "_probe") == "ok"
@@ -57,21 +58,21 @@ def reset() -> None:
 
 
 def name() -> str:
-    keyring, _ = _keyring()
+    keyring, _x = _keyring()
     if not keyring or not usable():
-        return "a beállítási fájl (csak a te felhasználód olvashatja)"
+        return _("a beállítási fájl (csak a te felhasználód olvashatja)")
     backend = type(keyring.get_keyring()).__module__
     if "Windows" in backend or "windows" in backend:
-        return "a Windows hitelesítőadat-kezelője"
+        return _("a Windows hitelesítőadat-kezelője")
     if "macOS" in backend or "OS_X" in backend:
-        return "a macOS kulcskarikája"
+        return _("a macOS kulcskarikája")
     if "SecretService" in backend or "libsecret" in backend or "kwallet" in backend.lower():
-        return "a rendszer kulcstárolója (Secret Service)"
-    return "a rendszer kulcstárolója"
+        return _("a rendszer kulcstárolója (Secret Service)")
+    return _("a rendszer kulcstárolója")
 
 
 def get(key: str) -> str:
-    keyring, _ = _keyring()
+    keyring, _x = _keyring()
     try:
         return keyring.get_password(SERVICE, key) or ""
     except Exception as exc:  # noqa: BLE001
@@ -80,7 +81,7 @@ def get(key: str) -> str:
 
 
 def put(key: str, value: str) -> None:
-    keyring, _ = _keyring()
+    keyring, _x = _keyring()
     if value:
         keyring.set_password(SERVICE, key, value)
     else:
@@ -95,16 +96,16 @@ def put(key: str, value: str) -> None:
 def check_assemblyai(cfg) -> tuple[bool, str]:
     import httpx
     if not cfg.assemblyai_key:
-        return False, "nincs megadva"
+        return False, _("nincs megadva")
     try:
         r = httpx.get(cfg.assemblyai_url.rstrip("/") + "/v2/transcript", params={"limit": 1},
                       headers={"authorization": cfg.assemblyai_key}, timeout=15)
     except httpx.HTTPError as exc:
-        return False, f"nem érhető el ({exc})"
+        return False, _("nem érhető el ({exc})").format(exc=exc)
     if r.status_code == 200:
-        return True, "rendben"
+        return True, _("rendben")
     if r.status_code in (401, 403):
-        return False, "a kulcsot nem fogadja el"
+        return False, _("a kulcsot nem fogadja el")
     return False, f"HTTP {r.status_code}"
 
 
@@ -114,7 +115,7 @@ def check_llm(cfg) -> tuple[bool, str]:
     from . import localllm
     eff = localllm.effective(cfg)
     if not eff.llm_url:
-        return False, "nincs megadva LLM-cím"
+        return False, _("nincs megadva LLM-cím")
     base = eff.llm_url.rstrip("/")
     headers = {"Authorization": f"Bearer {eff.llm_key}"} if eff.llm_key else {}
     from . import gateway
@@ -126,20 +127,20 @@ def check_llm(cfg) -> tuple[bool, str]:
             try:
                 r = httpx.get(base + path, headers=headers, timeout=15)
             except httpx.HTTPError as exc:
-                return False, f"nem érhető el ({exc})"
+                return False, _("nem érhető el ({exc})").format(exc=exc)
             if r.status_code == 200:
-                return True, "rendben"
+                return True, _("rendben")
             if r.status_code in (401, 403):
-                return False, "a kulcsot nem fogadja el"
+                return False, _("a kulcsot nem fogadja el")
     url = (base if base.endswith("/v1") else base + "/v1") + "/models"
     try:
         r = httpx.get(url, headers={"Authorization": f"Bearer {eff.llm_key}"} if eff.llm_key else {}, timeout=15)
     except httpx.HTTPError as exc:
-        return False, f"nem érhető el ({exc})"
+        return False, _("nem érhető el ({exc})").format(exc=exc)
     if r.status_code == 200:
-        return True, "rendben"
+        return True, _("rendben")
     if r.status_code in (401, 403):
-        return False, "a kulcsot nem fogadja el"
+        return False, _("a kulcsot nem fogadja el")
     return False, f"HTTP {r.status_code}"
 
 
@@ -150,7 +151,7 @@ def check_gateway(cfg) -> tuple[bool, str]:
 
     from . import gateway
     if not cfg.llm_key:
-        return False, "nincs megadva AssemblyAI-kulcs"
+        return False, _("nincs megadva AssemblyAI-kulcs")
     model = cfg.llm_public_model or gateway.TRIAL_MODEL
     body = {"model": model, "stream": True, "max_tokens": 5, "temperature": gateway.TRIAL_TEMPERATURE,
             "messages": [{"role": "user", "content": "Válaszolj egy szóval: kész?"}]}
@@ -160,17 +161,18 @@ def check_gateway(cfg) -> tuple[bool, str]:
                           timeout=30) as r:
             r.read()
     except httpx.HTTPError as exc:
-        return False, f"nem érhető el ({exc})"
+        return False, _("nem érhető el ({exc})").format(exc=exc)
     if r.status_code == 200:
-        return True, "rendben"
+        return True, _("rendben")
     if r.status_code == 429:
-        return True, "rendben (most épp sok a kérés, a munkák várnak egy kicsit)"
+        return True, _("rendben (most épp sok a kérés, a munkák várnak egy kicsit)")
     if r.status_code in (401, 403):
-        return False, "a kulcsot nem fogadja el"
+        return False, _("a kulcsot nem fogadja el")
     text = r.text[:400]
     if "does not have access" in text:
-        return False, (f"a fiókod nem éri el a(z) {model} modellt (ingyenes fiókkal csak a {gateway.TRIAL_MODEL}; "
-                       "nagyobb modellhez töltsd fel az egyenleged)")
+        return False, (_("a fiókod nem éri el a(z) {model} modellt (ingyenes fiókkal csak a "
+                          "{TRIAL_MODEL}; nagyobb modellhez töltsd fel az egyenleged)").format(
+                         model=model, TRIAL_MODEL=gateway.TRIAL_MODEL))
     if "not supported" in text:
-        return False, f"nincs ilyen modell az AssemblyAI-nál: {model}"
+        return False, _("nincs ilyen modell az AssemblyAI-nál: {model}").format(model=model)
     return False, f"HTTP {r.status_code}"

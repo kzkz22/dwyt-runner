@@ -1,15 +1,15 @@
 {% extends "telepites.html" %}
 {% block step %}
-<h1>Ami a(z) {{ mode_label }} módhoz kell</h1>
+<h1>{{ _("Ami a(z) %(mode_label)s módhoz kell", mode_label=mode_label) }}</h1>
 {% if error %}<div class="note warn">{{ error }}</div>{% endif %}
 {% if mode == "egyeni" %}
-<p class="muted">Egyéni módban a részleteket a telepítés után a <strong>Működés</strong> lap részletes beállításaiban adod meg.
-  A kulcsokat itt is megadhatod.</p>
+<p class="muted">{{ _("Egyéni módban a részleteket a telepítés után a") }} <strong>{{ _("Működés") }}</strong> {{ _("lap részletes beállításaiban adod meg.
+  A kulcsokat itt is megadhatod.") }}</p>
 {% endif %}
 {% for it in items %}
 <section class="card ingredient{% if it.need == 'nem kell' %} off{% endif %}">
   <div class="row"><span class="dot {{ it.lamp }}"></span><strong>{{ it.title }}</strong>
-    <span class="right muted">{{ it.note or it.need }}</span></div>
+    <span class="right muted">{{ it.note or _(it.need) }}</span></div>
 
   {% if it.key == "whisper" and it.need != "nem kell" %}
   <div data-watch="prepare"{% if prepare.running %} data-running{% endif %}>
@@ -20,13 +20,13 @@
     {% elif prepare.error %}
     <div class="note warn">{{ prepare.error }}</div>
     <form method="post" action="/telepites/4"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <button name="action" value="prepare">Újra</button></form>
+      <button name="action" value="prepare">{{ _("Újra") }}</button></form>
     {% elif it.ok %}
-    <p class="good">Kész: a beszédfelismerő a gépen van.</p>
+    <p class="good">{{ _("Kész: a beszédfelismerő a gépen van.") }}</p>
     {% else %}
     <form method="post" action="/telepites/4"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <p class="muted">Kb. 3,5 GB, egyszer kell letölteni.</p>
-      <button class="primary" name="action" value="prepare">Letöltés</button></form>
+      <p class="muted">{{ _("Kb. 3,5 GB, egyszer kell letölteni.") }}</p>
+      <button class="primary" name="action" value="prepare">{{ _("Letöltés") }}</button></form>
     {% endif %}
   </div>
   {% endif %}
@@ -34,66 +34,66 @@
   {% if it.key == "llm" and it.need != "nem kell" %}
   <form method="post" action="/telepites/4" class="form">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label>Kulcs<input type="password" name="key" autocomplete="off"
-      placeholder="{{ 'beállítva – új kulcshoz írd be' if cfg.llm_key else 'sk-or-…' }}"{% if not cfg.llm_key %} required{% endif %}></label>
-    <label>Modell<input name="model" value="{{ cloud_model }}" required></label>
-    <p class="muted">A kulcsot a gép saját, védett kulcstárolójában őrizzük. A Skipwise sosem látja.
-      <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Kulcsot itt kérhetsz</a> · Tipp: hozz
-      létre külön kulcsot a Skipwise-nak havi keretkorláttal.</p>
-    {% if checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">Kipróbáltuk: {{ checks.llm[1] }}.</p>{% endif %}
-    <button name="action" value="llm">Mentés és próba</button>
+    <label>{{ _("Kulcs") }}<input type="password" name="key" autocomplete="off"
+      placeholder="{{ _('beállítva – új kulcshoz írd be') if cfg.llm_key else _('sk-or-…') }}"{% if not cfg.llm_key %} required{% endif %}></label>
+    <label>{{ _("Modell") }}<input name="model" value="{{ cloud_model }}" required></label>
+    <p class="muted">{{ _("A kulcsot a gép saját, védett kulcstárolójában őrizzük. A Skipwise sosem látja.") }}
+      <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">{{ _("Kulcsot itt kérhetsz") }}</a> {{ _("· Tipp: hozz
+      létre külön kulcsot a Skipwise-nak havi keretkorláttal.") }}</p>
+    {% if checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">{{ _("Kipróbáltuk: %(llm)s.", llm=checks.llm[1]) }}</p>{% endif %}
+    <button name="action" value="llm">{{ _("Mentés és próba") }}</button>
   </form>
   {% endif %}
 
   {% if it.key == "assemblyai" and it.need != "nem kell" %}
   <form method="post" action="/telepites/4" class="form">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label>Kulcs<input type="password" name="key" autocomplete="off"{% if not cfg.assemblyai_key %} required{% endif %}
-      placeholder="{{ 'beállítva – új kulcshoz írd be' if cfg.assemblyai_key else '' }}"></label>
-    <p class="muted">Regisztrációkor <strong>50 $ induló kreditet</strong> kapsz, bankkártya nélkül: ez nagyjából 300 óra
+    <label>{{ _("Kulcs") }}<input type="password" name="key" autocomplete="off"{% if not cfg.assemblyai_key %} required{% endif %}
+      placeholder="{{ _('beállítva – új kulcshoz írd be') if cfg.assemblyai_key else '' }}"></label>
+    <p class="muted">{{ _("Regisztrációkor") }} <strong>{{ _("50 $ induló kreditet") }}</strong> {{ _("kapsz, bankkártya nélkül: ez nagyjából 300 óra
       átírásra elég. Felhős átírás csak akkor készül, ha a Skipwise-ban kéred. A kulcsot a gép saját, védett
-      kulcstárolójában őrizzük, a Skipwise sosem látja. <a href="https://www.assemblyai.com/dashboard"
-      target="_blank" rel="noopener">Regisztráció és kulcs</a></p>
-    {% if checks.assemblyai %}<p class="{{ 'good' if checks.assemblyai[0] else 'bad' }}">Kipróbáltuk az átírást: {{ checks.assemblyai[1] }}.</p>{% endif %}
-    {% if provider == "gateway" and checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">Kipróbáltuk a próba-összefoglalót: {{ checks.llm[1] }}.</p>{% endif %}
-    <button name="action" value="assemblyai">Mentés és próba</button>
+      kulcstárolójában őrizzük, a Skipwise sosem látja.") }} <a href="https://www.assemblyai.com/dashboard"
+      target="_blank" rel="noopener">{{ _("Regisztráció és kulcs") }}</a></p>
+    {% if checks.assemblyai %}<p class="{{ 'good' if checks.assemblyai[0] else 'bad' }}">{{ _("Kipróbáltuk az átírást: %(assemblyai)s.", assemblyai=checks.assemblyai[1]) }}</p>{% endif %}
+    {% if provider == "gateway" and checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">{{ _("Kipróbáltuk a próba-összefoglalót: %(llm)s.", llm=checks.llm[1]) }}</p>{% endif %}
+    <button name="action" value="assemblyai">{{ _("Mentés és próba") }}</button>
   </form>
   {% endif %}
 
   {% if it.key == "provider" %}
-  <form method="post" action="/telepites/4" class="choice2" role="radiogroup" aria-label="Ki írja az összefoglalót">
+  <form method="post" action="/telepites/4" class="choice2" role="radiogroup" aria-label="{{ _("Ki írja az összefoglalót") }}">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="provider">
     <button class="modecard{% if provider == 'gateway' %} chosen{% endif %}" name="provider" value="gateway"
       role="radio" aria-checked="{{ 'true' if provider == 'gateway' else 'false' }}">
-      <span class="name">Az AssemblyAI-kulccsal <span class="badge">próba</span></span>
-      <span class="muted">Nem kell újabb regisztráció. Kis, gyors próba-modell (Qwen3.5 4B), szinte ingyenes.</span>
-      <small>a magyar szöveg gyengébb lehet</small></button>
+      <span class="name">{{ _("Az AssemblyAI-kulccsal") }} <span class="badge">{{ _("próba") }}</span></span>
+      <span class="muted">{{ _("Nem kell újabb regisztráció. Kis, gyors próba-modell (Qwen3.5 4B), szinte ingyenes.") }}</span>
+      <small>{{ _("a magyar szöveg gyengébb lehet") }}</small></button>
     <button class="modecard{% if provider == 'openrouter' %} chosen{% endif %}" name="provider" value="openrouter"
       role="radio" aria-checked="{{ 'true' if provider == 'openrouter' else 'false' }}">
-      <span class="name">OpenRouter-kulccsal <span class="badge">jobb minőség</span></span>
-      <span class="muted">Bármelyik modell választható, a jobbak magyarul is jól írnak. Külön regisztráció kell.</span>
-      <small>centes tétel videónként</small></button>
+      <span class="name">{{ _("OpenRouter-kulccsal") }} <span class="badge">{{ _("jobb minőség") }}</span></span>
+      <span class="muted">{{ _("Bármelyik modell választható, a jobbak magyarul is jól írnak. Külön regisztráció kell.") }}</span>
+      <small>{{ _("centes tétel videónként") }}</small></button>
   </form>
   {% if provider == "gateway" %}
-  <div class="note warn"><strong>Mire számíts a próba-modellel?</strong>
-    <p>Kis modell: az összefoglaló használható, de lehetnek benne nyelvi botlások, és ritkán elferdít egy számot vagy
+  <div class="note warn"><strong>{{ _("Mire számíts a próba-modellel?") }}</strong>
+    <p>{{ _("Kis modell: az összefoglaló használható, de lehetnek benne nyelvi botlások, és ritkán elferdít egy számot vagy
       egy nevet – a fontos adatokat ellenőrizd az átiratban. Ingyenes fiókkal csak ez a modell érhető el, és
-      percenként kevés kérést enged, ezért a hosszú videók összefoglalója és a fordítás lassabban készül.</p>
-    <p>Okosabb modellhez töltsd fel az AssemblyAI-egyenleged (ugyanezzel a kulccsal, a Működés lap részletes
-      beállításaiban választható nagyobb modell), vagy válaszd az OpenRoutert. Bármikor átállhatsz.</p></div>
-  {% if cfg.assemblyai_key %}<p class="good">Kész: ugyanazt a kulcsot használom, a próba-modell: {{ trial_model }}.</p>
-  {% else %}<p class="muted">Előbb add meg fent az AssemblyAI-kulcsot.</p>{% endif %}
+      percenként kevés kérést enged, ezért a hosszú videók összefoglalója és a fordítás lassabban készül.") }}</p>
+    <p>{{ _("Okosabb modellhez töltsd fel az AssemblyAI-egyenleged (ugyanezzel a kulccsal, a Működés lap részletes
+      beállításaiban választható nagyobb modell), vagy válaszd az OpenRoutert. Bármikor átállhatsz.") }}</p></div>
+  {% if cfg.assemblyai_key %}<p class="good">{{ _("Kész: ugyanazt a kulcsot használom, a próba-modell: %(trial_model)s.", trial_model=trial_model) }}</p>
+  {% else %}<p class="muted">{{ _("Előbb add meg fent az AssemblyAI-kulcsot.") }}</p>{% endif %}
   {% else %}
   <form method="post" action="/telepites/4" class="form">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label>OpenRouter-kulcs<input type="password" name="key" autocomplete="off"
-      placeholder="{{ 'beállítva – új kulcshoz írd be' if cfg.llm_key else 'sk-or-…' }}"{% if not cfg.llm_key %} required{% endif %}></label>
-    <label>Modell<input name="model" value="{{ cloud_model }}" required></label>
-    <p class="muted">A kulcsot a gép saját, védett kulcstárolójában őrizzük. A Skipwise sosem látja.
-      <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Kulcsot itt kérhetsz</a> · Tipp: hozz
-      létre külön kulcsot a Skipwise-nak havi keretkorláttal.</p>
-    {% if checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">Kipróbáltuk: {{ checks.llm[1] }}.</p>{% endif %}
-    <button name="action" value="llm">Mentés és próba</button>
+    <label>{{ _("OpenRouter-kulcs") }}<input type="password" name="key" autocomplete="off"
+      placeholder="{{ _('beállítva – új kulcshoz írd be') if cfg.llm_key else _('sk-or-…') }}"{% if not cfg.llm_key %} required{% endif %}></label>
+    <label>{{ _("Modell") }}<input name="model" value="{{ cloud_model }}" required></label>
+    <p class="muted">{{ _("A kulcsot a gép saját, védett kulcstárolójában őrizzük. A Skipwise sosem látja.") }}
+      <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">{{ _("Kulcsot itt kérhetsz") }}</a> {{ _("· Tipp: hozz
+      létre külön kulcsot a Skipwise-nak havi keretkorláttal.") }}</p>
+    {% if checks.llm %}<p class="{{ 'good' if checks.llm[0] else 'bad' }}">{{ _("Kipróbáltuk: %(llm)s.", llm=checks.llm[1]) }}</p>{% endif %}
+    <button name="action" value="llm">{{ _("Mentés és próba") }}</button>
   </form>
   {% endif %}
   {% endif %}
@@ -102,19 +102,19 @@
   {% set running = servers|selectattr("running")|list %}
   {% set installed = servers|selectattr("installed")|list %}
   {% if not running and not installed %}
-  <p>Nincs a gépen helyi modellszerver. Telepítsd az <strong>Ollamát</strong> (ingyenes, rendszergazdai jog nélkül is
-    települ), majd kattints az Újravizsgálatra.</p>
-  <form method="post" action="/telepites/4" class="inline" data-busy="Vizsgálom …"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <a class="button" href="https://ollama.com/download" target="_blank" rel="noopener">Az Ollama letöltése</a>
-    <button name="action" value="rescan">Újravizsgálat</button></form>
+  <p>{{ _("Nincs a gépen helyi modellszerver. Telepítsd az") }} <strong>{{ _("Ollamát") }}</strong> {{ _("(ingyenes, rendszergazdai jog nélkül is
+    települ), majd kattints az Újravizsgálatra.") }}</p>
+  <form method="post" action="/telepites/4" class="inline" data-busy="{{ _("Vizsgálom …") }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <a class="button" href="https://ollama.com/download" target="_blank" rel="noopener">{{ _("Az Ollama letöltése") }}</a>
+    <button name="action" value="rescan">{{ _("Újravizsgálat") }}</button></form>
   {% else %}
   {% for s in servers if s.installed or s.running %}
   {% set now_starting = starting.running and starting.kind == s.kind %}
   <div class="row server"{% if now_starting %} data-watch="starting" data-running{% endif %}>
     {% if now_starting %}<span class="spinner"></span>{% else %}<span class="dot {{ 'green' if s.running else 'yellow' }}"></span>{% endif %}{{ s.title }}
-    <span class="muted">{% if now_starting %}indul … <span data-text></span> (legfeljebb 1 perc){% elif s.running %}fut · {{ s.models|length }} modell{% else %}telepítve, nem fut{% endif %}</span>
-    {% if not s.running and not now_starting %}<form method="post" action="/telepites/4" class="right inline" data-busy="Indítás …"><input type="hidden" name="csrf" value="{{ csrf }}">
-      <input type="hidden" name="server" value="{{ s.kind }}"><button name="action" value="start"{% if starting.running %} disabled{% endif %}>Indítás</button></form>{% endif %}
+    <span class="muted">{% if now_starting %}{{ _("indul …") }} <span data-text></span> {{ _("(legfeljebb 1 perc)") }}{% elif s.running %}{{ _("fut · %(models)s modell", models=s.models|length) }}{% else %}{{ _("telepítve, nem fut") }}{% endif %}</span>
+    {% if not s.running and not now_starting %}<form method="post" action="/telepites/4" class="right inline" data-busy="{{ _("Indítás …") }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="server" value="{{ s.kind }}"><button name="action" value="start"{% if starting.running %} disabled{% endif %}>{{ _("Indítás") }}</button></form>{% endif %}
   </div>
   {% if starting.error and starting.kind == s.kind and not s.running and not now_starting %}<div class="note warn">{{ starting.error }}</div>{% endif %}
   {% endfor %}
@@ -122,9 +122,9 @@
   {% if s.models %}
   <form method="post" action="/telepites/4" class="inline pick">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="server" value="{{ s.kind }}">
-    <label class="inline-label">Ez írja az összefoglalót ({{ s.title }})
+    <label class="inline-label">{{ _("Ez írja az összefoglalót (%(title)s)", title=s.title) }}
       <select name="model">{% for name in s.models %}<option{% if name == cfg.llm_private_model %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
-    <button name="action" value="local">Kiválasztom</button>
+    <button name="action" value="local">{{ _("Kiválasztom") }}</button>
   </form>
   {% endif %}
   <div data-watch="pull"{% if pull.running %} data-running{% endif %}>
@@ -136,25 +136,25 @@
   {% if pull.error %}<div class="note warn">{{ pull.error }}</div>{% endif %}
   <form method="post" action="/telepites/4" class="inline pick">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="server" value="{{ s.kind }}">
-    <label class="inline-label">{% if s.models %}Vagy tölts le másikat{% else %}Tölts le egy modellt{% endif %}
+    <label class="inline-label">{% if s.models %}{{ _("Vagy tölts le másikat") }}{% else %}{{ _("Tölts le egy modellt") }}{% endif %}
       <input name="name" value="{{ suggested if s.kind == kind else '' }}" required
-        placeholder="{{ 'például qwen/qwen3-8b' if s.kind == 'lmstudio' else 'például qwen3:8b' }}"></label>
-    <button name="action" value="pull">Letöltés</button>
+        placeholder="{{ _('például qwen/qwen3-8b') if s.kind == 'lmstudio' else _('például qwen3:8b') }}"></label>
+    <button name="action" value="pull">{{ _("Letöltés") }}</button>
   </form>
-  <p class="muted">A javasolt modell a videókártyád memóriájához illik. A kis helyi modellek magyar összefoglalója
-    érezhetően gyengébb, mint egy felhős modellé.</p>
+  <p class="muted">{{ _("A javasolt modell a videókártyád memóriájához illik. A kis helyi modellek magyar összefoglalója
+    érezhetően gyengébb, mint egy felhős modellé.") }}</p>
   {% endif %}
   </div>
   {% endfor %}
   {% endif %}
-  {% if cfg.local_llm and cfg.llm_private_model %}<p class="good">Kiválasztva: {{ cfg.llm_private_model }}.</p>{% endif %}
+  {% if cfg.local_llm and cfg.llm_private_model %}<p class="good">{{ _("Kiválasztva: %(llm_private_model)s.", llm_private_model=cfg.llm_private_model) }}</p>{% endif %}
   {% endif %}
 </section>
 {% endfor %}
 <div class="actions">
-  {% if not go_on %}<p class="muted right-note">A Tovább gomb akkor lesz aktív, ha a „kell” jelű részek megvannak.</p>{% endif %}
-  <a class="button" href="/telepites/3">Vissza</a>
-  {% if go_on %}<a class="button primary" href="/telepites/5">Tovább</a>
-  {% else %}<button class="primary" disabled>Tovább</button>{% endif %}
+  {% if not go_on %}<p class="muted right-note">{{ _("A Tovább gomb akkor lesz aktív, ha a „kell” jelű részek megvannak.") }}</p>{% endif %}
+  <a class="button" href="/telepites/3">{{ _("Vissza") }}</a>
+  {% if go_on %}<a class="button primary" href="/telepites/5">{{ _("Tovább") }}</a>
+  {% else %}<button class="primary" disabled>{{ _("Tovább") }}</button>{% endif %}
 </div>
 {% endblock %}

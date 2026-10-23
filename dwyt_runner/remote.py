@@ -25,6 +25,8 @@ import httpx
 
 from . import __version__, config, settings, tools
 from .config import Config
+from .i18n import gettext as _
+from .i18n import N_, labels
 
 log = logging.getLogger("dwyt-runner")
 APP = False  # set by the desktop app: "auto" means off there
@@ -33,10 +35,10 @@ VERSION_URL = "https://raw.githubusercontent.com/kzkz22/skipwise-runner/main/pyp
 LATEST_EVERY_S = 24 * 3600
 REPORT_EVERY_S = 3600
 RESTART_EXIT = 75  # systemd (Restart=on-failure) starts the new version
-MODE_TEXT = {"felho": "átírás felhőben (AssemblyAI), összefoglaló felhőben",
-             "vegyes": "átírás ezen a gépen, összefoglaló felhőben",
-             "sajat": "átírás és összefoglaló ezen a gépen",
-             "egyeni": "a lenti beállítások szerint (például külön GPU-gép, saját LiteLLM)"}
+MODE_TEXT = labels({"felho": N_("átírás felhőben (AssemblyAI), összefoglaló felhőben"),
+             "vegyes": N_("átírás ezen a gépen, összefoglaló felhőben"),
+             "sajat": N_("átírás és összefoglaló ezen a gépen"),
+             "egyeni": N_("a lenti beállítások szerint (például külön GPU-gép, saját LiteLLM)")})
 
 _latest: dict[str, Any] = {"version": "", "at": 0.0}
 
@@ -183,7 +185,7 @@ def apply(cfg: Config, change: dict[str, Any]) -> dict[str, Any]:
     for key, text in (change.get("values") or {}).items():
         s = _allowed(key, secret=False)
         if s is None:
-            errors[key] = "ez a beállítás a Skipwise-ból nem állítható"
+            errors[key] = _("ez a beállítás a Skipwise-ból nem állítható")
             continue
         try:
             setattr(cfg, key, settings.parse(key, str(text)))
@@ -192,16 +194,16 @@ def apply(cfg: Config, change: dict[str, Any]) -> dict[str, Any]:
             errors[key] = str(exc)
     for key, blob in (change.get("secrets") or {}).items():
         if _allowed(key, secret=True) is None:
-            errors[key] = "ez a kulcs a Skipwise-ból nem állítható"
+            errors[key] = _("ez a kulcs a Skipwise-ból nem állítható")
             continue
         try:
             setattr(cfg, key, decrypt(str(blob)).strip())
             applied.append(key)
         except Exception:  # noqa: BLE001 - wrong key pair, damaged text: the owner gives it again
-            errors[key] = "a kulcsot nem sikerült megfejteni; add meg újra a Skipwise-ban"
+            errors[key] = _("a kulcsot nem sikerült megfejteni; add meg újra a Skipwise-ban")
     for key in change.get("clear") or []:
         if _allowed(key, secret=True) is None:
-            errors[key] = "ez a kulcs a Skipwise-ból nem törölhető"
+            errors[key] = _("ez a kulcs a Skipwise-ból nem törölhető")
             continue
         setattr(cfg, key, "")
         applied.append(key)
@@ -233,23 +235,24 @@ def update() -> dict[str, Any]:
     """Frissítés most: the newest signed release (decision 18.20); before the project's key exists, the same
     command as a manual update (decision 18.16)."""
     if APP:
-        return {"ok": False, "message": "Az asztali alkalmazás a saját gépén frissül."}
+        return {"ok": False, "message": _("Az asztali alkalmazás a saját gépén frissül.")}
     from . import updater
     if updater.signed():
         ok, message, action = updater.update_now()
         return {"ok": ok and bool(action), "message": message, "action": action}
     cmd = update_command()
     if cmd is None:
-        return {"ok": False, "message": "Nincs uv ezen a gépen, amivel frissíthetnék."}
+        return {"ok": False, "message": _("Nincs uv ezen a gépen, amivel frissíthetnék.")}
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1200,
                               check=False, **tools.no_window())
     except (OSError, subprocess.TimeoutExpired) as exc:
-        return {"ok": False, "message": f"A frissítés nem futott le: {exc}"}
+        return {"ok": False, "message": _("A frissítés nem futott le: {exc}").format(exc=exc)}
     if proc.returncode != 0:
         return {"ok": False, "message": ((proc.stderr or proc.stdout).strip()[-300:]
-                                         or f"kilépési kód {proc.returncode}")}
-    return {"ok": True, "message": f"Telepítve ({__version__} helyett a legújabb); újraindulok."}
+                                         or _("kilépési kód {returncode}").format(returncode=proc.returncode))}
+    return {"ok": True, "message": _("Telepítve ({__version__} helyett a legújabb); újraindulok.").format(
+        __version__=__version__)}
 
 
 def restart() -> None:

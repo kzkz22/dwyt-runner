@@ -107,6 +107,7 @@ class Config:
     secret_store: str = "auto"         # auto | keyring | file
     # settings from the dwyt Runners page (round 7d): auto = on for `run` (a server), off in the desktop app
     remote_settings: str = "auto"      # auto | on | off
+    ui_language: str = "auto"          # the window and messages: auto (the account's / the system's) | hu | en | …
     # signed updates of the runner itself (7c): auto = on in the desktop app, off for `run` (dwyt tells)
     auto_update: str = "auto"          # auto | on | off
 

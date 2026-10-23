@@ -21,6 +21,7 @@ import webbrowser
 from pathlib import Path
 
 from .. import config
+from ..i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 INSTANCE_HEADER = "X-Dwyt-Instance"
@@ -135,7 +136,7 @@ def serve(start_worker: bool = True, port: int = 0):
     api, state = create(runtime, f"127.0.0.1:{port}")
     server = uvicorn.Server(uvicorn.Config(api, host="127.0.0.1", port=port, log_level="warning"))
     threading.Thread(target=server.run, daemon=True, name="window-server").start()
-    for _ in range(100):
+    for _n in range(100):
         try:
             socket.create_connection(("127.0.0.1", port), timeout=0.1).close()
             break
@@ -185,7 +186,7 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
     if after:
         wait_for(after)
     if wake_running():
-        print("A futtató már fut; előhoztam az ablakát.")
+        print(_("A futtató már fut; előhoztam az ablakát."))
         return 0
     keep_login_start_current()
     from . import wizard
@@ -233,7 +234,7 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
     try:
         if webview is not None:
             width, height = window_size(webview)
-            window = webview.create_window("Skipwise futtató", state.start_url, width=width, height=height,
+            window = webview.create_window(_("Skipwise futtató"), state.start_url, width=width, height=height,
                                            min_size=(420, 520), hidden=hidden)
 
             def closing() -> bool:
@@ -249,9 +250,9 @@ def run(browser: bool = False, hidden: bool = False, after: int = 0) -> int:
             has_tray = tray.start()
             if not hidden or not has_tray:
                 webbrowser.open(state.start_url)
-            print(f"A futtató ablaka a böngészőben: {state.start_url}\n"
-                  + "Kilépés: az ablak Kilépés gombjával" + (", a tálcaikon menüjéből" if has_tray else "")
-                  + " vagy Ctrl+C")
+            print(_("A futtató ablaka a böngészőben: {url}").format(url=state.start_url) + "\n"
+                  + (_("Kilépés: az ablak Kilépés gombjával, a tálcaikon menüjéből vagy Ctrl+C") if has_tray
+                     else _("Kilépés: az ablak Kilépés gombjával vagy Ctrl+C")))
             while not quitting.wait(1):
                 pass
     except KeyboardInterrupt:
@@ -299,7 +300,8 @@ def entry() -> None:
         code = run(args.browser, args.hidden, args.after)
     except Exception as exc:  # noqa: BLE001 - without a console nobody would see it
         logging.getLogger("dwyt").exception("the app could not start")
-        tell_failure(f"A Skipwise futtató nem indult el: {exc}\n\nRészletek: {home / 'app.log'}")
+        tell_failure(_("A Skipwise futtató nem indult el: {exc}\n\nRészletek: {log}").format(
+            exc=exc, log=home / 'app.log'))
         code = 1
     sys.exit(code)
 
@@ -310,7 +312,7 @@ def tell_failure(text: str) -> None:
         return
     try:
         import ctypes
-        ctypes.windll.user32.MessageBoxW(None, text, "Skipwise futtató", 0x10)
+        ctypes.windll.user32.MessageBoxW(None, text, _("Skipwise futtató"), 0x10)
     except Exception:  # noqa: BLE001
         pass
 

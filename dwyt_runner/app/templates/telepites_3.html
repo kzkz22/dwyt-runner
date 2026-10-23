@@ -1,13 +1,13 @@
 {% extends "telepites.html" %}
 {% block step %}
-<h1>Hol készüljön az átírás és az összefoglaló?</h1>
+<h1>{{ _("Hol készüljön az átírás és az összefoglaló?") }}</h1>
 <form method="post" action="/telepites/3">
   <input type="hidden" name="csrf" value="{{ csrf }}">
-  <div class="modecards" role="radiogroup" aria-label="Működési mód">
+  <div class="modecards" role="radiogroup" aria-label="{{ _("Működési mód") }}">
     {% for id, label in modes.items() %}
     <label class="modecard">
       <input type="radio" name="mode" value="{{ id }}"{% if id == mode %} checked{% endif %} data-mode-card>
-      <span class="name">{{ label }}{% if id == recommended %} <span class="badge">ajánlott</span>{% endif %}</span>
+      <span class="name">{{ label }}{% if id == recommended %} <span class="badge">{{ _("ajánlott") }}</span>{% endif %}</span>
       <span class="muted">{{ texts[id][0] }}</span>
       {% if texts[id][1] %}<small>{{ texts[id][1] }}</small>{% endif %}
     </label>
@@ -15,7 +15,7 @@
   </div>
   {% for id, flow in flows.items() %}
   <div data-flow-for="{{ id }}"{% if id != mode %} hidden{% endif %}>
-    <h2>Így halad egy videó {{ modes[id] }} módban</h2>
+    <h2>{{ _("Így halad egy videó %(modes)s módban", modes=modes[id]) }}</h2>
     <div class="flow">
       {% for b in flow %}
       <div class="box{% if b.local %} local{% elif loop.index in (2, 3) %} cloud{% endif %}">
@@ -27,13 +27,13 @@
     </div>
   </div>
   {% endfor %}
-  <p class="muted legend"><span class="sw local"></span> ezen a gépen <span class="sw cloud"></span> felhőben · a pöttyök mutatják, merre halad az adat</p>
-  <div class="note"><div>Ha a videónak van <strong>a feltöltőtől származó felirata</strong>, azt használjuk (ingyenes, gyors); gépi
+  <p class="muted legend"><span class="sw local"></span> {{ _("ezen a gépen") }} <span class="sw cloud"></span> {{ _("felhőben · a pöttyök mutatják, merre halad az adat") }}</p>
+  <div class="note"><div>{{ _("Ha a videónak van") }} <strong>{{ _("a feltöltőtől származó felirata") }}</strong>{{ _(", azt használjuk (ingyenes, gyors); gépi
     feliratnál átírunk. Ezt a Skipwise Beállításaiban módosíthatod. Felhőbe semmi nem kerül magától: ha a gép ki van
-    kapcsolva, a munkák a Skipwise-ban várnak.</div></div>
+    kapcsolva, a munkák a Skipwise-ban várnak.") }}</div></div>
   <div class="actions">
-    <a class="button" href="/telepites/2">Vissza</a>
-    <button class="primary">Tovább</button>
+    <a class="button" href="/telepites/2">{{ _("Vissza") }}</a>
+    <button class="primary">{{ _("Tovább") }}</button>
   </div>
 </form>
 {% endblock %}

@@ -21,6 +21,7 @@ from typing import Any
 import httpx
 
 from . import tools
+from .i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 PYPI = "https://pypi.org/pypi/yt-dlp/json"
@@ -96,11 +97,13 @@ def check(update: bool = True, timeout: float = 15) -> dict[str, Any]:
         if update and newer(STATE["latest"], STATE["installed"]):
             cmd = install_command()
             if cmd is None:
-                raise RuntimeError("nincs uv és pip sem, amivel frissíthetném")
+                raise RuntimeError(_("nincs uv és pip sem, amivel frissíthetném"))
             proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                   timeout=600, check=False, **tools.no_window())
             if proc.returncode != 0:
-                raise RuntimeError((proc.stderr or proc.stdout).strip()[-300:] or f"kilépési kód {proc.returncode}")
+                raise RuntimeError((proc.stderr or proc.stdout).strip()[-300:] or _("kilépési kód "
+                                                                                     "{returncode}").format(
+                                                                                    returncode=proc.returncode))
             _forget_loaded()
             before, STATE["installed"] = STATE["installed"], installed() or STATE["latest"]
             STATE["updated"] = f"{before} → {STATE['installed']}"

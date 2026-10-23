@@ -9,8 +9,10 @@ from urllib.parse import urlsplit
 
 from . import gateway, localllm
 from .config import Config
+from .i18n import gettext as _
+from .i18n import N_, labels
 
-MODES = {"felho": "Felhő", "vegyes": "Vegyes", "sajat": "Saját gép", "egyeni": "Egyéni"}
+MODES = labels({"felho": N_("Felhő"), "vegyes": N_("Vegyes"), "sajat": N_("Saját gép"), "egyeni": N_("Egyéni")})
 
 
 @dataclass
@@ -45,21 +47,21 @@ def apply(cfg: Config, mode: str) -> list[str]:
         cfg.whisper_builtin = not cfg.whisper_url
         cfg.llm_prefer_local = True
         if not cfg.local_llm:
-            missing.append("Válaszd ki a helyi modellszervert (Ollama vagy LM Studio).")
+            missing.append(_("Válaszd ki a helyi modellszervert (Ollama vagy LM Studio)."))
         if not (cfg.llm_private_model or cfg.llm_public_model):
-            missing.append("Add meg, melyik helyi modell írja az összefoglalókat.")
+            missing.append(_("Add meg, melyik helyi modell írja az összefoglalókat."))
     if mode in ("felho", "vegyes"):
         if not cfg.llm_url:
-            missing.append("Add meg a felhős LLM címét és kulcsát (például OpenRouter) a Kulcsok lapon.")
+            missing.append(_("Add meg a felhős LLM címét és kulcsát (például OpenRouter) a Kulcsok lapon."))
         elif gateway.is_gateway(cfg.llm_url) and not cfg.assemblyai_key:
-            missing.append("Az összefoglalóhoz add meg az AssemblyAI-kulcsot a Kulcsok lapon.")
+            missing.append(_("Az összefoglalóhoz add meg az AssemblyAI-kulcsot a Kulcsok lapon."))
         elif not gateway.is_gateway(cfg.llm_url) and not cfg.llm_key and "openrouter.ai" in cfg.llm_url:
-            missing.append("Add meg az OpenRouter-kulcsot a Kulcsok lapon.")
+            missing.append(_("Add meg az OpenRouter-kulcsot a Kulcsok lapon."))
         elif not cfg.llm_public_model:
-            missing.append("Add meg, melyik felhős modell írja az összefoglalókat.")
+            missing.append(_("Add meg, melyik felhős modell írja az összefoglalókat."))
     if mode == "felho" and not cfg.assemblyai_key:
-        missing.append("Felhős átíráshoz add meg az AssemblyAI-kulcsot; nélküle csak a YouTube-feliratok "
-                       "használhatók.")
+        missing.append(_("Felhős átíráshoz add meg az AssemblyAI-kulcsot; nélküle csak a YouTube-feliratok "
+                       "használhatók."))
     return missing
 
 
@@ -86,26 +88,28 @@ def _provider(url: str) -> str:
 def flow(cfg: Config) -> list[Box]:
     """The four boxes of the mode picture: source, transcription, language model, library."""
     if cfg.whisper_url:
-        transcribe = Box("Átírás", "a GPU-gépen (Whisper)", "ingyenes", True)
+        transcribe = Box(_("Átírás"), _("a GPU-gépen (Whisper)"), _("ingyenes"), True)
     elif cfg.whisper_builtin:
-        transcribe = Box("Átírás", "ezen a gépen (Whisper)", "ingyenes", True)
+        transcribe = Box(_("Átírás"), _("ezen a gépen (Whisper)"), _("ingyenes"), True)
     elif cfg.assemblyai_key:
-        transcribe = Box("Átírás", "felhőben (AssemblyAI), ha kéred", "az AssemblyAI-kreditből"
-                         if gateway.is_gateway(cfg.llm_url) else "fizetős, a te kulcsoddal", False)
+        transcribe = Box(_("Átírás"), _("felhőben (AssemblyAI), ha kéred"), _("az AssemblyAI-kreditből")
+                         if gateway.is_gateway(cfg.llm_url) else _("fizetős, a te kulcsoddal"), False)
     else:
-        transcribe = Box("Átírás", "YouTube-feliratból", "ingyenes", False)
+        transcribe = Box(_("Átírás"), _("YouTube-feliratból"), _("ingyenes"), False)
     if cfg.llm_prefer_local and localllm.server(cfg) is None:
-        llm = Box("Összefoglaló, fordítás, kérdések", "ezen a gépen (Ollama vagy LM Studio)", "ingyenes", True)
+        llm = Box(_("Összefoglaló, fordítás, kérdések"), _("ezen a gépen (Ollama vagy LM Studio)"), _("ingyenes"), True)
     elif localllm.uses_local(cfg):
         server = localllm.server(cfg)
-        llm = Box("Összefoglaló, fordítás, kérdések", f"ezen a gépen ({server.title})", "ingyenes", True)
+        llm = Box(_("Összefoglaló, fordítás, kérdések"), _("ezen a gépen ({title})").format(
+            title=server.title), _("ingyenes"), True)
     elif gateway.is_trial(cfg.llm_url, cfg.llm_public_model):
-        llm = Box("Összefoglaló, fordítás, kérdések", "felhőben (AssemblyAI, próba-modell)",
-                  "az AssemblyAI-kreditből", False)
+        llm = Box(_("Összefoglaló, fordítás, kérdések"), _("felhőben (AssemblyAI, próba-modell)"),
+                  _("az AssemblyAI-kreditből"), False)
     elif cfg.llm_url:
-        llm = Box("Összefoglaló, fordítás, kérdések", f"felhőben ({_provider(cfg.llm_url)})",
-                  "fizetős, a te kulcsoddal", False)
+        llm = Box(_("Összefoglaló, fordítás, kérdések"), _("felhőben ({_provider})").format(
+            _provider=_provider(cfg.llm_url)),
+                  _("fizetős, a te kulcsoddal"), False)
     else:
-        llm = Box("Összefoglaló, fordítás, kérdések", "nincs beállítva", "", False)
-    return [Box("YouTube-videó", "vagy saját felvétel", "", False), transcribe, llm,
-            Box("Skipwise-könyvtár", "bárhonnan olvasható", "", False)]
+        llm = Box(_("Összefoglaló, fordítás, kérdések"), _("nincs beállítva"), "", False)
+    return [Box(_("YouTube-videó"), _("vagy saját felvétel"), "", False), transcribe, llm,
+            Box(_("Skipwise-könyvtár"), _("bárhonnan olvasható"), "", False)]

@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skipwise futtató – telepítés</title>
+<title>{{ _("Skipwise futtató – telepítés") }}</title>
 <link rel="stylesheet" href="/static/style.css">
 <script src="/static/app.js" defer></script>
 </head>
 <body class="setup">
-<nav class="steps" aria-label="Telepítés lépései">
+<nav class="steps" aria-label="{{ _("Telepítés lépései") }}">
   <ol>
   {% for label in steps %}{% set i = loop.index %}
     <li class="{{ 'now' if i == step else 'done' if i < step else '' }}">
-      {% if i < step %}<a href="/telepites/{{ i }}">{% endif %}<span class="num">{{ i }}</span><span class="label">{{ label }}</span>{% if i < step %}</a>{% endif %}
+      {% if i < step %}<a href="/telepites/{{ i }}">{% endif %}<span class="num">{{ i }}</span><span class="label">{{ _(label) }}</span>{% if i < step %}</a>{% endif %}
     </li>
   {% endfor %}
   </ol>

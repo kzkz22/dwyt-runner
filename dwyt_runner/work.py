@@ -14,6 +14,7 @@ from .config import Config
 from .errors import WorkError
 from .llm import Llm
 from .protocol import Central, CentralError
+from .i18n import gettext as _
 
 KINDS = ("transcribe", "summarize", "translate", "ask", "categorize", "chapters")
 
@@ -91,13 +92,13 @@ def _own_file(job: dict[str, Any], data: dict[str, Any], cfg: Config, stage: Cal
               cancelled: Callable[[], bool], central: Central | None) -> dict[str, Any]:
     """An own recording: uploaded to the central service, or a file of this runner's watched folder."""
     source, options = data["source"], data.get("options") or {}
-    sha, name = str(source.get("sha256") or ""), str(source.get("name") or "felvétel")
+    sha, name = str(source.get("sha256") or ""), str(source.get("name") or _("felvétel"))
     if not re.fullmatch(r"[0-9a-f]{64}", sha):
-        raise WorkError("Hibás fájlazonosító a munkában.")
+        raise WorkError(_("Hibás fájlazonosító a munkában."))
     if source["kind"] == "upload":
         media_path = str(source.get("media") or "")
         if central is None or not re.fullmatch(r"/runner/v1/jobs/\d+/media", media_path):
-            raise WorkError("Hibás letöltési cím a munkában.")
+            raise WorkError(_("Hibás letöltési cím a munkában."))
 
         def obtain(workdir: str) -> str:
             dest = os.path.join(workdir, "upload.bin")
@@ -111,7 +112,7 @@ def _own_file(job: dict[str, Any], data: dict[str, Any], cfg: Config, stage: Cal
         def obtain(workdir: str) -> str:
             path = watch.path_for(sha)
             if path is None:
-                raise WorkError("A fájl már nincs meg a figyelt mappában (áthelyezték vagy törölték).")
+                raise WorkError(_("A fájl már nincs meg a figyelt mappában (áthelyezték vagy törölték)."))
             return path
     fetch = media.from_file(name, sha, obtain, options)
     mode = options.get("mode")
@@ -122,7 +123,7 @@ def _own_file(job: dict[str, Any], data: dict[str, Any], cfg: Config, stage: Cal
     elif mode == "captions":  # the subtitles embedded in the file (decision 19.12)
         result = _embedded_subtitles(fetch, options, cfg, stage)
     else:
-        raise WorkError(f"Saját felvételhez ez a mód nem kérhető: {mode}.")
+        raise WorkError(_("Saját felvételhez ez a mód nem kérhető: {mode}.").format(mode=mode))
     report = fetch.report()
     if report is not None:
         result["tracks"] = report
@@ -161,13 +162,14 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         source, options = data.get("source") or {}, data.get("options") or {}
         url = str(source.get("url") or "")
         if source.get("kind") not in ("youtube", "url") or not url.startswith(("https://", "http://")):
-            raise WorkError("Ezt a forrást ez a futtató nem dolgozza fel.")
+            raise WorkError(_("Ezt a forrást ez a futtató nem dolgozza fel."))
         if not domain_allowed(url, cfg.allowed_domains):
-            raise WorkError(f"A(z) {urlsplit(url).hostname} oldal nincs az engedélyezett tartományok között "
-                            "(allowed_domains).")
+            raise WorkError(_("A(z) {urlsplit} oldal nincs az engedélyezett tartományok között "
+                               "(allowed_domains).").format(
+                              urlsplit=urlsplit(url).hostname))
         mode = options.get("mode")
         if mode not in ("captions", "cloud", "local"):
-            raise WorkError(f"Ez a futtató nem tud ilyen módot: {mode}.")
+            raise WorkError(_("Ez a futtató nem tud ilyen módot: {mode}.").format(mode=mode))
         page = None
         if source.get("kind") == "url" and not resolve.is_file(url) and not resolve.known(url):
             # a page yt-dlp does not know (a news site's video or podcast page): find the recording on it (19.10)
@@ -175,11 +177,12 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
             page = resolve.read(url)
             chosen = resolve.choose(page, mode, str(options.get("pick") or "") or None)
             if chosen.kind != "youtube" and not _allowed_media(chosen.url, url, cfg.allowed_domains):
-                raise WorkError(f"A felvétel a(z) {urlsplit(chosen.url).hostname} oldalon van, ami nincs az "
-                                "engedélyezett tartományok között (allowed_domains).")
+                raise WorkError(_("A felvétel a(z) {urlsplit} oldalon van, ami nincs az "
+                                   "engedélyezett tartományok között (allowed_domains).").format(
+                                  urlsplit=urlsplit(chosen.url).hostname))
             url = chosen.url
         elif mode == "captions" and source.get("kind") != "youtube":
-            raise WorkError("YouTube-feliratot csak YouTube-videóhoz lehet kérni.")
+            raise WorkError(_("YouTube-feliratot csak YouTube-videóhoz lehet kérni."))
         try:
             if mode != "captions":
                 # Indavideo: yt-dlp's tokens are refused; ask the way the player does (indavideo.py)
@@ -194,7 +197,8 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
             if page is None:
                 raise
             # say what was found on the page, so a failure shows that the resolver did its part
-            raise WorkError(f"Az oldalon ezt találtam: {chosen.label}, {chosen.url}. {exc}", exc.retry) from exc
+            raise WorkError(_("Az oldalon ezt találtam: {label}, {url}. {exc}").format(
+                label=chosen.label, url=chosen.url, exc=exc), exc.retry) from exc
         if page is not None:
             result["page"] = page.summary(chosen)
             video = result.setdefault("video", {})
@@ -206,12 +210,13 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         role = data.get("role")
         model = model_for(cfg, kind, role)
         if not cfg.llm_url or not model:
-            raise WorkError(f"Ennek a futtatónak nincs modellje ehhez ({role}).")
+            raise WorkError(_("Ennek a futtatónak nincs modellje ehhez ({role}).").format(role=role))
         wanted = data.get("model")
         if wanted:  # chosen on the item page: only a model this runner offers for this role
             if role not in ("public", "private") or wanted not in offered_models(cfg, role):
-                raise WorkError(f"Ezt a modellt a futtató nem ajánlja fel ehhez: {str(wanted)[:80]} (llm_models, "
-                                "llm_private_models).")
+                raise WorkError(_("Ezt a modellt a futtató nem ajánlja fel ehhez: {str} "
+                                   "(llm_models, llm_private_models).").format(
+                                  str=str(wanted)[:80]))
             model = str(wanted)
         context = localllm.before_llm_job(cfg, model)  # a local model: its context decides the text sizes
         context = context or gateway.context(cfg.llm_url, model)  # AssemblyAI's trial model: 32K
@@ -234,4 +239,4 @@ def run(job: dict[str, Any], cfg: Config, stage: Callable[[str], None],
         if kind == "ask":
             return ask.run(data, llm, model, stage, progress=progress, context_tokens=context, partial=partial)
         return translate.run(data, llm, model, stage, cancelled, progress=progress)
-    raise WorkError(f"Ismeretlen munkafajta: {kind}.")
+    raise WorkError(_("Ismeretlen munkafajta: {kind}.").format(kind=kind))

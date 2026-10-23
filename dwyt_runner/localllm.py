@@ -30,6 +30,7 @@ import httpx
 
 from .config import Config
 from .errors import WorkError
+from .i18n import gettext as _
 
 log = logging.getLogger("dwyt-runner")
 KINDS = {"ollama": "Ollama", "lmstudio": "LM Studio"}
@@ -79,12 +80,16 @@ class LocalServer:
             r = httpx.request(method, self.url + path, json=body, headers=self.headers,
                               timeout=timeout or self.timeout)
         except httpx.HTTPError as exc:
-            raise LocalLlmError(f"A(z) {self.title} nem érhető el ({self.url}).", "later") from exc
+            raise LocalLlmError(_("A(z) {title} nem érhető el ({url}).").format(
+                title=self.title, url=self.url), "later") from exc
         if r.status_code in (401, 403):
-            raise LocalLlmError(f"A(z) {self.title} nem fogadta el a kérést (HTTP {r.status_code}). Ha bekapcsoltad "
-                                "az API-tokent, add meg: skipwise-runner config set lmstudio_token ...")
+            raise LocalLlmError(_("A(z) {title} nem fogadta el a kérést (HTTP {status_code}). Ha "
+                                   "bekapcsoltad az API-tokent, add meg: skipwise-runner config set "
+                                   "lmstudio_token ...").format(
+                                  title=self.title, status_code=r.status_code))
         if r.status_code >= 400:
-            raise LocalLlmError(f"A(z) {self.title} hibát adott (HTTP {r.status_code}): {_detail(r)}",
+            raise LocalLlmError(_("A(z) {title} hibát adott (HTTP {status_code}): {_detail}").format(
+                                  title=self.title, status_code=r.status_code, _detail=_detail(r)),
                                 "later" if r.status_code >= 500 else "never")
         try:
             return r.json()
@@ -155,8 +160,10 @@ class LocalServer:
                 return True
             time.sleep(1)
         why = self.why_not_started()
-        raise LocalLlmError(f"A(z) {self.title} nem indult el {int(wait_s)} másodperc alatt. Indítsd el kézzel, "
-                            "és próbáld újra." + (f" A szerver utolsó üzenete: {why}" if why else ""), "later")
+        raise LocalLlmError(_("A(z) {title} nem indult el {int} másodperc alatt. Indítsd el kézzel, "
+                               "és próbáld újra.").format(
+                              title=self.title, int=int(wait_s)) + (_(" A szerver utolsó üzenete: {why}").format(
+                                  why=why) if why else ""), "later")
 
     def why_not_started(self) -> str:
         return ""
@@ -183,13 +190,15 @@ class Ollama(LocalServer):
                               headers=self.headers, timeout=httpx.Timeout(60, read=600)) as r:
                 if r.status_code >= 400:
                     r.read()
-                    raise LocalLlmError(f"Az Ollama nem tudja letölteni: {name} ({_detail(r)}).")
+                    raise LocalLlmError(_("Az Ollama nem tudja letölteni: {name} ({_detail}).").format(
+                        name=name, _detail=_detail(r)))
                 for line in r.iter_lines():
                     if not line.strip():
                         continue
                     msg = json.loads(line)
                     if msg.get("error"):
-                        raise LocalLlmError(f"Az Ollama nem tudja letölteni: {name} ({msg['error']}).")
+                        raise LocalLlmError(_("Az Ollama nem tudja letölteni: {name} ({msg}).").format(
+                            name=name, msg=msg['error']))
                     total, done = msg.get("total"), msg.get("completed")
                     if msg.get("status") == "success":
                         if progress:
@@ -198,8 +207,9 @@ class Ollama(LocalServer):
                     if progress:
                         progress(done / total if total and done is not None else None, str(msg.get("status", "")))
         except httpx.HTTPError as exc:
-            raise LocalLlmError(f"Megszakadt a letöltés: {name} ({exc}).", "later") from exc
-        raise LocalLlmError(f"Az Ollama nem jelezte, hogy kész: {name}.", "later")
+            raise LocalLlmError(_("Megszakadt a letöltés: {name} ({exc}).").format(
+                name=name, exc=exc), "later") from exc
+        raise LocalLlmError(_("Az Ollama nem jelezte, hogy kész: {name}.").format(name=name), "later")
 
     def load(self, name: str) -> None:
         self._req("POST", "/api/generate", {"model": name, "keep_alive": KEEP_LOADED}, timeout=600)
@@ -270,7 +280,9 @@ class LmStudio(LocalServer):
             job = self._req("GET", f"/api/v1/models/download/status/{job.get('job_id')}")
             status = job.get("status")
         if status not in ("completed", "already_downloaded"):
-            raise LocalLlmError(f"Az LM Studio nem tudta letölteni: {name} ({status or 'ismeretlen hiba'}).")
+            raise LocalLlmError(_("Az LM Studio nem tudta letölteni: {name} "
+                                   "({statusorismeretlenhiba}).").format(
+                                  name=name, statusorismeretlenhiba=status or _('ismeretlen hiba')))
         if progress:
             progress(1.0, status)
 
@@ -295,7 +307,7 @@ class LmStudio(LocalServer):
         best = max((c for _, c in have), default=0)
         if best >= target:
             return best
-        for inst_id, _ in have:
+        for inst_id, _x in have:
             self._req("POST", "/api/v1/models/unload", {"instance_id": inst_id}, timeout=120)
         size, last = target, None
         while size >= min(CONTEXT_FLOOR, target):
@@ -307,8 +319,9 @@ class LmStudio(LocalServer):
                 last = exc
                 size //= 2
         floor = min(CONTEXT_FLOOR, target)
-        raise LocalLlmError(f"Az LM Studio nem tudta betölteni a(z) {name} modellt legalább {floor} token "
-                            f"kontextussal ({last}). Válassz kisebb modellt.", "later")
+        raise LocalLlmError(_("Az LM Studio nem tudta betölteni a(z) {name} modellt legalább "
+                               "{floor} token kontextussal ({last}). Válassz kisebb modellt.").format(
+                              name=name, floor=floor, last=last), "later")
 
     def unload(self, name: str) -> None:
         for m in self._req("GET", "/api/v1/models").get("models") or []:
@@ -330,8 +343,9 @@ class LmStudio(LocalServer):
             subprocess.run([program, "server", "start"], capture_output=True, timeout=START_WAIT_S, check=False,
                            **_no_window())
         except (OSError, subprocess.SubprocessError) as exc:
-            raise LocalLlmError(f"Az LM Studio szerverét nem sikerült elindítani ({exc}). Nyisd meg az LM Studiót, "
-                                "és a Developer lapon kapcsold be a szervert.", "later") from exc
+            raise LocalLlmError(_("Az LM Studio szerverét nem sikerült elindítani ({exc}). Nyisd "
+                                   "meg az LM Studiót, és a Developer lapon kapcsold be a szervert.").format(
+                                  exc=exc), "later") from exc
 
 
 def _no_window() -> dict:
@@ -374,7 +388,7 @@ def _detached(cmd: list[str], env: dict[str, str] | None = None, log_file: Path 
     try:
         subprocess.Popen(cmd, **kwargs)  # noqa: S603 - a fixed program found on this machine
     except OSError as exc:
-        raise LocalLlmError(f"Nem sikerült elindítani: {cmd[0]} ({exc}).", "later") from exc
+        raise LocalLlmError(_("Nem sikerült elindítani: {cmd} ({exc}).").format(cmd=cmd[0], exc=exc), "later") from exc
     finally:
         if out is not subprocess.DEVNULL:
             out.close()  # the child has its own handle
@@ -427,5 +441,6 @@ def before_llm_job(cfg: Config, model: str = "") -> int | None:
     s = server(cfg)
     START_CONTEXT[0] = cfg.local_llm_context or START_CONTEXT[0]
     if not s.ensure_running():
-        raise LocalLlmError(f"A(z) {s.title} nincs telepítve ezen a gépen (local_llm = {cfg.local_llm}).")
+        raise LocalLlmError(_("A(z) {title} nincs telepítve ezen a gépen (local_llm = {local_llm}).").format(
+            title=s.title, local_llm=cfg.local_llm))
     return s.ensure_context(model, cfg.local_llm_context) if model else None

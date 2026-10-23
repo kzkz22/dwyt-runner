@@ -9,20 +9,23 @@ from dataclasses import dataclass
 from typing import Any
 
 from .. import config, gateway, modes
+from ..i18n import gettext as _
+from ..i18n import N_, labels
 
-STEPS = ["Üdvözlés", "Gépvizsgálat", "Működési mód", "Hozzávalók", "Párosítás", "Kész"]
+STEPS = [N_("Üdvözlés"), N_("Gépvizsgálat"), N_("Működési mód"), N_("Hozzávalók"), N_("Párosítás"), N_("Kész")]
+NEEDS = (N_("kell"), N_("ajánlott"), N_("nem kell"))  # the ingredient badges, shown translated
 CLOUD_LLM_URL = "https://openrouter.ai/api/v1"
 CLOUD_MODEL = "qwen/qwen3.8-flash"  # a good, cheap Hungarian summary on OpenRouter (the owner's choice)
-MODE_TEXT = {
-    "felho": ("Minden a felhőben készül. Gyenge géphez, vagy ha a gép ritkán van bekapcsolva.",
-              "fizetős, a te kulcsaiddal · egy AssemblyAI-regisztrációval kipróbálható (50 $ induló kredit, "
-              "bankkártya nélkül)"),
-    "vegyes": ("Átírás ezen a gépen, összefoglaló a felhőben. Jó magyar összefoglaló kevés pénzért.",
-               "az összefoglaló fizetős (centes tétel)"),
-    "sajat": ("Minden ezen a gépen készül. Ingyenes és a legprivátabb; erős gép kell.",
-              "ingyenes · a magyar összefoglaló gyengébb"),
-    "egyeni": ("Haladóknak: lépésenként választható, a Működés lap részletes beállításaiban.", ""),
-}
+MODE_TEXT = labels({
+    "felho": (N_("Minden a felhőben készül. Gyenge géphez, vagy ha a gép ritkán van bekapcsolva."),
+              N_("fizetős, a te kulcsaiddal · egy AssemblyAI-regisztrációval kipróbálható (50 $ induló kredit, "
+              "bankkártya nélkül)")),
+    "vegyes": (N_("Átírás ezen a gépen, összefoglaló a felhőben. Jó magyar összefoglaló kevés pénzért."),
+               N_("az összefoglaló fizetős (centes tétel)")),
+    "sajat": (N_("Minden ezen a gépen készül. Ingyenes és a legprivátabb; erős gép kell."),
+              N_("ingyenes · a magyar összefoglaló gyengébb")),
+    "egyeni": (N_("Haladóknak: lépésenként választható, a Működés lap részletes beállításaiban."), ""),
+})
 
 
 def path():
@@ -89,34 +92,35 @@ class Ingredient:
 def ingredients(cfg: config.Config, mode: str, prepare: dict[str, Any], whisper_ready: bool) -> list[Ingredient]:
     out = []
     if needs_whisper(cfg, mode):
-        out.append(Ingredient("whisper", f"Beszédfelismerő (Whisper {whisper_model(cfg)})", "kell",
+        out.append(Ingredient("whisper", _("Beszédfelismerő (Whisper {whisper_model})").format(
+            whisper_model=whisper_model(cfg)), "kell",
                               whisper_ready or prepare.get("ready") or prepare.get("running"),
-                              "a letöltés a háttérben is folytatódik" if prepare.get("running") else ""))
+                              _("a letöltés a háttérben is folytatódik") if prepare.get("running") else ""))
     else:
-        out.append(Ingredient("whisper", "Beszédfelismerő (Whisper)", "nem kell", False,
-                              "a GPU-gép végzi" if cfg.whisper_url else "ebben a módban nem kell"))
+        out.append(Ingredient("whisper", _("Beszédfelismerő (Whisper)"), "nem kell", False,
+                              _("a GPU-gép végzi") if cfg.whisper_url else _("ebben a módban nem kell")))
     if mode == "felho":  # one AssemblyAI key may do both (19.9): the summary's writer is a choice
         trial = gateway.is_gateway(cfg.llm_url)
-        out.append(Ingredient("assemblyai", "AssemblyAI-kulcs: átírás és próba-összefoglaló" if trial
-                              else "Felhős átírás (AssemblyAI)", "kell" if trial else "ajánlott",
-                              bool(cfg.assemblyai_key), "kötelező ehhez a módhoz" if trial
-                              else "nélküle csak a YouTube-feliratok használhatók"))
-        out.append(Ingredient("provider", "Ki írja az összefoglalót, a fordítást és a válaszokat?", "kell",
+        out.append(Ingredient("assemblyai", _("AssemblyAI-kulcs: átírás és próba-összefoglaló") if trial
+                              else _("Felhős átírás (AssemblyAI)"), "kell" if trial else _("ajánlott"),
+                              bool(cfg.assemblyai_key), _("kötelező ehhez a módhoz") if trial
+                              else _("nélküle csak a YouTube-feliratok használhatók")))
+        out.append(Ingredient("provider", _("Ki írja az összefoglalót, a fordítást és a válaszokat?"), "kell",
                               bool(cfg.assemblyai_key) if trial
                               else bool(cfg.llm_url and cfg.llm_key and cfg.llm_public_model),
-                              "később a Működés lapon átállítható"))
+                              _("később a Működés lapon átállítható")))
     else:
         cloud_llm = mode == "vegyes"
-        out.append(Ingredient("llm", "Felhős összefoglaló: OpenRouter-kulcs", "kell" if cloud_llm else "nem kell",
+        out.append(Ingredient("llm", _("Felhős összefoglaló: OpenRouter-kulcs"), "kell" if cloud_llm else "nem kell",
                               bool(cfg.llm_url and cfg.llm_key and cfg.llm_public_model)
                               or (cloud_llm and gateway.is_gateway(cfg.llm_url) and bool(cfg.assemblyai_key)),
-                              "kötelező ehhez a módhoz" if cloud_llm else "ebben a módban nem kell"))
-        out.append(Ingredient("assemblyai", "Felhős átírás (AssemblyAI)", "nem kell", bool(cfg.assemblyai_key),
-                              "ebben a módban nem kell"))
+                              _("kötelező ehhez a módhoz") if cloud_llm else _("ebben a módban nem kell")))
+        out.append(Ingredient("assemblyai", _("Felhős átírás (AssemblyAI)"), "nem kell", bool(cfg.assemblyai_key),
+                              _("ebben a módban nem kell")))
     local = mode == "sajat"
-    out.append(Ingredient("local", "Helyi összefoglaló (Ollama vagy LM Studio)", "kell" if local else "nem kell",
+    out.append(Ingredient("local", _("Helyi összefoglaló (Ollama vagy LM Studio)"), "kell" if local else "nem kell",
                           bool(cfg.local_llm and cfg.llm_private_model),
-                          "" if local else "ebben a módban nem kell · később a Működés lapon bekapcsolható"))
+                          "" if local else _("ebben a módban nem kell · később a Működés lapon bekapcsolható")))
     return out
 
 

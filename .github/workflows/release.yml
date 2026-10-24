@@ -131,18 +131,17 @@ jobs:
           python packaging/build.py windows-verify (Get-ChildItem dist/skipwise-runner-setup-*.exe).FullName build/package/windows
       - name: PROBE the files to sign (temporary)
         shell: pwsh
+        continue-on-error: true
         run: |
-          python packaging/build.py windows-tosign
-          Get-ChildItem build/package/uninstaller | Format-Table Name, Length
-          $files = Get-ChildItem -Recurse -File build/package/tosign
-          Write-Output ("to sign: " + $files.Count + " files, " + [math]::Round(($files | Measure-Object Length -Sum).Sum / 1MB) + " MB")
-          $files | Select-Object -First 25 | ForEach-Object { $_.FullName.Substring((Resolve-Path build/package/tosign).Path.Length) }
+          function Note($title, $lines) { $t = (($lines | Out-String) -replace "%", "%25" -replace "`r", "" -replace "`n", "%0A"); Write-Output "::warning title=$title::$t" }
+          $o = python packaging/build.py windows-tosign 2>&1; Note "tosign exit $LASTEXITCODE" ($o | Select-Object -Last 40)
+          Note "uninstaller dir" (Get-ChildItem build/package/uninstaller -ErrorAction SilentlyContinue | ForEach-Object { $_.Name + " " + $_.Length })
+          $files = Get-ChildItem -Recurse -File build/package/tosign -ErrorAction SilentlyContinue
+          Note "to sign" (@("count: " + $files.Count + ", MB: " + [math]::Round(($files | Measure-Object Length -Sum).Sum / 1MB)) + ($files | Select-Object -First 30 | ForEach-Object { $_.FullName }))
           $all = Get-ChildItem -Recurse -File build/package/windows -Include *.exe,*.dll,*.pyd
           $signed = $all | Where-Object { (Get-AuthenticodeSignature -LiteralPath $_.FullName).Status -eq "Valid" }
-          Write-Output ("already signed: " + $signed.Count + " of " + $all.Count)
-          $signed | ForEach-Object { $_.Name + " · " + (Get-AuthenticodeSignature -LiteralPath $_.FullName).SignerCertificate.Subject }
-          python packaging/build.py windows-installer --signed-uninstaller 2>&1 | Select-Object -Last 15
-          Write-Output "exit: $LASTEXITCODE"
+          Note "already signed" (@("" + $signed.Count + " of " + $all.Count) + ($signed | ForEach-Object { $_.Name + " | " + (Get-AuthenticodeSignature -LiteralPath $_.FullName).SignerCertificate.Subject }))
+          $o = python packaging/build.py windows-installer --signed-uninstaller 2>&1; Note "second compile exit $LASTEXITCODE" ($o | Select-Object -Last 20)
       - name: try it (silent install, the command line, uninstall)
         shell: pwsh
         env:

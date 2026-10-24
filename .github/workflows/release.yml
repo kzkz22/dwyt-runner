@@ -221,4 +221,4 @@ jobs:
           cp "out/skipwise-runner-setup-$v.exe" out/dwyt-runner-setup.exe
           cp "out/skipwise-runner-$v-x86_64.AppImage" out/dwyt-runner-x86_64.AppImage
           gh release create "v$v" out/* --target "$GITHUB_SHA" --title "Skipwise futtató $v" \
-            --notes "Windows: skipwise-runner-setup.exe (rendszergazdai jog nélkül). Linux: skipwise-runner-x86_64.AppImage. Szerverre: a Skipwise Futtatók oldalán az egysoros telepítő. A futtató csak a projekt kulcsával aláírt kiadást telepíti magától."
+            --notes "Windows: skipwise-runner-setup.exe (rendszergazdai jog nélkül). Linux: skipwise-runner-x86_64.AppImage. Szerverre: a Skipwise Futtatók oldalán az egysoros telepítő. A futtató csak a projekt kulcsával aláírt kiadást telepíti magától. Code signing: free code signing provided by SignPath.io, certificate by SignPath Foundation (https://github.com/kzkz22/skipwise-runner/blob/main/docs/code-signing.md)."

@@ -129,6 +129,20 @@ jobs:
         run: |
           Copy-Item build/package/signed-setup/skipwise-runner-setup-*.exe dist/ -Force
           python packaging/build.py windows-verify (Get-ChildItem dist/skipwise-runner-setup-*.exe).FullName build/package/windows
+      - name: PROBE the files to sign (temporary)
+        shell: pwsh
+        run: |
+          python packaging/build.py windows-tosign
+          Get-ChildItem build/package/uninstaller | Format-Table Name, Length
+          $files = Get-ChildItem -Recurse -File build/package/tosign
+          Write-Output ("to sign: " + $files.Count + " files, " + [math]::Round(($files | Measure-Object Length -Sum).Sum / 1MB) + " MB")
+          $files | Select-Object -First 25 | ForEach-Object { $_.FullName.Substring((Resolve-Path build/package/tosign).Path.Length) }
+          $all = Get-ChildItem -Recurse -File build/package/windows -Include *.exe,*.dll,*.pyd
+          $signed = $all | Where-Object { (Get-AuthenticodeSignature -LiteralPath $_.FullName).Status -eq "Valid" }
+          Write-Output ("already signed: " + $signed.Count + " of " + $all.Count)
+          $signed | ForEach-Object { $_.Name + " · " + (Get-AuthenticodeSignature -LiteralPath $_.FullName).SignerCertificate.Subject }
+          python packaging/build.py windows-installer --signed-uninstaller 2>&1 | Select-Object -Last 15
+          Write-Output "exit: $LASTEXITCODE"
       - name: try it (silent install, the command line, uninstall)
         shell: pwsh
         env:

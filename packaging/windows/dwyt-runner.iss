@@ -32,6 +32,12 @@ UninstallDisplayIcon={app}\dwyt-logo.ico
 ; tells Explorer to refresh its icons (the old "d" icon stayed in the cache)
 ChangesAssociations=yes
 UninstallDisplayName={cm:AppTitle}
+#ifdef SignUninstaller
+; signed releases (decision 19.27): the first compile leaves the uninstaller in UninstDir as an .e32 and stops; it is
+; signed outside (SignPath), and this compile embeds its signature (packaging/build.py windows-tosign)
+SignedUninstaller=yes
+SignedUninstallerDir={#UninstDir}
+#endif
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

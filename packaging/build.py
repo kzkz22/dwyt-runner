@@ -1,6 +1,8 @@
 """Build the desktop packages (round 7c, decision 18.20): the Windows installer and the Linux AppImage.
 
     python packaging/build.py windows   # on Windows, with Inno Setup (iscc) on PATH or in its usual place
+    # signed (the release workflow): windows-folder, windows-tosign, (SignPath), windows-putback DIR,
+    # windows-installer --signed-uninstaller, (SignPath for the installer), windows-verify FILES
     python packaging/build.py appimage  # on Linux; downloads appimagetool
 
 Both carry their own Python (the standalone CPython uv manages) with the runner and its [desktop,local]
@@ -131,8 +133,13 @@ def iscc() -> str:
     raise SystemExit("Inno Setup (ISCC.exe) not found")
 
 
-def windows() -> Path:
-    src = BUILD / "windows"
+WIN_SRC = BUILD / "windows"
+ISS = ROOT / "packaging" / "windows" / "dwyt-runner.iss"
+
+
+def windows_folder() -> Path:
+    """Everything the installer puts down, in build/package/windows."""
+    src = WIN_SRC
     if src.exists():
         shutil.rmtree(src)
     python = bundled_python(src / "python")
@@ -143,12 +150,134 @@ def windows() -> Path:
         (src / "bin" / f"{name}.cmd").write_text('@"%~dp0..\\python\\python.exe" -m dwyt_runner.cli %*\r\n',
                                                  encoding="ascii")
     launcher(python, src / "dwyt-logo.ico")
+    return src
+
+
+def windows_installer(signed_uninstaller: bool = False) -> Path:
     DIST.mkdir(exist_ok=True)
-    run(iscc(), f"/DAppVersion={version()}", f"/DSrc={src}", f"/O{DIST}",
-        str(ROOT / "packaging" / "windows" / "dwyt-runner.iss"))
+    extra = ["/DSignUninstaller=1", f"/DUninstDir={UNINST_DIR}"] if signed_uninstaller else []
+    run(iscc(), f"/DAppVersion={version()}", f"/DSrc={WIN_SRC}", f"/O{DIST}", *extra, str(ISS))
     out = DIST / f"skipwise-runner-setup-{version()}.exe"
     print("built", out)
     return out
+
+
+def windows() -> Path:
+    """The unsigned installer in one go (local builds, branches without signing)."""
+    windows_folder()
+    return windows_installer()
+
+
+# ---- Authenticode signing through SignPath (decision 19.27) ----------------------------------------------------
+# Smart App Control checks every EXE and DLL Windows loads, not only the installer: every PE file of the package
+# that has no valid signature yet (Python, Skipwise.exe, the .pyd modules, wheels' DLLs) is signed, and so is Inno
+# Setup's uninstaller. Files already signed (Microsoft's runtime DLLs, NVIDIA's) keep their own signature.
+# SignPath signs .exe/.dll: a .pyd travels as <name>.pyd.dll, the uninstaller (Inno's .e32) as <name>.e32.exe.
+PE_SUFFIXES = (".exe", ".dll", ".pyd")
+SIGN_DIR = BUILD / "tosign"
+UNINST_DIR = BUILD / "uninstaller"  # Inno Setup's SignedUninstallerDir
+MANIFEST = "signing-manifest.json"
+TRANSPORT = {".pyd": ".pyd.dll", ".e32": ".e32.exe"}
+# SignPath's test-signing policy uses a certificate Windows does not trust: signed, but "UnknownError"
+ACCEPTED = {"Valid"} | ({"UnknownError"} if os.environ.get("SIGNPATH_TEST") == "1" else set())
+
+
+def transport_name(rel: str) -> str:
+    for suffix, carried in TRANSPORT.items():
+        if rel.lower().endswith(suffix):
+            return rel[:-len(suffix)] + carried
+    return rel
+
+
+def original_name(rel: str) -> str:
+    for suffix, carried in TRANSPORT.items():
+        if rel.lower().endswith(carried):
+            return rel[:-len(carried)] + suffix
+    return rel
+
+
+def pe_files(root: Path) -> list[Path]:
+    return sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in PE_SUFFIXES)
+
+
+def signature_status(files: list[Path]) -> dict[Path, str]:
+    """Authenticode status of each file as Windows sees it (Valid, NotSigned, HashMismatch ...)."""
+    if not files:
+        return {}
+    listing = BUILD / "signature-files.txt"
+    listing.write_text("\n".join(str(f) for f in files), encoding="utf-8")
+    script = ("Get-Content -LiteralPath '" + str(listing) + "' | ForEach-Object { [pscustomobject]@{ p = $_; "
+              "s = (Get-AuthenticodeSignature -LiteralPath $_).Status.ToString() } } | ConvertTo-Json -AsArray")
+    out = run("pwsh", "-NoProfile", "-Command", script)
+    return {Path(row["p"]): row["s"] for row in json.loads(out)}
+
+
+def signing_plan(root: Path, uninstallers: list[Path], status: dict[Path, str]) -> dict[str, str]:
+    """{path inside the signing ZIP: source file}: the package's unsigned PE files and the uninstallers."""
+    plan = {}
+    for f in pe_files(root):
+        if status.get(f) != "Valid":
+            plan["package/" + transport_name(f.relative_to(root).as_posix())] = str(f)
+    for f in uninstallers:
+        plan["uninstaller/" + transport_name(f.name)] = str(f)
+    return plan
+
+
+def uninstaller_to_sign() -> list[Path]:
+    """Inno Setup writes its uninstaller to SignedUninstallerDir as an .e32 and stops when no signed copy is there
+    yet; that file is signed outside and the next compile embeds its signature."""
+    if UNINST_DIR.exists():
+        shutil.rmtree(UNINST_DIR)
+    UNINST_DIR.mkdir(parents=True)
+    probe = BUILD / "iscc-probe"
+    r = subprocess.run([iscc(), f"/DAppVersion={version()}", f"/DSrc={WIN_SRC}", f"/O{probe}", "/DSignUninstaller=1",
+                        f"/DUninstDir={UNINST_DIR}", str(ISS)], text=True, capture_output=True)
+    found = sorted(UNINST_DIR.glob("*.e32"))
+    if not found:
+        raise SystemExit("Inno Setup made no uninstaller to sign:\n" + r.stdout[-3000:] + r.stderr[-2000:])
+    return found
+
+
+def windows_tosign() -> Path:
+    """build/package/tosign: the files to sign (uploaded as one GitHub artifact) and the manifest to put them back."""
+    plan = signing_plan(WIN_SRC, uninstaller_to_sign(), signature_status(pe_files(WIN_SRC)))
+    if SIGN_DIR.exists():
+        shutil.rmtree(SIGN_DIR)
+    for inside, source in plan.items():
+        target = SIGN_DIR / inside
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    (BUILD / MANIFEST).write_text(json.dumps(plan, indent=1), encoding="utf-8")
+    print(f"{len(plan)} files to sign in {SIGN_DIR}")
+    return SIGN_DIR
+
+
+def put_back(signed: Path, plan: dict[str, str]) -> list[Path]:
+    """Copy the signed files over the originals; every planned file must have come back."""
+    missing = [inside for inside in plan if not (signed / inside).is_file()]
+    if missing:
+        raise SystemExit(f"{len(missing)} files did not come back signed, first: {missing[:5]}")
+    for inside, source in plan.items():
+        shutil.copyfile(signed / inside, source)
+    return [Path(source) for source in plan.values()]
+
+
+def windows_putback(signed: Path) -> None:
+    plan = json.loads((BUILD / MANIFEST).read_text(encoding="utf-8"))
+    files = put_back(signed, plan)
+    bad = {f: s for f, s in signature_status(files).items() if s not in ACCEPTED}
+    if bad:
+        raise SystemExit(f"not validly signed: {list(bad.items())[:5]}")
+    print(f"{len(files)} files signed and back in place")
+
+
+def windows_verify(*paths: str) -> None:
+    """Every PE file under the given paths (files or folders) must be validly signed."""
+    files = [f for p in map(Path, paths) for f in (pe_files(p) if p.is_dir() else [p])]
+    bad = {f: s for f, s in signature_status(files).items() if s not in ACCEPTED}
+    if bad:
+        raise SystemExit(f"{len(bad)} files not validly signed, first: {list(bad.items())[:10]}")
+    print(f"{len(files)} files validly signed")
 
 
 APPRUN = """#!/bin/sh
@@ -229,6 +358,16 @@ if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else ""
     if what == "windows":
         windows()
+    elif what == "windows-folder":
+        windows_folder()
+    elif what == "windows-tosign":
+        windows_tosign()
+    elif what == "windows-putback":
+        windows_putback(Path(sys.argv[2]))
+    elif what == "windows-installer":
+        windows_installer(signed_uninstaller="--signed-uninstaller" in sys.argv)
+    elif what == "windows-verify":
+        windows_verify(*sys.argv[2:])
     elif what == "appimage":
         appimage()
     elif what == "wheel":

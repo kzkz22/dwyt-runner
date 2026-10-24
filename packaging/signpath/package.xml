@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration "package" (decision 19.27): the GitHub artifact windows-tosign made by
+     `packaging/build.py windows-tosign`: every PE file of the Windows package that has no valid signature yet
+     (package/..., .pyd modules travel as .pyd.dll) and Inno Setup's uninstaller (uninstaller/*.e32.exe). -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file-set>
+      <include path="package/**/*.exe" min-matches="1" max-matches="unbounded" />
+      <include path="package/**/*.dll" min-matches="1" max-matches="unbounded" />
+      <include path="uninstaller/*.exe" min-matches="1" max-matches="unbounded" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>

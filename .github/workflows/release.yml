@@ -129,19 +129,28 @@ jobs:
         run: |
           Copy-Item build/package/signed-setup/skipwise-runner-setup-*.exe dist/ -Force
           python packaging/build.py windows-verify (Get-ChildItem dist/skipwise-runner-setup-*.exe).FullName build/package/windows
-      - name: PROBE the files to sign (temporary)
+      - name: PROBE the whole chain with a self-signed certificate (temporary)
         shell: pwsh
         continue-on-error: true
+        env:
+          SIGNPATH_TEST: "1"
         run: |
           function Note($title, $lines) { $t = (($lines | Out-String) -replace "%", "%25" -replace "`r", "" -replace "`n", "%0A"); Write-Output "::warning title=$title::$t" }
-          $o = python packaging/build.py windows-tosign 2>&1; Note "tosign exit $LASTEXITCODE" ($o | Select-Object -Last 40)
-          Note "uninstaller dir" (Get-ChildItem build/package/uninstaller -ErrorAction SilentlyContinue | ForEach-Object { $_.Name + " " + $_.Length })
-          $files = Get-ChildItem -Recurse -File build/package/tosign -ErrorAction SilentlyContinue
-          Note "to sign" (@("count: " + $files.Count + ", MB: " + [math]::Round(($files | Measure-Object Length -Sum).Sum / 1MB)) + ($files | Select-Object -First 30 | ForEach-Object { $_.FullName }))
-          $all = Get-ChildItem -Recurse -File build/package/windows -Include *.exe,*.dll,*.pyd
-          $signed = $all | Where-Object { (Get-AuthenticodeSignature -LiteralPath $_.FullName).Status -eq "Valid" }
-          Note "already signed" (@("" + $signed.Count + " of " + $all.Count) + ($signed | ForEach-Object { $_.Name + " | " + (Get-AuthenticodeSignature -LiteralPath $_.FullName).SignerCertificate.Subject }))
-          $o = python packaging/build.py windows-installer --signed-uninstaller 2>&1; Note "second compile exit $LASTEXITCODE" ($o | Select-Object -Last 20)
+          $o = python packaging/build.py windows-tosign 2>&1; Note "tosign exit $LASTEXITCODE" ($o | Select-Object -Last 5)
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=Skipwise probe" -CertStoreLocation Cert:\CurrentUser\My
+          Copy-Item -Recurse build/package/tosign build/package/signed
+          $files = Get-ChildItem -Recurse -File build/package/signed
+          $res = $files | ForEach-Object { (Set-AuthenticodeSignature -LiteralPath $_.FullName -Certificate $cert -HashAlgorithm SHA256).Status.ToString() } | Group-Object | ForEach-Object { $_.Name + ": " + $_.Count }
+          Note "self-signed" $res
+          $o = python packaging/build.py windows-putback build/package/signed 2>&1; Note "putback exit $LASTEXITCODE" ($o | Select-Object -Last 5)
+          $o = python packaging/build.py windows-installer --signed-uninstaller 2>&1; Note "second compile exit $LASTEXITCODE" ($o | Select-Object -Last 8)
+          $setup = Get-ChildItem dist\skipwise-runner-setup-*.exe | Select-Object -First 1
+          Set-AuthenticodeSignature -LiteralPath $setup.FullName -Certificate $cert -HashAlgorithm SHA256 | Out-Null
+          $o = python packaging/build.py windows-verify $setup.FullName build/package/windows 2>&1; Note "verify exit $LASTEXITCODE" ($o | Select-Object -Last 5)
+          Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/NOLAUNCH=1" -Wait
+          $app = "$env:LOCALAPPDATA\Programs\Skipwise"
+          Note "installed" (@("unins000: " + (Get-AuthenticodeSignature "$app\unins000.exe").Status + " " + (Get-AuthenticodeSignature "$app\unins000.exe").SignerCertificate.Subject, "Skipwise.exe: " + (Get-AuthenticodeSignature "$app\python\Skipwise.exe").Status, "version: " + (& "$app\bin\skipwise-runner.cmd" --version 2>&1)))
+          Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
       - name: try it (silent install, the command line, uninstall)
         shell: pwsh
         env:

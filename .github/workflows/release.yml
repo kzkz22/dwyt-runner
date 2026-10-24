@@ -1,5 +1,6 @@
 # Desktop packages and a signed release (round 7c; plan 15b, decision 18.20).
-# A new version in pyproject.toml pushed to main (or a tag vX.Y.Z equal to it) builds the wheel, the Windows installer and the Linux AppImage,
+# A new version in pyproject.toml pushed to main (or a tag vX.Y.Z equal to it) builds the wheel, the Windows installer
+# (Authenticode-signed through SignPath when that is set up, decision 19.27) and the Linux AppImage,
 # tries each, writes latest.json (version, file names, sizes, SHA-256) and signs it with the project's minisign
 # key (Actions secret MINISIGN_SECRET_KEY: the whole minisign.key file, made with `minisign -G -W`). Without the
 # secret the release is published unsigned, and runners do not install it. A push touching packaging/ (or a run by
@@ -15,6 +16,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: read  # SignPath's action reads the job and downloads the artifact to sign
 jobs:
   wheel:
     runs-on: ubuntu-latest
@@ -57,9 +59,80 @@ jobs:
         shell: pwsh
         run: |
           if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
-      - run: python packaging/build.py windows
+      # Authenticode (decision 19.27): with SignPath set up (secret SIGNPATH_API_TOKEN, variable
+      # SIGNPATH_ORGANIZATION_ID) a release is signed with SIGNPATH_POLICY (default release-signing, approved by hand
+      # in SignPath); other builds only with SIGNPATH_TEST_POLICY (test certificate) if that is set; otherwise unsigned
+      - id: sign
+        name: sign this build?
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          RELEASE: ${{ needs.wheel.outputs.release }}
+          POLICY: ${{ vars.SIGNPATH_POLICY }}
+          TEST_POLICY: ${{ vars.SIGNPATH_TEST_POLICY }}
+        run: |
+          policy=""; test=0
+          if [ -n "$TOKEN" ] && [ -n "$ORG" ]; then
+            if [ "$RELEASE" = "yes" ]; then policy="${POLICY:-release-signing}"; elif [ -n "$TEST_POLICY" ]; then policy="$TEST_POLICY"; test=1; fi
+          fi
+          echo "policy=$policy" >> "$GITHUB_OUTPUT"
+          echo "SIGNPATH_TEST=$test" >> "$GITHUB_ENV"
+          echo "signing policy: ${policy:-none (unsigned build)}"
+      - run: python packaging/build.py windows-folder
+      - if: steps.sign.outputs.policy == ''
+        run: python packaging/build.py windows-installer
+      - if: steps.sign.outputs.policy != ''
+        name: the files to sign (every unsigned EXE, DLL and .pyd, and the uninstaller)
+        run: python packaging/build.py windows-tosign
+      - if: steps.sign.outputs.policy != ''
+        id: tosign
+        uses: actions/upload-artifact@v4
+        with: {name: windows-tosign, path: build/package/tosign/, retention-days: 3}
+      - if: steps.sign.outputs.policy != ''
+        name: sign the package files (SignPath)
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092  # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'skipwise-runner' }}
+          signing-policy-slug: ${{ steps.sign.outputs.policy }}
+          artifact-configuration-slug: package
+          github-artifact-id: ${{ steps.tosign.outputs.artifact-id }}
+          wait-for-completion-timeout-in-seconds: 14400  # a release waits for the approval in SignPath
+          download-signed-artifact-timeout-in-seconds: 1800
+          output-artifact-directory: build/package/signed
+      - if: steps.sign.outputs.policy != ''
+        name: the signed files back in place, then the installer
+        run: |
+          python packaging/build.py windows-putback build/package/signed
+          python packaging/build.py windows-installer --signed-uninstaller
+      - if: steps.sign.outputs.policy != ''
+        id: setup
+        uses: actions/upload-artifact@v4
+        with: {name: windows-setup-tosign, path: dist/skipwise-runner-setup-*.exe, retention-days: 3}
+      - if: steps.sign.outputs.policy != ''
+        name: sign the installer (SignPath)
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092  # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'skipwise-runner' }}
+          signing-policy-slug: ${{ steps.sign.outputs.policy }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.setup.outputs.artifact-id }}
+          wait-for-completion-timeout-in-seconds: 14400
+          output-artifact-directory: build/package/signed-setup
+      - if: steps.sign.outputs.policy != ''
+        name: the signed installer, and every file checked
+        shell: pwsh
+        run: |
+          Copy-Item build/package/signed-setup/skipwise-runner-setup-*.exe dist/ -Force
+          python packaging/build.py windows-verify (Get-ChildItem dist/skipwise-runner-setup-*.exe).FullName build/package/windows
       - name: try it (silent install, the command line, uninstall)
         shell: pwsh
+        env:
+          SIGNED: ${{ steps.sign.outputs.policy != '' && '1' || '0' }}
         run: |
           function Fail($what) { Write-Output "::error title=Windows package::$what"; exit 1 }
           $setup = Get-ChildItem dist\skipwise-runner-setup-*.exe | Select-Object -First 1
@@ -85,6 +158,12 @@ jobs:
           $target = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk.FullName).TargetPath
           if ($target -notlike "*\Skipwise.exe") { Fail "the shortcut starts $target" }
           if (Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Filter "dwyt*.lnk") { Fail "the old dwyt shortcut is still there" }
+          if ($env:SIGNED -eq "1") {
+            foreach ($f in "$app\unins000.exe", "$app\python\Skipwise.exe", "$app\python\python.exe") {
+              $st = (Get-AuthenticodeSignature -LiteralPath $f).Status.ToString()
+              if ($st -ne "Valid" -and -not ($env:SIGNPATH_TEST -eq "1" -and $st -eq "UnknownError")) { Fail "$f is not signed: $st" }
+            }
+          }
           Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
           Start-Sleep -Seconds 5
           if (Test-Path "$app\python") { Fail ("uninstall left: " + ((Get-ChildItem $app | Select-Object -ExpandProperty Name) -join ", ")) }

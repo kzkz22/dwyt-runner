@@ -212,6 +212,10 @@ uv run pytest -q
 
 A tesztek nem érnek el semmilyen külső szolgáltatást: a központ, a yt-dlp, az AssemblyAI és az LLM is utánzat (`tests/`).
 
+## Kódaláírás
+
+A Windows-telepítőt és az általa telepített futtatható fájlokat a SignPath Foundation tanúsítványával írjuk alá (ingyenes kódaláírás nyílt forrású projekteknek, [SignPath.io](https://about.signpath.io)). A szabályzat és az adatkezelés: [docs/code-signing.md](docs/code-signing.md); a kiadás menete: [docs/kiadas.md](docs/kiadas.md).
+
 ## Licenc
 
 MIT, lásd [LICENSE](LICENSE).

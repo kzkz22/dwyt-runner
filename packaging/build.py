@@ -206,9 +206,9 @@ def signature_status(files: list[Path]) -> dict[Path, str]:
         return {}
     listing = BUILD / "signature-files.txt"
     listing.write_text("\n".join(str(f) for f in files), encoding="utf-8")
-    out = run("pwsh", "-NoProfile", "-Command",
-              f"Get-Content -LiteralPath '{listing}' | ForEach-Object {{ [pscustomobject]@{{ p = $_; "
-              "s = (Get-AuthenticodeSignature -LiteralPath $_).Status.ToString() }} } | ConvertTo-Json -AsArray")
+    script = ("Get-Content -LiteralPath '" + str(listing) + "' | ForEach-Object { [pscustomobject]@{ p = $_; "
+              "s = (Get-AuthenticodeSignature -LiteralPath $_).Status.ToString() } } | ConvertTo-Json -AsArray")
+    out = run("pwsh", "-NoProfile", "-Command", script)
     return {Path(row["p"]): row["s"] for row in json.loads(out)}
 
 
